@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Catalogue from './pages/Catalogue';
@@ -9,11 +9,15 @@ import Dashboard from './pages/Dashboard';
 import CreateListing from './pages/CreateListing';
 import OrderTracking from './pages/OrderTracking';
 import Onboarding from './pages/Onboarding';
+import { CartProvider } from './contexts/CartContext';
 
-export default function App() {
+function AppLayout() {
+  const location = useLocation();
+  const isKaarigarGalleryRoute = location.pathname === '/' || location.pathname === '/gallery';
+
   return (
-    <BrowserRouter>
-      <Navbar />
+    <>
+      {!isKaarigarGalleryRoute && <Navbar />}
       <Routes>
         <Route path="/"                   element={<Home />} />
         <Route path="/login"              element={<Onboarding />} />
@@ -26,6 +30,16 @@ export default function App() {
         <Route path="/dashboard/edit/:id" element={<CreateListing />} />
         <Route path="/orders/:id"         element={<OrderTracking />} />
       </Routes>
-    </BrowserRouter>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <CartProvider>
+      <BrowserRouter>
+        <AppLayout />
+      </BrowserRouter>
+    </CartProvider>
   );
 }
