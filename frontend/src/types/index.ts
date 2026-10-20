@@ -1,0 +1,1 @@
+// KalaHaat – TypeScript type definitions

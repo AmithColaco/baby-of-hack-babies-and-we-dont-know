@@ -1,0 +1,1 @@
+"""KalaHaat backend package."""

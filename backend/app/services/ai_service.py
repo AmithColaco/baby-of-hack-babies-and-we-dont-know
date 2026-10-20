@@ -1,0 +1,1 @@
+"""KalaHaat – Gemini AI service."""

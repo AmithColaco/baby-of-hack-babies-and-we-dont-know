@@ -1,0 +1,1 @@
+"""KalaHaat – Pydantic schemas."""

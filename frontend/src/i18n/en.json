@@ -1,0 +1,21 @@
+{
+  "nav": {
+    "shop": "Shop",
+    "gallery": "Gallery",
+    "dashboard": "Dashboard",
+    "cart": "Cart",
+    "login": "Login"
+  },
+  "home": {
+    "tagline": "Where every craft tells its own story",
+    "browse": "Browse Shop",
+    "enter_gallery": "Enter Gallery"
+  },
+  "listing": {
+    "add_piece": "Add Piece",
+    "publish": "Publish",
+    "price": "Price (₹)",
+    "stock": "Stock",
+    "craft_type": "Craft Type"
+  }
+}

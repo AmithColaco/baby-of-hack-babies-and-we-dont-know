@@ -1,0 +1,1 @@
+"""KalaHaat – price suggestion service."""
