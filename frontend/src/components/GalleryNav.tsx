@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../data/productStore';
@@ -33,7 +33,27 @@ export const GalleryNav = ({
   const totalWishlist = wishlist.length;
   const { user, isLoggedIn, isArtisan, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  // Dismiss dropdown on outside click or escape key
+  useEffect(() => {
+    if (!showUserMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowUserMenu(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showUserMenu]);
 
   const handleLogout = () => {
     logout();
@@ -174,7 +194,7 @@ export const GalleryNav = ({
 
           {/* Auth: User Pill or Sign In Button */}
           {isLoggedIn ? (
-            <div className="site-header__user-menu-wrap" style={{ position: 'relative' }}>
+            <div className="site-header__user-menu-wrap" ref={userMenuRef} style={{ position: 'relative' }}>
               <button
                 type="button"
                 className="site-header__seller-cta"
@@ -197,86 +217,43 @@ export const GalleryNav = ({
                 </svg>
               </button>
               {showUserMenu && (
-                <div
-                  className="user-dropdown"
-                  style={{
-                    position: 'absolute',
-                    top: 'calc(100% + 8px)',
-                    right: 0,
-                    background: '#FDFBF7',
-                    border: '1px solid rgba(0,0,0,0.1)',
-                    borderRadius: '8px',
-                    minWidth: '180px',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                    zIndex: 200,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1C1C1A' }}>{user?.name}</div>
-                    <div style={{ fontSize: '0.72rem', color: '#7A7570', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                <div className="user-dropdown">
+                  <div className="user-dropdown__header">
+                    <div className="user-dropdown__name">{user?.name}</div>
+                    <div className="user-dropdown__role">
                       {isArtisan ? 'Master Artisan' : 'Art Collector'}
                     </div>
                   </div>
                   {isArtisan && (
                     <Link
                       to="/dashboard"
-                      style={{
-                        display: 'block',
-                        padding: '0.65rem 1rem',
-                        fontSize: '0.84rem',
-                        color: '#2C2C2A',
-                        textDecoration: 'none',
-                        borderBottom: '1px solid rgba(0,0,0,0.06)',
-                      }}
+                      className="user-dropdown__link"
                       onClick={() => setShowUserMenu(false)}
                     >
-                      Seller Atelier
+                      <span>Seller Atelier</span>
+                      <span>→</span>
                     </Link>
                   )}
                   <Link
                     to="/wishlist"
-                    style={{
-                      display: 'block',
-                      padding: '0.65rem 1rem',
-                      fontSize: '0.84rem',
-                      color: '#2C2C2A',
-                      textDecoration: 'none',
-                      borderBottom: '1px solid rgba(0,0,0,0.06)',
-                    }}
+                    className="user-dropdown__link"
                     onClick={() => setShowUserMenu(false)}
                   >
-                    My Wishlist {totalWishlist > 0 && `(${totalWishlist})`}
+                    <span>My Wishlist</span>
+                    {totalWishlist > 0 && <span className="site-badge" style={{ position: 'static' }}>{totalWishlist}</span>}
                   </Link>
                   <Link
                     to="/settings"
-                    style={{
-                      display: 'block',
-                      padding: '0.65rem 1rem',
-                      fontSize: '0.84rem',
-                      color: '#2C2C2A',
-                      textDecoration: 'none',
-                      borderBottom: '1px solid rgba(0,0,0,0.06)',
-                    }}
+                    className="user-dropdown__link"
                     onClick={() => setShowUserMenu(false)}
                   >
-                    Settings
+                    <span>Account Settings</span>
+                    <span>⚙</span>
                   </Link>
                   <button
                     type="button"
                     onClick={handleLogout}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '0.65rem 1rem',
-                      fontSize: '0.84rem',
-                      color: '#C0392B',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                    }}
+                    className="user-dropdown__btn"
                   >
                     Sign Out
                   </button>

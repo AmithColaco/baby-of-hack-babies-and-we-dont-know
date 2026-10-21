@@ -88,7 +88,7 @@ def test_public_artisans_directory():
 
 
 def test_price_suggestion():
-    """Verify deterministic pricing breakdown per PRD §F4."""
+    """Verify deterministic pricing breakdown per fair pricing formula."""
     body = {
         "craft_type": "Kasuti",
         "hours_to_make": 10.0,

@@ -1,7 +1,7 @@
 """KalaHaat – payment provider interface + mock.
 
 Implements the PaymentProvider protocol with a MockProvider that always
-succeeds (or fails for a magic card number) – per PRD §F7.
+succeeds (or fails for a magic card number) – per payment workflow specification.
 """
 
 from __future__ import annotations

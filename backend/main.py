@@ -29,7 +29,7 @@ app = FastAPI(
 # ── CORS ──
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_ORIGIN, "http://localhost:5173", "http://localhost:3000"],
+    allow_origins=[settings.FRONTEND_ORIGIN, "http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -42,7 +42,7 @@ app.include_router(orders.router, prefix="/orders", tags=["orders"])
 app.include_router(gallery.router, prefix="/gallery", tags=["gallery"])
 app.include_router(guide.router, prefix="/guide", tags=["guide"])
 
-# ── Direct PRD §11 Aliases (/me, /artisan/orders, /crafts, /artisans) ──
+# ── Core Route Aliases (/me, /artisan/orders, /crafts, /artisans) ──
 @app.get("/me", response_model=auth.ProfileOut, tags=["auth"], summary="Get current user profile (alias)")
 def get_me_alias(user=Depends(auth.get_current_user)):
     return auth.get_me(user)

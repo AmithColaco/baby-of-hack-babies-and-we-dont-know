@@ -36,7 +36,7 @@ from app.services.payment_service import payment_provider
 
 router = APIRouter()
 
-# Legal order status transitions (PRD §6.3)
+# Legal order status transitions (order state machine)
 _TRANSITIONS: dict[str, set[str]] = {
     OrderStatus.PLACED: {OrderStatus.CONFIRMED, OrderStatus.CANCELLED},
     OrderStatus.CONFIRMED: {OrderStatus.SHIPPED, OrderStatus.CANCELLED},
@@ -294,7 +294,7 @@ def update_order_status(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Enforce legal state transitions (PRD §6.3):
+    """Enforce legal state transitions:
     PLACED → CONFIRMED → SHIPPED → DELIVERED
     Any non-terminal → CANCELLED
     """

@@ -1,16 +1,113 @@
-# Python
+# ==============================================================================
+# KalaHaat – Unified .gitignore
+# ==============================================================================
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Environment and Secrets (always keep .env.example tracked)
+.env
+.env.*
+!.env.example
+*.local
+
+# Python / Backend
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
 .venv/
 venv/
-.env
+ENV/
+env/
+env.bak/
+venv.bak/
 
-# Node
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Databases & Runtime State
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+*.sqlite3-shm
+*.sqlite3-wal
+*.db.bak
+
+# Local Uploads (preserve .gitkeep)
+**/uploads/*
+!**/uploads/.gitkeep
+
+# Node / Frontend
 node_modules/
 dist/
+dist-ssr/
 .cache/
+.parcel-cache/
+.turbo/
+.eslintcache
+*.tsbuildinfo
 
-# Misc
-.DS_Store
+# Logs
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor & IDE Directories
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*~

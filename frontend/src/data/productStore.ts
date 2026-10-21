@@ -1,10 +1,102 @@
 import { useState, useEffect } from 'react';
 import { CRAFT_OBJECTS } from './craftsData';
 import type { CraftObject } from '../types';
+import { getListings, type ListingRecord } from '../api/listings';
 
 const PRODUCTS_STORAGE_KEY = 'kaarigar_products_catalog_v2';
 const WISHLIST_STORAGE_KEY = 'kaarigar_wishlist_v1';
 const ARTISAN_PROFILE_KEY = 'kaarigar_artisan_profile_v1';
+
+export function listingToCraftObject(listing: ListingRecord): CraftObject {
+  let category: CraftObject['category'] = 'textiles';
+  const ct = listing.craft_type.toLowerCase();
+  if (ct.includes('kasuti') || ct.includes('embroidery') || ct.includes('weaving') || ct.includes('beedu') || ct.includes('mat')) {
+    category = 'textiles';
+  } else if (ct.includes('shell') || ct.includes('terracotta') || ct.includes('pottery') || ct.includes('ceramic')) {
+    category = 'ceramics';
+  } else if (ct.includes('wood') || ct.includes('channapatna') || ct.includes('driftwood')) {
+    category = 'woodcraft';
+  } else if (ct.includes('metal') || ct.includes('brass') || ct.includes('dhokra') || ct.includes('bidri')) {
+    category = 'metalcraft';
+  } else if (ct.includes('painting') || ct.includes('miniature')) {
+    category = 'paintings';
+  }
+
+  const materials = listing.materials
+    ? listing.materials.split(',').map((m) => m.trim()).filter(Boolean)
+    : ['Authentic Coastal Materials'];
+
+  let imageUrl = '/images/textile.jpg';
+  if (listing.images && listing.images.length > 0) {
+    const rawUrl = listing.images[0].url;
+    if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+      imageUrl = rawUrl;
+    } else if (rawUrl.startsWith('/uploads')) {
+      imageUrl = `http://localhost:8000${rawUrl}`;
+    } else {
+      imageUrl = rawUrl;
+    }
+  } else if (category === 'ceramics') {
+    imageUrl = '/images/bluepottery.jpg';
+  } else if (category === 'metalcraft') {
+    imageUrl = '/images/dhokra.jpg';
+  } else if (category === 'woodcraft') {
+    imageUrl = '/images/woodcraft.jpg';
+  }
+
+  return {
+    id: listing.id,
+    accessionNo: `KH-${listing.id.slice(0, 6).toUpperCase()}`,
+    romanNumeral: 'I',
+    title: listing.title,
+    vernacularTitle: listing.craft_type,
+    craftTradition: listing.craft_type,
+    category,
+    artisan: listing.artisan_name || 'Coastal Master Artisan',
+    artisanTitle: 'Master Artisan · Traditional Coastal Heritage Custodian',
+    atelier: listing.artisan_village ? `${listing.artisan_village} Artisan Atelier` : 'Coastal Karnataka Guild',
+    region: listing.artisan_village || 'Coastal Karnataka',
+    state: 'Karnataka',
+    period: 'Living Coastal Lineage',
+    price: listing.price_inr,
+    currency: 'INR',
+    availability: listing.stock > 0 ? 'Available' : 'Reserved',
+    dimensions: listing.dimensions || 'Canonical Artisan Sizing',
+    weight: '1.2 kg',
+    materials,
+    technique: listing.technique || `${listing.craft_type} traditional guild practice`,
+    image: imageUrl,
+    makingStory: {
+      summary:
+        listing.story?.origin_text ||
+        listing.description ||
+        'Handcrafted in coastal Karnataka preserving generational material memory.',
+      stages: [
+        {
+          step: '01',
+          title: 'Material Gathering & Processing',
+          description: listing.story?.process_text?.split('.')[0] || 'Natural coastal materials sustainably gathered along the coast and prepared by hand.',
+        },
+        {
+          step: '02',
+          title: 'Artisanal Crafting',
+          description: `Handcrafted with meticulous dedication taking approx ${listing.hours_to_make || 8} hours of manual devotion.`,
+        },
+        {
+          step: '03',
+          title: 'Final Burnish & Inspection',
+          description: 'Inspected and certified for enduring living heritage quality.',
+        },
+      ],
+    },
+    artisanBio: `Master artisan from ${listing.artisan_village || 'coastal Karnataka'}, maintaining centuries of ancestral craft wisdom.`,
+    artisanQuote: 'In handcraft, time is not counted in minutes, but in strokes of devotion and living tradition.',
+    directArtisanSharePercent: 88,
+    position3D: [0, 0, 0],
+    modelType: category === 'textiles' ? 'textile' : category === 'ceramics' ? 'pottery' : 'brass',
+    colorPalette: ['#A0522D', '#D2B48C', '#2E8B57', '#DEB887'],
+  };
+}
 
 // Initial seed
 export function getInitialProducts(): CraftObject[] {
@@ -58,17 +150,43 @@ export function getProductById(id: string): CraftObject | undefined {
   return products.find((p) => p.id === id);
 }
 
-// React Hook for Products
+// React Hook for Products - synchronized with FastAPI backend
 export function useProducts() {
   const [products, setProducts] = useState<CraftObject[]>(getInitialProducts);
+  const [backendLoaded, setBackendLoaded] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+
+    async function syncBackendListings() {
+      try {
+        const liveListings = await getListings({ status: 'PUBLISHED' });
+        if (liveListings && liveListings.length > 0 && isMounted) {
+          const converted = liveListings.map(listingToCraftObject);
+          // Combine live backend listings, deduplicating IDs
+          const existing = getInitialProducts();
+          const backendIds = new Set(converted.map((c) => c.id));
+          const nonDupExisting = existing.filter((e) => !backendIds.has(e.id));
+          const merged = [...converted, ...nonDupExisting];
+
+          saveProductsToStorage(merged);
+          setProducts(merged);
+          setBackendLoaded(true);
+        }
+      } catch (err) {
+        console.warn('Backend listings unreachable, using cached catalogue:', err);
+      }
+    }
+
+    syncBackendListings();
+
     const handleUpdate = () => {
       setProducts(getInitialProducts());
     };
     window.addEventListener('kaarigar_products_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
+      isMounted = false;
       window.removeEventListener('kaarigar_products_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
@@ -76,6 +194,7 @@ export function useProducts() {
 
   return {
     products,
+    backendLoaded,
     addProduct: addProductToStore,
     updateProduct: updateProductInStore,
     deleteProduct: deleteProductFromStore,
@@ -144,14 +263,14 @@ export interface ArtisanProfile {
 }
 
 export const DEFAULT_ARTISAN: ArtisanProfile = {
-  name: 'Pandit Ram Swaroop Sharma',
-  atelier: 'Chamba-Kangra Parampara Gurukulam',
-  craftSpecialization: 'Pahari Miniature & Wasli Painting',
-  region: 'Kangra Valley',
-  state: 'Himachal Pradesh',
-  phone: '+91 98160 44291',
-  bio: 'Preserving the sacred Kangra Kalam passed down through four generations. Works exhibited in national and international cultural retrospectives.',
-  yearsExperience: 42,
+  name: 'Parvati Devi',
+  atelier: 'Ankola Kasuti Mahila Kendra',
+  craftSpecialization: 'Kasuti Embroidery',
+  region: 'Ankola',
+  state: 'Karnataka',
+  phone: '+91 98450 12345',
+  bio: 'Master Kasuti needlework custodian with over 28 years of practice in Ankola, Uttara Kannada.',
+  yearsExperience: 28,
   avatarUrl: '/images/artisan.jpg',
   isLoggedIn: true,
 };

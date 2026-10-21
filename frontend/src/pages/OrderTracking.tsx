@@ -1,43 +1,78 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { getOrderById, type OrderRecord } from '../api/orders';
 
 export default function OrderTracking() {
   const { id } = useParams<{ id: string }>();
+  const [backendOrder, setBackendOrder] = useState<OrderRecord | null>(null);
 
-  let orderData: any = null;
+  // Read local cached order if available
+  let localOrder: any = null;
   try {
     const saved = localStorage.getItem('kaarigar_orders_v1');
     if (saved) {
       const parsed = JSON.parse(saved);
-      orderData = parsed.find((o: any) => o.id === id);
+      localOrder = parsed.find((o: any) => o.id === id);
     }
   } catch {
     // ignore
   }
 
-  // Fallback order info if visited directly
+  // Poll/fetch live backend order
+  useEffect(() => {
+    if (!id) return;
+    let isMounted = true;
+    async function fetchOrder() {
+      try {
+        const ord = await getOrderById(id!);
+        if (isMounted) setBackendOrder(ord);
+      } catch (e) {
+        // order may be in local storage only
+      }
+    }
+    fetchOrder();
+    return () => { isMounted = false; };
+  }, [id]);
+
   const orderId = id || 'KG-ORD-84912';
-  const orderDate = orderData?.date || new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-  const items = orderData?.items || [
+  const currentStatus = backendOrder ? backendOrder.status : (localOrder?.status || 'PLACED');
+
+  const orderDate = backendOrder
+    ? new Date(backendOrder.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+    : (localOrder?.date || new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }));
+
+  const items = localOrder?.items || [
     {
       object: {
-        id: 'pahari-miniature',
-        title: 'Radha & Krishna in the Groves of Kangra',
-        craftTradition: 'Kangra Miniature Painting',
-        artisan: 'Pandit Ram Swaroop Sharma',
-        price: 48500,
-        image: '/images/pahari.jpg',
+        id: 'kasuti-saree',
+        title: 'Kasuti Embroidered Chariot & Peacock Saree',
+        craftTradition: 'Kasuti Embroidery',
+        artisan: 'Parvati Devi',
+        price: 5200,
+        image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
       },
       quantity: 1,
     },
   ];
-  const totalAmount = orderData?.totalAmount || 48500;
-  const directArtisanTotal = orderData?.directArtisanTotal || 42680;
-  const customer = orderData?.customer || {
-    name: 'Ananya Sen',
-    address: '42, Gulmohar Enclave, Malabar Hill',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    pinCode: '400006',
+
+  const totalAmount = backendOrder ? backendOrder.total_inr : (localOrder?.totalAmount || 5200);
+  const directArtisanTotal = Math.round(totalAmount * 0.88);
+
+  // Status mapping to timeline steps (0..3)
+  // PLACED -> 0
+  // CONFIRMED -> 1
+  // SHIPPED -> 2
+  // DELIVERED -> 3
+  const getStepState = (stepIndex: number) => {
+    let currentStep = 0;
+    if (currentStatus === 'CONFIRMED') currentStep = 1;
+    else if (currentStatus === 'SHIPPED') currentStep = 2;
+    else if (currentStatus === 'DELIVERED') currentStep = 3;
+    else if (currentStatus === 'CANCELLED') return 'cancelled';
+
+    if (stepIndex < currentStep) return 'step--completed';
+    if (stepIndex === currentStep) return 'step--active';
+    return '';
   };
 
   return (
@@ -46,9 +81,11 @@ export default function OrderTracking() {
         {/* Top Success Badge */}
         <div className="order-success-header">
           <div className="success-icon-badge">✓</div>
-          <span className="order-eyebrow">ACQUISITION INSCRIBED IN ARCHIVE</span>
-          <h1 className="order-title">Order Confirmed · {orderId}</h1>
-          <p className="order-date-line">Placed on {orderDate} · Insured Archival Transit</p>
+          <span className="order-eyebrow">ACQUISITION INSCRIBED IN LIVING ARCHIVE</span>
+          <h1 className="order-title">
+            Order Status: {currentStatus} · {orderId.slice(0, 12).toUpperCase()}
+          </h1>
+          <p className="order-date-line">Placed on {orderDate} · Insured White-Glove Archival Transit</p>
         </div>
 
         {/* Milestone Tracker Timeline */}
@@ -56,106 +93,107 @@ export default function OrderTracking() {
           <h3 className="timeline-heading">Atelier Custodianship Progress</h3>
 
           <div className="timeline-steps">
-            <div className="timeline-step step--completed">
-              <div className="step-circle">✓</div>
+            <div className={`timeline-step ${getStepState(0)}`}>
+              <div className="step-circle">{getStepState(0) === 'step--completed' ? '✓' : '1'}</div>
               <div className="step-content">
-                <span className="step-label">Order Confirmed & Escrow Funded</span>
+                <span className="step-label">Order Placed & Escrow Funded</span>
                 <span className="step-time">Immediate</span>
               </div>
             </div>
 
-            <div className="timeline-step step--active">
-              <div className="step-circle">✦</div>
+            <div className={`timeline-step ${getStepState(1)}`}>
+              <div className="step-circle">{getStepState(1) === 'step--completed' ? '✓' : '2'}</div>
               <div className="step-content">
                 <span className="step-label">Atelier Packaging & Sealing</span>
-                <span className="step-time">In Progress by Master Artisan</span>
+                <span className="step-time">
+                  {currentStatus === 'PLACED' ? 'Awaiting Artisan Confirmation' : 'Confirmed by Master Artisan'}
+                </span>
               </div>
             </div>
 
-            <div className="timeline-step">
-              <div className="step-circle">3</div>
+            <div className={`timeline-step ${getStepState(2)}`}>
+              <div className="step-circle">{getStepState(2) === 'step--completed' ? '✓' : '3'}</div>
               <div className="step-content">
-                <span className="step-label">Provenance Certificate Inscribed</span>
-                <span className="step-time">Pending Final Wax Stamp</span>
+                <span className="step-label">Dispatched & Transit Carrier Handover</span>
+                <span className="step-time">
+                  {currentStatus === 'SHIPPED' || currentStatus === 'DELIVERED' ? 'En Route with White-Glove Logistics' : 'Scheduled upon packaging'}
+                </span>
               </div>
             </div>
 
-            <div className="timeline-step">
-              <div className="step-circle">4</div>
+            <div className={`timeline-step ${getStepState(3)}`}>
+              <div className="step-circle">{getStepState(3) === 'step--completed' ? '✓' : '4'}</div>
               <div className="step-content">
-                <span className="step-label">Insured Specialized Transit</span>
-                <span className="step-time">Estimated 3–5 Business Days</span>
-              </div>
-            </div>
-
-            <div className="timeline-step">
-              <div className="step-circle">5</div>
-              <div className="step-content">
-                <span className="step-label">Delivery & Balance Disbursement</span>
-                <span className="step-time">Direct release to Artisan Guild</span>
+                <span className="step-label">Delivered & Escrow Disbursed</span>
+                <span className="step-time">
+                  {currentStatus === 'DELIVERED' ? 'Delivered to Patron' : 'Upon white-glove arrival'}
+                </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Order Details Grid */}
-        <div className="order-details-grid">
-          {/* Items Inscribed */}
-          <div className="order-card">
-            <h3 className="card-subhead">Inscribed Masterworks</h3>
-            <div className="order-items-list">
+        {/* Order Details & Summary Card */}
+        <div className="order-summary-card">
+          <div className="summary-left">
+            <h3 className="summary-heading">Acquired Masterworks</h3>
+            <div className="summary-items-list">
               {items.map((item: any, idx: number) => (
-                <div key={idx} className="order-item-row">
-                  <img src={item.object.image} alt={item.object.title} className="order-item-img" />
-                  <div className="order-item-meta">
-                    <span className="order-item-tradition">{item.object.craftTradition}</span>
-                    <h4 className="order-item-title">{item.object.title}</h4>
-                    <span className="order-item-artisan">By {item.object.artisan}</span>
-                    <span className="order-item-qty">Quantity: {item.quantity}</span>
+                <div key={idx} className="summary-item-row">
+                  <img
+                    src={item.object?.image || '/images/textile.jpg'}
+                    alt={item.object?.title}
+                    className="summary-thumb"
+                  />
+                  <div className="summary-item-info">
+                    <h4 className="item-title">{item.object?.title}</h4>
+                    <span className="item-tradition">{item.object?.craftTradition}</span>
+                    <span className="item-maker">Maker: {item.object?.artisan}</span>
                   </div>
-                  <div className="order-item-price">
-                    ₹{(item.object.price * item.quantity).toLocaleString('en-IN')}
+                  <div className="summary-item-price">
+                    <span className="qty-tag">Qty: {item.quantity}</span>
+                    <span className="val-tag">₹{(item.object?.price * item.quantity).toLocaleString('en-IN')}</span>
                   </div>
                 </div>
               ))}
             </div>
-
-            <div className="order-total-summary">
-              <div className="tot-row">
-                <span>Total Acquisition:</span>
-                <strong>₹{totalAmount.toLocaleString('en-IN')}</strong>
-              </div>
-              <div className="tot-row direct-green">
-                <span>Direct Artisan Return (88%):</span>
-                <strong>₹{directArtisanTotal.toLocaleString('en-IN')}</strong>
-              </div>
-            </div>
           </div>
 
-          {/* Delivery & Provenance Card */}
-          <div className="order-card">
-            <h3 className="card-subhead">Transit Destination & Provenance</h3>
-            <div className="destination-box">
-              <span className="dest-name">{customer.name}</span>
-              <p className="dest-addr">
-                {customer.address}, {customer.city}, {customer.state} — {customer.pinCode}
-              </p>
+          <div className="summary-right">
+            <h3 className="summary-heading">Equity & Disbursal Breakdown</h3>
+            <div className="equity-breakdown-list">
+              <div className="equity-row">
+                <span>Total Acquisition Amount</span>
+                <span>₹{totalAmount.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="equity-row highlight-row">
+                <span>Direct Artisan Guild Payout (88%)</span>
+                <strong className="text-green">₹{directArtisanTotal.toLocaleString('en-IN')}</strong>
+              </div>
+              <div className="equity-row">
+                <span>Platform Archival & Escrow Fee</span>
+                <span>₹{(totalAmount - directArtisanTotal).toLocaleString('en-IN')}</span>
+              </div>
+              <div className="equity-row">
+                <span>Insured White-Glove Delivery</span>
+                <span className="text-free">Complimentary</span>
+              </div>
             </div>
 
-            <div className="provenance-guarantee-box">
-              <div className="p-badge">GI SEAL</div>
-              <p>
-                This acquisition is accompanied by a physical certificate of authenticity, 
-                witnessed by the local handicraft guild, and cataloged in the KAARIGAR Cultural Archive.
-              </p>
+            <div className="provenance-security-seal">
+              <span className="seal-icon">✦</span>
+              <div>
+                <strong>Certified Living Heritage Provenance</strong>
+                <p>An archival certificate with cryptographic verification is enclosed within your crate.</p>
+              </div>
             </div>
 
-            <div className="order-actions-row">
-              <Link to="/shop" className="hero-btn hero-btn--primary">
-                Explore More Crafts
+            <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+              <Link to="/shop" className="hero-btn hero-btn--primary" style={{ flex: 1, textAlign: 'center', textDecoration: 'none' }}>
+                Continue to Storefront
               </Link>
-              <Link to="/" className="hero-btn hero-btn--ghost">
-                Back to Archive
+              <Link to="/gallery" className="hero-btn hero-btn--secondary" style={{ flex: 1, textAlign: 'center', textDecoration: 'none' }}>
+                Visit 3D Pavilion
               </Link>
             </div>
           </div>

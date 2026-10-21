@@ -1,21 +1,20 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import type { KaargarUser } from '../contexts/AuthContext';
 
 type Mode = 'choose' | 'artisan-login' | 'artisan-signup' | 'collector-login' | 'collector-signup';
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { loginWithOtp, requestOtp, updateProfileOnBackend } = useAuth();
   const [mode, setMode] = useState<Mode>('choose');
 
   // Shared OTP state
   const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
   const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
+  const [otpCode, setOtpCode] = useState('123456');
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // Artisan signup extra fields
   const [name, setName] = useState('');
@@ -30,54 +29,67 @@ export default function Onboarding() {
   const [city, setCity] = useState('');
 
   const resetForm = () => {
-    setPhone(''); setEmail(''); setOtpSent(false); setOtpCode(''); setErrorMsg('');
+    setPhone(''); setOtpSent(false); setOtpCode('123456'); setErrorMsg('');
     setName(''); setAtelier(''); setCraft(''); setRegion(''); setState(''); setBio('');
-    setCollectorName(''); setCity('');
+    setCollectorName(''); setCity(''); setLoading(false);
   };
 
-  const handleSendOtp = (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     const digits = phone.replace(/\D/g, '');
     if (digits.length < 10) { setErrorMsg('Please enter a valid 10-digit mobile number'); return; }
     setErrorMsg('');
-    setOtpSent(true);
+    setLoading(true);
+    const fullPhone = `+91${digits.slice(-10)}`;
+    try {
+      await requestOtp(fullPhone);
+      setOtpSent(true);
+      if (!otpCode) setOtpCode('123456');
+    } catch (err: any) {
+      setErrorMsg(err.response?.data?.detail || 'Failed to dispatch OTP. Please check backend connection.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otpCode.length < 4) { setErrorMsg('Please enter the 4-digit verification code'); return; }
+    let cleanOtp = otpCode.trim();
+    if (cleanOtp.length === 4) cleanOtp = `${cleanOtp}00`;
+    if (cleanOtp.length !== 6) { setErrorMsg('Please enter the 6-digit verification code (demo: 123456)'); return; }
 
-    const id = `kg-${Date.now()}`;
+    const digits = phone.replace(/\D/g, '');
+    const fullPhone = `+91${digits.slice(-10)}`;
+    setErrorMsg('');
+    setLoading(true);
 
-    if (mode === 'artisan-signup' || mode === 'artisan-login') {
-      const user: KaargarUser = {
-        id,
-        role: 'artisan',
-        name: name || 'Master Artisan',
-        email: email || '',
-        phone: `+91 ${phone}`,
-        atelier: atelier || 'Independent Craft Atelier',
-        craftSpecialization: craft || 'Traditional Indian Craft',
-        region: region || 'India',
-        state: state || '',
-        bio: bio || '',
-        yearsExperience: 10,
-        avatarUrl: '',
-      };
-      login(user);
-      navigate('/dashboard');
-    } else {
-      const user: KaargarUser = {
-        id,
-        role: 'collector',
-        name: collectorName || 'Art Collector',
-        email: email || '',
-        phone: `+91 ${phone}`,
-        city: city || '',
-        preferredCategories: [],
-      };
-      login(user);
-      navigate('/shop');
+    try {
+      await loginWithOtp(fullPhone, cleanOtp);
+
+      if (mode === 'artisan-signup') {
+        await updateProfileOnBackend({
+          name: name || 'Master Artisan',
+          craft_types: craft || 'Traditional Coastal Crafts',
+          village: region || 'Coastal Karnataka',
+          bio: bio || '',
+          role: 'artisan',
+        });
+        navigate('/dashboard');
+      } else if (mode === 'artisan-login') {
+        navigate('/dashboard');
+      } else if (mode === 'collector-signup') {
+        await updateProfileOnBackend({
+          name: collectorName || 'Art Collector',
+          role: 'buyer',
+        });
+        navigate('/shop');
+      } else {
+        navigate('/shop');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.response?.data?.detail || 'Authentication failed. Please verify code.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -156,8 +168,8 @@ export default function Onboarding() {
                 </div>
               </div>
               {errorMsg && <div className="form-error-banner">{errorMsg}</div>}
-              <button type="submit" className="onboarding-submit-btn" id="send-otp-btn">
-                <span>Send OTP</span><span className="arrow">→</span>
+              <button type="submit" disabled={loading} className="onboarding-submit-btn" id="send-otp-btn">
+                <span>{loading ? 'Sending OTP...' : 'Send OTP'}</span><span className="arrow">→</span>
               </button>
               <p className="onboarding-switch-text">
                 No account?{' '}
@@ -208,8 +220,8 @@ export default function Onboarding() {
                 </div>
               </div>
               {errorMsg && <div className="form-error-banner">{errorMsg}</div>}
-              <button type="submit" className="onboarding-submit-btn">
-                <span>Send OTP to Verify</span><span className="arrow">→</span>
+              <button type="submit" disabled={loading} className="onboarding-submit-btn">
+                <span>{loading ? 'Sending OTP...' : 'Send OTP to Verify'}</span><span className="arrow">→</span>
               </button>
               <p className="onboarding-switch-text">
                 Already registered?{' '}
@@ -238,8 +250,8 @@ export default function Onboarding() {
                 </div>
               </div>
               {errorMsg && <div className="form-error-banner">{errorMsg}</div>}
-              <button type="submit" className="onboarding-submit-btn">
-                <span>Send OTP to Verify</span><span className="arrow">→</span>
+              <button type="submit" disabled={loading} className="onboarding-submit-btn">
+                <span>{loading ? 'Sending OTP...' : 'Send OTP to Verify'}</span><span className="arrow">→</span>
               </button>
               <p className="onboarding-switch-text">
                 Already registered?{' '}
@@ -262,8 +274,8 @@ export default function Onboarding() {
                 <span className="form-hint">Demo: enter any code like <strong>1234</strong></span>
               </div>
               {errorMsg && <div className="form-error-banner">{errorMsg}</div>}
-              <button type="submit" className="onboarding-submit-btn" id="verify-otp-btn">
-                <span>Verify & Enter {(mode === 'artisan-login' || mode === 'artisan-signup') ? 'Artisan Atelier' : 'Marketplace'}</span>
+              <button type="submit" disabled={loading} className="onboarding-submit-btn" id="verify-otp-btn">
+                <span>{loading ? 'Verifying...' : `Verify & Enter ${mode === 'artisan-login' || mode === 'artisan-signup' ? 'Artisan Atelier' : 'Marketplace'}`}</span>
                 <span className="arrow">→</span>
               </button>
             </form>

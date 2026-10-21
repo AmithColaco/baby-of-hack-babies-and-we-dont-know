@@ -1,6 +1,6 @@
 """KalaHaat – database models (SQLAlchemy 2).
 
-Data model from PRD §10:
+Core data models:
   users, artisan_profiles, listings, listing_images,
   stories, craft_reference, orders, order_items, payments
 """

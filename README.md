@@ -49,7 +49,7 @@ cp .env.example .env  # fill in secrets
 uvicorn main:app --reload  # http://localhost:8000
 ```
 
-## Features (PRD PS 4.2)
+## Core Features
 
 - **F1** Artisan onboarding (mock OTP + JWT)
 - **F2** Listing creation with image upload

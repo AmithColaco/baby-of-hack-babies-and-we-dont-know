@@ -1,6 +1,6 @@
 """KalaHaat – price suggestion service.
 
-Implements the deterministic pricing formula from PRD §F4:
+Implements the deterministic fair wage pricing formula:
 
   suggested_price = (materials_cost + hours × fair_hourly_wage)
                     × craft_premium_multiplier

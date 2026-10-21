@@ -46,8 +46,8 @@
   z-index: 100;
   width: 100%;
   transition: background-color var(--dur-med) var(--ease),
-              border-color var(--dur-med) var(--ease),
-              box-shadow var(--dur-med) var(--ease);
+    border-color var(--dur-med) var(--ease),
+    box-shadow var(--dur-med) var(--ease);
 }
 
 .site-header--transparent {
@@ -645,10 +645,25 @@
 }
 
 @keyframes scrollPulse {
-  0% { transform: scaleY(0); transform-origin: top; }
-  50% { transform: scaleY(1); transform-origin: top; }
-  51% { transform: scaleY(1); transform-origin: bottom; }
-  100% { transform: scaleY(0); transform-origin: bottom; }
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+
+  50% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+
+  51% {
+    transform: scaleY(1);
+    transform-origin: bottom;
+  }
+
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
 }
 
 /* 4. Craft Categories */
@@ -841,8 +856,13 @@
   transform: translateY(-50%) scale(1.05);
 }
 
-.carousel-nav-btn--prev { left: 1rem; }
-.carousel-nav-btn--next { right: 1rem; }
+.carousel-nav-btn--prev {
+  left: 1rem;
+}
+
+.carousel-nav-btn--next {
+  right: 1rem;
+}
 
 .carousel-track {
   position: relative;
@@ -1848,8 +1868,15 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .scene-object__grid {
@@ -2797,13 +2824,16 @@
     align-items: stretch;
     gap: 0.75rem;
   }
+
   .shop-search-bar {
     max-width: 100%;
   }
+
   .shop-toolbar__actions {
     justify-content: space-between;
     width: 100%;
   }
+
   .disciplines-label {
     display: none;
   }
@@ -3667,7 +3697,10 @@ legend.section-legend {
   border: 1px solid var(--charcoal);
 }
 
-.role-action-btn--primary:hover { background-color: var(--terracotta); border-color: var(--terracotta); }
+.role-action-btn--primary:hover {
+  background-color: var(--terracotta);
+  border-color: var(--terracotta);
+}
 
 .role-action-btn--secondary {
   background-color: #fff;
@@ -3675,7 +3708,9 @@ legend.section-legend {
   border: 1px solid var(--border);
 }
 
-.role-action-btn--secondary:hover { border-color: var(--charcoal); }
+.role-action-btn--secondary:hover {
+  border-color: var(--charcoal);
+}
 
 .onboarding-switch-text {
   text-align: center;
@@ -3709,7 +3744,9 @@ legend.section-legend {
   font-family: inherit;
 }
 
-.back-mode-btn:hover { color: var(--charcoal); }
+.back-mode-btn:hover {
+  color: var(--charcoal);
+}
 
 .onboarding-brand-link {
   text-decoration: none;
@@ -3935,36 +3972,110 @@ legend.section-legend {
 }
 
 @keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* Responsive adjustments */
 @media (max-width: 1024px) {
-  .hero-editorial__grid { grid-template-columns: 1fr; gap: 3rem; }
-  .craft-categories__grid { grid-template-columns: repeat(2, 1fr); }
-  .artisan-highlights__cards { grid-template-columns: 1fr; }
-  .making-journey__card { grid-template-columns: 1fr; gap: 2rem; }
-  .seller-perks-grid { grid-template-columns: repeat(2, 1fr); }
-  .site-footer__top { grid-template-columns: repeat(2, 1fr); gap: 2.5rem; }
-  .scene-object__grid { grid-template-columns: 1fr; gap: 2.5rem; }
-  .acquire-card { grid-template-columns: 1fr; }
-  .craft-grid { grid-template-columns: repeat(2, 1fr); }
-  .dashboard-metrics__inner { grid-template-columns: repeat(2, 1fr); }
+  .hero-editorial__grid {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  .craft-categories__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .artisan-highlights__cards {
+    grid-template-columns: 1fr;
+  }
+
+  .making-journey__card {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .seller-perks-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .site-footer__top {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2.5rem;
+  }
+
+  .scene-object__grid {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .acquire-card {
+    grid-template-columns: 1fr;
+  }
+
+  .craft-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dashboard-metrics__inner {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
-  .site-header__nav { display: none; }
-  .site-header__menu-btn { display: flex; }
-  .craft-categories__grid { grid-template-columns: 1fr; }
-  .materials-cards-grid { grid-template-columns: 1fr; }
-  .craft-grid { grid-template-columns: 1fr; }
-  .seller-perks-grid { grid-template-columns: 1fr; }
-  .site-footer__top { grid-template-columns: 1fr; }
-  .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
-  .dashboard-metrics__inner { grid-template-columns: 1fr; }
-  .piece-row { flex-direction: column; align-items: flex-start; }
-  .piece-row__financials { text-align: left; }
+  .site-header__nav {
+    display: none;
+  }
+
+  .site-header__menu-btn {
+    display: flex;
+  }
+
+  .craft-categories__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .materials-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .craft-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .seller-perks-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .site-footer__top {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid-2,
+  .form-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-metrics__inner {
+    grid-template-columns: 1fr;
+  }
+
+  .piece-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .piece-row__financials {
+    text-align: left;
+  }
 }
 
 /* ============================================================
@@ -4230,8 +4341,15 @@ legend.section-legend {
 }
 
 @keyframes modalFadeIn {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .curatorial-modal-card {
@@ -4738,8 +4856,13 @@ legend.section-legend {
 }
 
 @keyframes slideInRight {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
 }
 
 .panel__header {
@@ -5221,6 +5344,7 @@ img {
 }
 
 @media (max-width: 600px) {
+
   .form-grid-2,
   .form-grid-3 {
     grid-template-columns: 1fr;
@@ -5818,8 +5942,13 @@ img {
 }
 
 @keyframes fadeInBackdrop {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .cart-drawer {
@@ -5835,8 +5964,13 @@ img {
 }
 
 @keyframes slideInDrawer {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
 }
 
 .cart__header {
@@ -6844,4 +6978,3 @@ img {
   gap: 0.4rem;
   line-height: 1.4;
 }
-

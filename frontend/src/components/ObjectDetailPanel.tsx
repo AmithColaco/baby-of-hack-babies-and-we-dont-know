@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import type { CraftObject } from '../types';
 import { useCart } from '../contexts/CartContext';
+import { getGuideNarration } from '../api/gallery';
 
 interface ObjectDetailPanelProps {
   object: CraftObject;
@@ -21,6 +22,67 @@ export const ObjectDetailPanel = ({
   const { addToCart } = useCart();
   const [activeTab, setActiveTab] = useState<'provenance' | 'making' | 'artisan'>('provenance');
   const [addedAnimation, setAddedAnimation] = useState(false);
+
+  // AI Gallery Guide State (AI Audio Guide)
+  const [guideNarration, setGuideNarration] = useState<string | null>(null);
+  const [guideLoading, setGuideLoading] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [guideLang, setGuideLang] = useState<'en' | 'kn'>('en');
+
+  // Cancel speech synthesis when object changes or unmounts
+  useEffect(() => {
+    setGuideNarration(null);
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsSpeaking(false);
+  }, [object.id]);
+
+  const handleToggleGuide = async () => {
+    if (!('speechSynthesis' in window)) {
+      alert('Text-to-speech is not supported by your browser.');
+      return;
+    }
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    try {
+      setGuideLoading(true);
+      let narrationText = guideNarration;
+      if (!narrationText) {
+        const res = await getGuideNarration(object.id, guideLang);
+        narrationText = res.narration;
+        setGuideNarration(narrationText);
+      }
+
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(narrationText);
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
+      utterance.lang = guideLang === 'kn' ? 'kn-IN' : 'en-IN';
+
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn('AI Guide narration fallback:', e);
+      const fallback = `This masterwork is ${object.title} by ${object.artisan} from ${object.region}. Crafted with ${object.technique}, preserving living Indian heritage.`;
+      setGuideNarration(fallback);
+      const utterance = new SpeechSynthesisUtterance(fallback);
+      utterance.lang = 'en-IN';
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      window.speechSynthesis.speak(utterance);
+    } finally {
+      setGuideLoading(false);
+    }
+  };
 
   const handleAcquire = () => {
     addToCart(object);
@@ -122,6 +184,87 @@ export const ObjectDetailPanel = ({
               <strong>{object.directArtisanSharePercent}% (₹{directShareAmount.toLocaleString('en-IN')})</strong> proceeds transfer directly to {object.artisan} & the {object.atelier}.
             </div>
           </div>
+        </div>
+
+        {/* AI Gallery Guide (AI Audio Guide) */}
+        <div
+          style={{
+            margin: '14px 0 16px 0',
+            padding: '12px 14px',
+            background: 'rgba(232, 213, 183, 0.25)',
+            border: '1px solid rgba(205, 133, 63, 0.35)',
+            borderRadius: '8px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a3b32', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>🏛️</span>
+              <span>AI Exhibition Guide (Gemini Narration + TTS)</span>
+            </span>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <button
+                type="button"
+                onClick={() => setGuideLang('en')}
+                style={{
+                  fontSize: '0.72rem',
+                  padding: '2px 6px',
+                  borderRadius: '3px',
+                  border: 'none',
+                  background: guideLang === 'en' ? '#8B4513' : 'transparent',
+                  color: guideLang === 'en' ? '#fff' : '#4a3b32',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                onClick={() => setGuideLang('kn')}
+                style={{
+                  fontSize: '0.72rem',
+                  padding: '2px 6px',
+                  borderRadius: '3px',
+                  border: 'none',
+                  background: guideLang === 'kn' ? '#8B4513' : 'transparent',
+                  color: guideLang === 'kn' ? '#fff' : '#4a3b32',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                ಕನ್ನಡ
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleToggleGuide}
+            disabled={guideLoading}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              padding: '8px 12px',
+              background: isSpeaking ? '#8B2500' : '#8B4513',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '5px',
+              fontSize: '0.82rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            <span>{isSpeaking ? '⏹ Stop Voice Guide' : guideLoading ? '⏳ Generating Audio Narration...' : '🎧 Listen to AI Gallery Guide'}</span>
+          </button>
+
+          {guideNarration && (
+            <p style={{ margin: '8px 0 0 0', fontSize: '0.8rem', color: '#554', fontStyle: 'italic', lineHeight: 1.4 }}>
+              “{guideNarration}”
+            </p>
+          )}
         </div>
 
         {/* Navigation Tabs: Provenance / Making Process / Master Artisan */}

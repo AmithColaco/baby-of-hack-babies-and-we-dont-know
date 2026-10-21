@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import { checkoutOrder } from '../api/orders';
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -15,12 +16,39 @@ export default function Checkout() {
   const [pinCode, setPinCode] = useState('400006');
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'card' | 'inspection'>('upi');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setCheckoutError('');
 
-    const orderId = `KG-ORD-${Math.floor(10000 + Math.random() * 90000)}`;
+    const idempotencyKey = `idemp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+    let createdBackendOrderId: string | null = null;
+    try {
+      const backendOrder = await checkoutOrder({
+        items: cart.map((it) => ({
+          listing_id: it.object.id,
+          qty: it.quantity,
+        })),
+        address: {
+          full_name: name,
+          phone,
+          address_line: address,
+          city,
+          state,
+          pincode: pinCode,
+        },
+        payment_method: paymentMethod === 'card' ? 'mock_card' : 'mock_upi',
+        idempotency_key: idempotencyKey,
+      });
+      createdBackendOrderId = backendOrder.id;
+    } catch (err: any) {
+      console.warn('Backend checkout fallback to local order:', err);
+    }
+
+    const orderId = createdBackendOrderId || `KG-ORD-${Math.floor(10000 + Math.random() * 90000)}`;
     const orderData = {
       id: orderId,
       date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
@@ -42,10 +70,8 @@ export default function Checkout() {
     }
 
     clearCart();
-    setTimeout(() => {
-      setIsSubmitting(false);
-      navigate(`/orders/${orderId}`);
-    }, 600);
+    setIsSubmitting(false);
+    navigate(`/orders/${orderId}`);
   };
 
   if (cart.length === 0) {
@@ -82,6 +108,7 @@ export default function Checkout() {
           {/* Left Column: Delivery & Payment Details */}
           <div className="checkout-form-col">
             <form onSubmit={handlePlaceOrder} className="checkout-form">
+              {checkoutError && <div className="form-error-banner" style={{ marginBottom: '14px' }}>{checkoutError}</div>}
               {/* Shipping Address */}
               <div className="checkout-card">
                 <span className="checkout-card__step">STEP 01</span>
