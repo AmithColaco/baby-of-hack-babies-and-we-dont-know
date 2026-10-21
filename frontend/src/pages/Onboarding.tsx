@@ -118,7 +118,7 @@ export default function Onboarding() {
         <div className="onboarding-card">
           <div className="onboarding-card__header">
             <Link to="/" className="onboarding-brand-link">
-              <span className="onboarding-brand-sub">कारिगर PORTAL</span>
+              <span className="onboarding-brand-sub">KAARIGAR PORTAL</span>
             </Link>
             <h1 className="onboarding-title">{titles[mode]}</h1>
             <p className="onboarding-subtitle">{subtitles[mode]}</p>

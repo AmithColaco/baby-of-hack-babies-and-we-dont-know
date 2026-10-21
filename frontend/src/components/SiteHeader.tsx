@@ -75,9 +75,8 @@ export function SiteHeader() {
 
           {/* Brand */}
           <Link to="/" className="site-header__brand" aria-label="KAARIGAR Home">
-            <span className="site-header__brand-sub">कारिगर · EST. 2026</span>
             <span className="site-header__brand-title">KAARIGAR</span>
-            <span className="site-header__brand-tagline">Archive of Living Craft</span>
+            <span className="site-header__brand-tagline">Living Craft Archive</span>
           </Link>
 
           {/* Desktop Nav */}

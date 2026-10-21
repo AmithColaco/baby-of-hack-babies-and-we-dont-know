@@ -363,13 +363,12 @@ export default function CreateListing() {
           {/* Main Form Form */}
           <div className="editor-form-col">
             <div className="editor-card">
-              <span className="editor-eyebrow">कारिगर ARCHIVAL LISTING FORM · KALAYAAN</span>
+              <span className="editor-eyebrow">CRAFT LISTING FORM</span>
               <h1 className="editor-title">
-                {isEditing ? `Edit Masterpiece: ${title}` : 'Inscribe a New Craft Piece into the Living Archive'}
+                {isEditing ? `Edit Piece: ${title}` : 'Add a New Craft Piece'}
               </h1>
               <p className="editor-desc">
-                Provide curatorial specifications, craft provenance, and fair pricing breakdown. 
-                Use the AI assistant and fair wage calculator to streamline your listing.
+                Provide specifications, craft provenance, and fair pricing breakdown.
               </p>
 
               {errorMsg && <div className="form-error-banner">{errorMsg}</div>}

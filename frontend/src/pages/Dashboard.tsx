@@ -117,16 +117,16 @@ export default function Dashboard() {
       <section className="dashboard-header">
         <div className="dashboard-header__inner">
           <div className="dashboard-header__left">
-            <span className="dashboard-eyebrow">कारिगर ATELIER CONSOLE · KALAYAAN</span>
+            <span className="dashboard-eyebrow">ATELIER CONSOLE</span>
             <h1 className="dashboard-title">{user?.atelier || 'Artisan Atelier'}</h1>
             <p className="dashboard-subtitle">
-              Master Custodian: <strong>{user?.name}</strong> · {user?.region || 'Coastal Karnataka'} · {user?.craftSpecialization}
+              {user?.name} · {user?.region || 'Karnataka'} · {user?.craftSpecialization || 'Mastercraft'}
             </p>
           </div>
 
           <div className="dashboard-header__actions">
             <Link to="/dashboard/create" className="dash-btn dash-btn--primary" id="dashboard-add-piece">
-              <span>+ Add New Craft Piece</span>
+              <span>+ Add Craft Piece</span>
             </Link>
             <Link to="/settings" className="dash-btn dash-btn--secondary">
               <span>Settings</span>

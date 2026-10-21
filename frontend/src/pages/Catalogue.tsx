@@ -104,13 +104,13 @@ export default function Catalogue() {
   }, [filteredProducts, currentPage, itemsPerPage]);
 
   const CATEGORIES: Array<{ key: CraftCategory; label: string }> = [
-    { key: 'all', label: 'All Disciplines' },
-    { key: 'paintings', label: 'Paintings & Wasli' },
-    { key: 'ceramics', label: 'Quartz Blue Pottery' },
-    { key: 'textiles', label: 'Handwoven Silks' },
-    { key: 'metalcraft', label: 'Dhokra & Bidri' },
-    { key: 'woodcraft', label: 'Lathe Woodcraft' },
-    { key: 'jewellery', label: 'Kundan Meenakari' },
+    { key: 'all', label: 'All' },
+    { key: 'paintings', label: 'Paintings' },
+    { key: 'ceramics', label: 'Blue Pottery' },
+    { key: 'textiles', label: 'Silks' },
+    { key: 'metalcraft', label: 'Metalcraft' },
+    { key: 'woodcraft', label: 'Woodcraft' },
+    { key: 'jewellery', label: 'Jewellery' },
   ];
 
   return (
@@ -118,20 +118,14 @@ export default function Catalogue() {
       {/* Header Banner */}
       <section className="shop-header">
         <div className="shop-header__inner">
-          <span className="section-eyebrow">✦ KAARIGAR CULTURAL ARCHIVE · LIVING INDIGENOUS HERITAGE ✦</span>
-          <h1 className="shop-header__title">Living Gallery of Indian Masterworks</h1>
-          <span className="shop-header__vernacular">भारतीय हस्तशिल्प एवं अमूर्त सांस्कृतिक धरोहर</span>
+          <h1 className="shop-header__title">Gallery of Masterworks</h1>
           <p className="shop-header__desc">
-            Discover rare, museum-grade creations acquired directly from master ateliers across the subcontinent. 
-            Each piece is authenticated with certified GI provenance, ethically compensated with 85%+ direct capital flow to artisans, and preserved with archival care.
+            Authentic Indian craftsmanship directly from living master artisans.
           </p>
 
           <div className="shop-header__stats">
-            <span className="stat-pill"><strong>{products.length}</strong> Masterworks</span>
-            <span className="stat-pill"><strong>85%+</strong> Direct to Makers</span>
-            <span className="stat-pill"><strong>6</strong> Heritage Centers</span>
-            <span className="stat-pill"><strong>100%</strong> GI Provenance</span>
-            <span className="stat-pill"><strong>Insured</strong> White-Glove Transit</span>
+            <span className="stat-pill"><strong>{products.length}</strong> Works</span>
+            <span className="stat-pill"><strong>100%</strong> Direct Maker Rate</span>
           </div>
         </div>
       </section>
@@ -150,7 +144,7 @@ export default function Catalogue() {
                 type="search"
                 value={searchQuery}
                 onChange={handleSearchChange}
-                placeholder="Search masterworks by craft lineage, artisan, region, or mineral…"
+                placeholder="Search by craft, artisan, or region…"
                 className="shop-search-input"
                 aria-label="Filter crafts"
               />
@@ -222,10 +216,10 @@ export default function Catalogue() {
                     className="shop-sort-select"
                     aria-label="Sort masterworks"
                   >
-                    <option value="curated">Curated Lineage</option>
+                    <option value="curated">Curated</option>
                     <option value="price-asc">Price: Low to High</option>
                     <option value="price-desc">Price: High to Low</option>
-                    <option value="payout">Highest Direct Artisan Payout</option>
+                    <option value="payout">Direct Maker Payout</option>
                   </select>
                   <svg className="sort-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <polyline points="6 9 12 15 18 9" />
@@ -237,7 +231,7 @@ export default function Catalogue() {
 
           {/* Bottom Tier: Craft Heritage Disciplines */}
           <div className="shop-toolbar__disciplines">
-            <span className="disciplines-label">Discipline Archive</span>
+            <span className="disciplines-label">Craft:</span>
             <div className="shop-category-tabs" role="tablist" aria-label="Craft disciplines">
               {CATEGORIES.map((cat) => (
                 <button

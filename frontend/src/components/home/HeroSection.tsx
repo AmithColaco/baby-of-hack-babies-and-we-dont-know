@@ -6,8 +6,8 @@ export function HeroSection() {
       <div className="hero-editorial__container">
         {/* Top Eyebrow */}
         <div className="hero-editorial__eyebrow">
-          <span className="hero-editorial__badge">कारिगर · EST. 2026</span>
-          <span className="hero-editorial__provenance">AN ARCHIVAL SANCTUARY OF LIVING INDIAN CRAFT TRADITIONS</span>
+          <span className="hero-editorial__badge">LIVING CRAFT ARCHIVE</span>
+          <span className="hero-editorial__provenance">PRESERVING TIME-HONOURED INDIAN MASTERWORKS</span>
         </div>
 
         {/* Main Headline Grid */}
@@ -19,22 +19,18 @@ export function HeroSection() {
             </h1>
 
             <p className="hero-editorial__lead">
-              Discover and collect authentic handcrafted treasures directly from India’s master artisans. 
-              Learn how each object is born from fire, mineral, and generational wisdom—with 100% of every maker base acquisition flowing directly to the makers preserving our living heritage.
+              Discover authentic handcrafted treasures directly from India’s master artisans. 
+              Each creation carries generational wisdom, with 100% of every acquisition flowing directly to the makers.
             </p>
 
             <div className="hero-editorial__cta-group">
-              <Link to="/shop" className="hero-btn hero-btn--primary" id="hero-explore-collection">
-                <span>Explore the Collection</span>
+              <Link to="/gallery" className="hero-btn hero-btn--primary" id="hero-explore-collection">
+                <span>Explore Gallery</span>
                 <span className="hero-btn__arrow">→</span>
               </Link>
 
-              <Link to="/gallery" className="hero-btn hero-btn--secondary" id="hero-spatial-gallery">
-                <span>Enter Digital Exhibition</span>
-              </Link>
-
               <Link to="/login" className="hero-btn hero-btn--ghost" id="hero-sell-craft">
-                <span>Sell Your Craft</span>
+                <span>Artisan Portal</span>
               </Link>
             </div>
 

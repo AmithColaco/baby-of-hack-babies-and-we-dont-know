@@ -20,7 +20,6 @@ export function SiteFooter() {
           {/* Col 1: Brand & Philosophy */}
           <div className="site-footer__col site-footer__brand-col">
             <div className="site-footer__brand">
-              <span className="site-footer__brand-hindi">कारिगर</span>
               <span className="site-footer__brand-name">KAARIGAR</span>
             </div>
             <p className="site-footer__philosophy">
