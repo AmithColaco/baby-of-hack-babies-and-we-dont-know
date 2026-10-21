@@ -5,17 +5,20 @@ interface TwoDArchiveViewProps {
   selectedCategory: CraftCategory;
   onSelectObject: (obj: CraftObject) => void;
   onEnter3D: () => void;
+  products?: CraftObject[];
 }
 
 export const TwoDArchiveView = ({
   selectedCategory,
   onSelectObject,
   onEnter3D,
+  products,
 }: TwoDArchiveViewProps) => {
+  const source = products && products.length > 0 ? products : CRAFT_OBJECTS;
   const visibleObjects =
     selectedCategory === 'all'
-      ? CRAFT_OBJECTS
-      : CRAFT_OBJECTS.filter((o) => o.category === selectedCategory);
+      ? source
+      : source.filter((o) => o.category === selectedCategory);
 
   return (
     <div className="archive-2d-view">

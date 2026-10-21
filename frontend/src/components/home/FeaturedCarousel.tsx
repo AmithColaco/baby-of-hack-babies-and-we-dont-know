@@ -185,11 +185,11 @@ export function FeaturedCarousel() {
               </button>
 
               <Link
-                to="/gallery"
+                to={`/gallery?focus=${currentProduct.id}`}
                 className="inspector-btn inspector-btn--3d"
                 id="carousel-enter-3d"
               >
-                <span>Inspect in 3D Gallery</span>
+                <span>✦ Inspect in 3D Gallery</span>
               </Link>
             </div>
           </div>

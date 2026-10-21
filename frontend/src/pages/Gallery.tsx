@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { GalleryCanvas } from '../gallery/GalleryCanvas';
 import { HeroIntro } from '../components/HeroIntro';
 import { GalleryNav } from '../components/GalleryNav';
@@ -8,10 +9,13 @@ import { StoriesModal } from '../components/StoriesModal';
 import { MakingOfModal } from '../components/MakingOfModal';
 import { AboutModal } from '../components/AboutModal';
 import { TwoDArchiveView } from '../components/TwoDArchiveView';
-import { CRAFT_OBJECTS } from '../data/craftsData';
+import { useProducts } from '../data/productStore';
 import type { CraftObject, CraftCategory } from '../types';
 
 export default function Gallery() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { products } = useProducts();
+
   const [hasEntered, setHasEntered] = useState(true);
   const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d');
   const [selectedObject, setSelectedObject] = useState<CraftObject | null>(null);
@@ -22,51 +26,79 @@ export default function Gallery() {
   // Filtered objects
   const filteredObjects =
     selectedCategory === 'all'
-      ? CRAFT_OBJECTS
-      : CRAFT_OBJECTS.filter((o) => o.category === selectedCategory);
+      ? products
+      : products.filter((o) => o.category === selectedCategory);
+
+  // Sync selected craft object with ?focus=<id> or ?id=<id> in URL query
+  useEffect(() => {
+    const focusId = searchParams.get('focus') || searchParams.get('id');
+    if (focusId && products.length > 0) {
+      const match = products.find((p) => p.id === focusId);
+      if (match && selectedObject?.id !== match.id) {
+        setSelectedObject(match);
+        if (selectedCategory !== 'all' && match.category !== selectedCategory) {
+          setSelectedCategory('all');
+        }
+      }
+    }
+  }, [searchParams, products, selectedCategory, selectedObject?.id]);
+
+  const handleSelectObject = useCallback((obj: CraftObject | null) => {
+    setSelectedObject(obj);
+    if (obj) {
+      setSearchParams({ focus: obj.id }, { replace: true });
+    } else {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('focus');
+      newParams.delete('id');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   // Next and Previous navigation across objects
   const handleNextObject = useCallback(() => {
+    if (filteredObjects.length === 0) return;
     if (!selectedObject) {
-      setSelectedObject(filteredObjects[0]);
+      handleSelectObject(filteredObjects[0]);
       return;
     }
     const idx = filteredObjects.findIndex((o) => o.id === selectedObject.id);
     const nextIdx = (idx + 1) % filteredObjects.length;
-    setSelectedObject(filteredObjects[nextIdx]);
-  }, [filteredObjects, selectedObject]);
+    handleSelectObject(filteredObjects[nextIdx]);
+  }, [filteredObjects, selectedObject, handleSelectObject]);
 
   const handlePrevObject = useCallback(() => {
+    if (filteredObjects.length === 0) return;
     if (!selectedObject) {
-      setSelectedObject(filteredObjects[filteredObjects.length - 1]);
+      handleSelectObject(filteredObjects[filteredObjects.length - 1]);
       return;
     }
     const idx = filteredObjects.findIndex((o) => o.id === selectedObject.id);
     const prevIdx = (idx - 1 + filteredObjects.length) % filteredObjects.length;
-    setSelectedObject(filteredObjects[prevIdx]);
-  }, [filteredObjects, selectedObject]);
+    handleSelectObject(filteredObjects[prevIdx]);
+  }, [filteredObjects, selectedObject, handleSelectObject]);
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (selectedObject) setSelectedObject(null);
+        if (selectedObject) handleSelectObject(null);
         if (activeSection !== 'collection') setActiveSection('collection');
       } else if (e.key === 'ArrowRight' && selectedObject) {
         handleNextObject();
       } else if (e.key === 'ArrowLeft' && selectedObject) {
         handlePrevObject();
-      } else if (['1', '2', '3', '4', '5', '6'].includes(e.key) && hasEntered) {
+      } else if (hasEntered && e.key >= '1' && e.key <= '9') {
         const index = parseInt(e.key, 10) - 1;
-        if (CRAFT_OBJECTS[index]) {
-          setSelectedObject(CRAFT_OBJECTS[index]);
+        if (products[index]) {
+          handleSelectObject(products[index]);
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedObject, activeSection, hasEntered, handleNextObject, handlePrevObject]);
+  }, [selectedObject, activeSection, hasEntered, handleNextObject, handlePrevObject, handleSelectObject, products]);
 
   const handleOpenArtisanStory = (artisanCraftId: string) => {
     if (artisanCraftId === 'pahari-miniature') {
@@ -103,12 +135,13 @@ export default function Gallery() {
         }}
         selectedCategory={selectedCategory}
         onSelectCategory={(cat: CraftCategory) => setSelectedCategory(cat)}
-        onResetCamera={() => setSelectedObject(null)}
+        onResetCamera={() => handleSelectObject(null)}
         hasIntroDismissed={hasEntered}
         onReturnToIntro={() => {
-          setSelectedObject(null);
+          handleSelectObject(null);
           setHasEntered(false);
         }}
+        totalCount={products.length}
       />
 
       {/* 3. Main Exhibition Area: 3D Spatial Canvas OR 2D Curatorial Catalog */}
@@ -116,14 +149,16 @@ export default function Gallery() {
         {viewMode === '3d' ? (
           <GalleryCanvas
             selectedObject={selectedObject}
-            onSelectObject={(obj: CraftObject | null) => setSelectedObject(obj)}
+            onSelectObject={handleSelectObject}
             filteredCategory={selectedCategory}
+            products={products}
           />
         ) : (
           <TwoDArchiveView
             selectedCategory={selectedCategory}
-            onSelectObject={(obj: CraftObject) => setSelectedObject(obj)}
+            onSelectObject={(obj: CraftObject) => handleSelectObject(obj)}
             onEnter3D={() => setViewMode('3d')}
+            products={products}
           />
         )}
 

@@ -13,15 +13,21 @@ interface GalleryCanvasProps {
   selectedObject: CraftObject | null;
   onSelectObject: (object: CraftObject | null) => void;
   filteredCategory?: string;
+  products?: CraftObject[];
 }
 
 export const GalleryCanvas = ({
   selectedObject,
   onSelectObject,
   filteredCategory = 'all',
+  products,
 }: GalleryCanvasProps) => {
   const [textures, setTextures] = useState<Record<string, Texture>>({});
   const [webGLSupported, setWebGLSupported] = useState<boolean>(true);
+
+  const allProducts = useMemo(() => {
+    return products && products.length > 0 ? products : CRAFT_OBJECTS;
+  }, [products]);
 
   // Check WebGL availability
   useEffect(() => {
@@ -36,13 +42,14 @@ export const GalleryCanvas = ({
     }
   }, []);
 
-  // Preload authentic craft textures in batch
+  // Preload authentic craft textures in batch for all products
   useEffect(() => {
     const loader = new TextureLoader();
     const map: Record<string, Texture> = {};
     let loadedCount = 0;
 
-    CRAFT_OBJECTS.forEach((obj) => {
+    allProducts.forEach((obj) => {
+      if (!obj.image) return;
       loader.load(
         obj.image,
         (tex: Texture) => {
@@ -51,7 +58,7 @@ export const GalleryCanvas = ({
           tex.wrapT = ClampToEdgeWrapping;
           map[obj.id] = tex;
           loadedCount++;
-          if (loadedCount === CRAFT_OBJECTS.length || loadedCount % 2 === 0) {
+          if (loadedCount === allProducts.length || loadedCount % 2 === 0) {
             setTextures((prev) => ({ ...prev, ...map }));
           }
         },
@@ -61,12 +68,46 @@ export const GalleryCanvas = ({
         }
       );
     });
-  }, []);
+  }, [allProducts]);
 
-  const visibleObjects = useMemo(() => {
-    if (filteredCategory === 'all') return CRAFT_OBJECTS;
-    return CRAFT_OBJECTS.filter((o) => o.category === filteredCategory);
-  }, [filteredCategory]);
+  const rawVisible = useMemo(() => {
+    if (!filteredCategory || filteredCategory === 'all') return allProducts;
+    return allProducts.filter((o) => o.category === filteredCategory);
+  }, [allProducts, filteredCategory]);
+
+  // Curatorial Exhibition Arc: Arranges objects with intentional spacing, depth & hierarchy
+  const positionedObjects = useMemo(() => {
+    const count = rawVisible.length;
+    if (count === 0) return [];
+    if (count === 1) {
+      return [
+        {
+          ...rawVisible[0],
+          position3D: [0, 0.2, 0.4] as [number, number, number],
+          rotation3D: [0, 0, 0] as [number, number, number],
+        },
+      ];
+    }
+    const span = Math.min(10.6, Math.max(3.8, (count - 1) * 2.1));
+    return rawVisible.map((obj, i) => {
+      const u = -1 + (2 * i) / (count - 1);
+      const x = Number((u * (span / 2)).toFixed(2));
+      const z = Number((0.4 - Math.pow(Math.abs(u), 1.6) * 1.4).toFixed(2));
+      const yaw = Number((-u * 0.26).toFixed(3));
+      return {
+        ...obj,
+        position3D: [x, 0.2, z] as [number, number, number],
+        rotation3D: [0, yaw, 0] as [number, number, number],
+      };
+    });
+  }, [rawVisible]);
+
+  // Synchronize selectedObject with its computed 3D layout coordinates
+  const activeSelected = useMemo(() => {
+    if (!selectedObject) return null;
+    const matched = positionedObjects.find((p) => p.id === selectedObject.id);
+    return matched || selectedObject;
+  }, [selectedObject, positionedObjects]);
 
   if (!webGLSupported) {
     return (
@@ -110,11 +151,11 @@ export const GalleryCanvas = ({
       >
         <Suspense fallback={null}>
           <GalleryEnvironment />
-          <GalleryCameraRig selectedObject={selectedObject} />
+          <GalleryCameraRig selectedObject={activeSelected} />
 
           {/* Render All Sculpted Artisan Objects */}
           <group position={[0, 0, 0]}>
-            {visibleObjects.map((obj) => (
+            {positionedObjects.map((obj) => (
               <ArtisanArtifact3D
                 key={obj.id}
                 object={obj}
