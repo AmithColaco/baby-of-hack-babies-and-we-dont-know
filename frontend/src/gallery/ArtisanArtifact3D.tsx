@@ -38,18 +38,18 @@ export const ArtisanArtifact3D = ({
     if (modelPivotRef.current) {
       if (!isSelected) {
         // Subtle floating breathing of the craft object alone (pedestal stays anchored)
-        const hoverElevate = hovered ? 0.06 : 0;
-        const targetY = 0.05 + Math.sin(t * 1.0) * 0.02 + hoverElevate;
+        const hoverElevate = hovered ? 0.08 : 0;
+        const targetY = 0.05 + Math.sin(t * 1.1) * 0.025 + hoverElevate;
         modelPivotRef.current.position.y = MathUtils.lerp(modelPivotRef.current.position.y, targetY, 0.08);
 
         // Gentle idle yaw breathing
         const baseRot = object.rotation3D?.[1] || 0;
-        const targetRot = baseRot + Math.sin(t * 0.45) * 0.04 + (hovered ? 0.12 : 0);
+        const targetRot = baseRot + Math.sin(t * 0.45) * 0.05 + (hovered ? 0.15 : 0);
         modelPivotRef.current.rotation.y = MathUtils.lerp(modelPivotRef.current.rotation.y, targetRot, 0.06);
       } else {
         // Selected focus: elevated showcase height & smooth 360-degree turntable rotation
-        modelPivotRef.current.position.y = MathUtils.lerp(modelPivotRef.current.position.y, 0.14, 0.08);
-        modelPivotRef.current.rotation.y += 0.004;
+        modelPivotRef.current.position.y = MathUtils.lerp(modelPivotRef.current.position.y, 0.16, 0.08);
+        modelPivotRef.current.rotation.y += 0.005;
       }
     }
   });
@@ -86,7 +86,7 @@ export const ArtisanArtifact3D = ({
         </mesh>
 
         {/* Tiered Sandstone Plinth Base (bottom touches floor at Y = -1.20) */}
-        <mesh position={[0, -0.38, 0]} receiveShadow>
+        <mesh position={[0, -0.38, 0]}>
           <cylinderGeometry args={[0.78, 0.86, 0.28, 48]} />
           <meshStandardMaterial
             color={isSelected || hovered ? '#F5EFE4' : '#ECE5D6'}
@@ -110,8 +110,8 @@ export const ArtisanArtifact3D = ({
           <cylinderGeometry args={[0.735, 0.735, 0.018, 48]} />
           <meshStandardMaterial
             color={isSelected ? '#F5DA88' : '#C89D42'}
-            metalness={0.9}
-            roughness={0.2}
+            metalness={0.88}
+            roughness={0.25}
           />
         </mesh>
 
@@ -121,7 +121,7 @@ export const ArtisanArtifact3D = ({
           <meshStandardMaterial
             color={isSelected ? '#F5DA88' : '#D4AF37'}
             metalness={0.92}
-            roughness={0.18}
+            roughness={0.2}
           />
         </mesh>
 
@@ -129,14 +129,14 @@ export const ArtisanArtifact3D = ({
         {(hovered || isSelected) && (
           <pointLight
             position={[0, 0.8, 0.2]}
-            intensity={isSelected ? 2.4 : 1.6}
+            intensity={isSelected ? 2.5 : 1.6}
             distance={3.2}
             color="#FFF4D8"
           />
         )}
       </group>
 
-      {/* 2. Sculpted Masterpiece 3D Geometry (Solid, Opaque Craft Heritage) */}
+      {/* 2. Sculpted Masterpiece 3D Geometry (True 3D Volumetric Heritage) */}
       <group
         ref={modelPivotRef}
         scale={isSelected ? [1.12, 1.12, 1.12] : hovered ? [1.04, 1.04, 1.04] : [1, 1, 1]}
@@ -150,7 +150,10 @@ export const ArtisanArtifact3D = ({
 /* ============================================================
    ARCHITECTURAL & ARTISAN 3D GEOMETRY BUILDER
 
-   High fidelity forms for each Indian Craft Tradition
+   High-fidelity, authentic volumetric 3D models for each craft.
+   Paintings are museum-framed with physical depth.
+   Pottery, textiles, metalcraft, woodcraft, and jewelry are
+   fully realized 3D sculptural objects.
    ============================================================ */
 
 function resolveModelType(object: CraftObject): string {
@@ -184,13 +187,14 @@ export function renderSculptedMasterwork(
   switch (modelType) {
     /* ------------------------------------------------------------
        I. PAHARI MINIATURE PAINTING (Kangra Wasli Kalam)
-       Carved teak frame, gold leaf inner fillet, burnished wasli
+       Authentic painting displayed in a handcrafted 3D carved teak frame,
+       with stepped bevels, gold leaf inner fillet, and protective glazing.
        ------------------------------------------------------------ */
     case 'painting':
       return (
         <group position={[0, 0.05, 0]}>
-          {/* Main Carved Teak Outer Frame - Solid Opaque */}
-          <mesh castShadow receiveShadow position={[0, 0, 0]}>
+          {/* Main Carved Teak Outer Frame */}
+          <mesh position={[0, 0, 0]}>
             <boxGeometry args={[1.36, 1.74, 0.08]} />
             <meshStandardMaterial
               color="#24140A"
@@ -199,7 +203,7 @@ export function renderSculptedMasterwork(
             />
           </mesh>
 
-          {/* Stepped Frame Bevel - Solid Opaque */}
+          {/* Stepped Frame Bevel */}
           <mesh position={[0, 0, 0.03]}>
             <boxGeometry args={[1.26, 1.64, 0.04]} />
             <meshStandardMaterial
@@ -209,7 +213,7 @@ export function renderSculptedMasterwork(
             />
           </mesh>
 
-          {/* 24K Beaten Gold Leaf Inner Fillet (Varq) - Solid Opaque */}
+          {/* 24K Beaten Gold Leaf Inner Fillet (Varq) */}
           <mesh position={[0, 0, 0.048]}>
             <boxGeometry args={[1.14, 1.52, 0.015]} />
             <meshStandardMaterial
@@ -219,14 +223,14 @@ export function renderSculptedMasterwork(
             />
           </mesh>
 
-          {/* Hand-layered Wasli Paper Painting Face - Solid Opaque */}
+          {/* Hand-layered Wasli Paper Painting Face */}
           <mesh position={[0, 0, 0.058]}>
             <planeGeometry args={[1.06, 1.44]} />
             {texture ? (
               <meshStandardMaterial
                 map={texture}
                 roughness={0.35}
-                metalness={0.08}
+                metalness={0.06}
               />
             ) : (
               <meshStandardMaterial
@@ -236,7 +240,7 @@ export function renderSculptedMasterwork(
             )}
           </mesh>
 
-          {/* Glazing Glass Reflection Plane - Legitimately Transparent */}
+          {/* Glazing Glass Reflection Plane */}
           <mesh position={[0, 0, 0.062]}>
             <planeGeometry args={[1.06, 1.44]} />
             <meshPhysicalMaterial
@@ -245,12 +249,12 @@ export function renderSculptedMasterwork(
               transmission={0.92}
               thickness={0.04}
               transparent
-              opacity={0.3}
+              opacity={0.25}
               depthWrite={false}
             />
           </mesh>
 
-          {/* Reverse Side Teak Backing & Archival Seal - Solid Opaque */}
+          {/* Reverse Side Teak Backing */}
           <mesh position={[0, 0, -0.042]}>
             <planeGeometry args={[1.34, 1.72]} />
             <meshStandardMaterial
@@ -260,9 +264,9 @@ export function renderSculptedMasterwork(
             />
           </mesh>
 
-          {/* Brass Suspension Rings on Top - Solid Opaque */}
+          {/* Brass Suspension Rings on Top */}
           {[-0.42, 0.42].map((x) => (
-            <mesh key={x} position={[x, 0.88, 0]} rotation={[0, 0, 0]}>
+            <mesh key={x} position={[x, 0.88, 0]}>
               <torusGeometry args={[0.04, 0.01, 16, 24]} />
               <meshStandardMaterial color="#C89D42" metalness={0.85} roughness={0.25} />
             </mesh>
@@ -271,84 +275,118 @@ export function renderSculptedMasterwork(
       );
 
     /* ------------------------------------------------------------
-       II. JAIPUR BLUE POTTERY (Glazed Quartz Crystal Urn)
-       Baluster body, flanged lip, domed finial lid, cobalt glaze
+       II. JAIPUR BLUE POTTERY (Glazed Quartz Urn / Baluster Vase)
+       Full 3D sculptural ceramic vessel with fluted foot, bulbous
+       contour body, arabesque waist band, fluted neck, flared rim,
+       sculpted handles, and a golden stupa finial lid.
        ------------------------------------------------------------ */
     case 'pottery':
       return (
-        <group position={[0, -0.05, 0]}>
-          {/* Fluted Ceramic Foot Base - Solid Opaque */}
-          <mesh position={[0, -0.7, 0]} castShadow>
-            <cylinderGeometry args={[0.34, 0.44, 0.14, 48]} />
+        <group position={[0, 0.02, 0]}>
+          {/* Tiered Ceramic Foot Base */}
+          <mesh position={[0, -0.68, 0]}>
+            <cylinderGeometry args={[0.34, 0.44, 0.12, 48]} />
             <meshStandardMaterial
               color="#0A3C6B"
-              roughness={0.12}
-              metalness={0.15}
+              roughness={0.18}
+              metalness={0.12}
             />
           </mesh>
 
-          {/* Gilded Foot Ring - Solid Opaque */}
-          <mesh position={[0, -0.62, 0]}>
-            <cylinderGeometry args={[0.36, 0.36, 0.025, 48]} />
+          {/* Gilded Brass Foot Ring Trim */}
+          <mesh position={[0, -0.61, 0]}>
+            <cylinderGeometry args={[0.355, 0.355, 0.024, 48]} />
             <meshStandardMaterial color="#D4AF37" metalness={0.88} roughness={0.2} />
           </mesh>
 
-          {/* Swelling Baluster Urn Body - Solid Opaque Glazed Quartz */}
-          <mesh position={[0, -0.18, 0]} castShadow>
-            <sphereGeometry args={[0.66, 48, 48]} />
-            {texture ? (
-              <meshStandardMaterial
-                map={texture}
-                roughness={0.1}
-                metalness={0.12}
-              />
-            ) : (
-              <meshStandardMaterial
-                color="#0D47A1"
-                roughness={0.12}
-                metalness={0.15}
-              />
-            )}
+          {/* Lower Baluster Urn Belly (Deep Cobalt Quartz Ceramic) */}
+          <mesh position={[0, -0.32, 0]}>
+            <cylinderGeometry args={[0.54, 0.35, 0.54, 48]} />
+            <meshStandardMaterial
+              color="#0D47A1"
+              roughness={0.15}
+              metalness={0.12}
+            />
           </mesh>
 
-          {/* Tapered Neck with Persian Arabesque Glaze - Solid Opaque */}
-          <mesh position={[0, 0.44, 0]}>
-            <cylinderGeometry args={[0.26, 0.42, 0.52, 48]} />
+          {/* Mid Swelling Urn Torus */}
+          <mesh position={[0, -0.06, 0]}>
+            <torusGeometry args={[0.48, 0.12, 24, 48]} />
             <meshStandardMaterial
-              color="#1E88E5"
-              roughness={0.08}
+              color="#0A3C6B"
+              roughness={0.15}
+              metalness={0.12}
+            />
+          </mesh>
+
+          {/* Main Body (Cobalt & Turquoise Arabesque Faience) */}
+          <mesh position={[0, 0.08, 0]}>
+            <cylinderGeometry args={[0.44, 0.56, 0.48, 48]} />
+            <meshStandardMaterial
+              color="#1565C0"
+              roughness={0.16}
               metalness={0.1}
             />
           </mesh>
 
-          {/* Molded Flanged Lip - Solid Opaque */}
-          <mesh position={[0, 0.7, 0]}>
-            <torusGeometry args={[0.28, 0.045, 24, 48]} />
-            <meshStandardMaterial color="#0A3C6B" roughness={0.1} />
+          {/* Inlaid Gilded Persian Arabesque Filigree Ring around Waist */}
+          <mesh position={[0, 0.28, 0]}>
+            <cylinderGeometry args={[0.445, 0.445, 0.05, 48]} />
+            <meshStandardMaterial
+              color="#D4AF37"
+              metalness={0.85}
+              roughness={0.25}
+            />
           </mesh>
 
-          {/* Domed Finial Lid - Solid Opaque */}
-          <mesh position={[0, 0.82, 0]}>
-            <coneGeometry args={[0.28, 0.28, 48]} />
-            <meshStandardMaterial color="#0A3C6B" roughness={0.12} />
+          {/* Tapered Shoulder Collar (Turquoise glaze) */}
+          <mesh position={[0, 0.38, 0]}>
+            <cylinderGeometry args={[0.26, 0.44, 0.22, 48]} />
+            <meshStandardMaterial
+              color="#00838F"
+              roughness={0.14}
+              metalness={0.1}
+            />
           </mesh>
 
-          {/* 24K Gold Finial Stupa Peak - Solid Opaque */}
-          <mesh position={[0, 0.98, 0]}>
-            <sphereGeometry args={[0.07, 24, 24]} />
-            <meshStandardMaterial color="#E8C045" metalness={0.9} roughness={0.18} />
+          {/* Tall Fluted Neck (Cream Porcelain with Cobalt Stripes) */}
+          <mesh position={[0, 0.62, 0]}>
+            <cylinderGeometry args={[0.24, 0.26, 0.32, 48]} />
+            <meshStandardMaterial
+              color="#FAF8F5"
+              roughness={0.18}
+              metalness={0.06}
+            />
           </mesh>
 
-          {/* Twin Acanthus Loop Handles - Solid Opaque */}
+          {/* Flared Molded Lip Rim with Gold Leaf Trim */}
+          <mesh position={[0, 0.78, 0]}>
+            <torusGeometry args={[0.26, 0.04, 20, 48]} />
+            <meshStandardMaterial color="#D4AF37" metalness={0.88} roughness={0.2} />
+          </mesh>
+
+          {/* Domed Ceramic Lid */}
+          <mesh position={[0, 0.86, 0]}>
+            <coneGeometry args={[0.25, 0.22, 48]} />
+            <meshStandardMaterial color="#0A3C6B" roughness={0.15} metalness={0.1} />
+          </mesh>
+
+          {/* 24K Gold Stupa / Kalasha Finial Peak */}
+          <mesh position={[0, 1.02, 0]}>
+            <sphereGeometry args={[0.065, 24, 24]} />
+            <meshStandardMaterial color="#E8C045" metalness={0.92} roughness={0.18} />
+          </mesh>
+
+          {/* Twin Sculpted Acanthus Loop Handles */}
           {[-1, 1].map((sign) => (
-            <group key={sign} position={[sign * 0.6, 0.02, 0]} rotation={[0, 0, (sign * Math.PI) / 4]}>
+            <group key={sign} position={[sign * 0.52, 0.22, 0]} rotation={[0, 0, (sign * Math.PI) / 3.8]}>
               <mesh>
-                <torusGeometry args={[0.24, 0.048, 20, 36, Math.PI * 1.1]} />
-                <meshStandardMaterial color="#0A3C6B" roughness={0.12} />
+                <torusGeometry args={[0.24, 0.042, 20, 36, Math.PI * 1.15]} />
+                <meshStandardMaterial color="#0A3C6B" roughness={0.15} metalness={0.1} />
               </mesh>
               <mesh position={[0, 0.12, 0]}>
-                <sphereGeometry args={[0.05, 16, 16]} />
-                <meshStandardMaterial color="#D4AF37" metalness={0.85} roughness={0.2} />
+                <sphereGeometry args={[0.045, 16, 16]} />
+                <meshStandardMaterial color="#D4AF37" metalness={0.88} roughness={0.2} />
               </mesh>
             </group>
           ))}
@@ -356,74 +394,113 @@ export function renderSculptedMasterwork(
       );
 
     /* ------------------------------------------------------------
-       III. CHANDERI HANDWOVEN SILK (Gossamer Royal Brocade)
-       Rosewood hanging rod, brass finials, draped wave silk, zari hem
+       III. CHANDERI HANDWOVEN ROYAL SILK (Gossamer Zari Saree)
+       Full 3D sculptural textile exhibition on a carved rosewood &
+       turned brass architectural stand. Rich fluid undulating 3D folds,
+       overlapping drape, heavy golden zari border, and hanging tassels.
+       (Replaces the flat 2D hanging sheet with authentic 3D volume!)
        ------------------------------------------------------------ */
     case 'textile':
       return (
-        <group position={[0, 0, 0]}>
-          {/* Handcrafted Rosewood Suspension Dowel - Solid Opaque */}
-          <mesh position={[0, 0.86, 0]} rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[0.035, 0.035, 1.52, 32]} />
-            <meshStandardMaterial color="#2B1408" roughness={0.45} />
+        <group position={[0, 0.08, 0]}>
+          {/* Architectural Rosewood & Turned Brass Display Stand */}
+          {/* Top Hanging Bar */}
+          <mesh position={[0, 0.96, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.032, 0.032, 1.56, 32]} />
+            <meshStandardMaterial color="#2B1408" roughness={0.4} />
           </mesh>
 
-          {/* Turned Brass Rod Finials - Solid Opaque */}
-          {[-0.78, 0.78].map((x) => (
-            <group key={x} position={[x, 0.86, 0]}>
+          {/* Turned Brass Finials on Rod Ends */}
+          {[-0.8, 0.8].map((x) => (
+            <group key={x} position={[x, 0.96, 0]}>
               <mesh>
-                <sphereGeometry args={[0.065, 24, 24]} />
+                <sphereGeometry args={[0.06, 20, 20]} />
                 <meshStandardMaterial color="#D4AF37" metalness={0.88} roughness={0.2} />
               </mesh>
               <mesh position={[x > 0 ? 0.04 : -0.04, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-                <coneGeometry args={[0.04, 0.08, 20]} />
+                <coneGeometry args={[0.035, 0.08, 16]} />
                 <meshStandardMaterial color="#D4AF37" metalness={0.88} roughness={0.2} />
               </mesh>
             </group>
           ))}
 
-          {/* Draped Gossamer Mulberry Silk Body - Solid Opaque Silk Texture */}
-          <mesh position={[0, -0.02, 0]} castShadow>
+          {/* Vertical Support Stanchions (Rosewood) */}
+          {[-0.68, 0.68].map((x) => (
+            <mesh key={x} position={[x, 0.06, -0.1]}>
+              <cylinderGeometry args={[0.024, 0.024, 1.82, 16]} />
+              <meshStandardMaterial color="#2B1408" roughness={0.45} />
+            </mesh>
+          ))}
+
+          {/* 3D Volumetric Sculpted Silk Drapery - Layer 1: Main Fluid Cascading Curtain */}
+          <mesh position={[0, 0.06, 0]}>
             <cylinderGeometry
-              args={[0.62, 0.78, 1.62, 48, 12, true, -Math.PI * 0.42, Math.PI * 0.84]}
+              args={[0.66, 0.74, 1.72, 48, 16, true, -Math.PI * 0.45, Math.PI * 0.9]}
             />
-            {texture ? (
-              <meshStandardMaterial
-                map={texture}
-                roughness={0.32}
-                metalness={0.22}
-                side={DoubleSide}
-              />
-            ) : (
-              <meshStandardMaterial
-                color="#6B1420"
-                roughness={0.35}
-                metalness={0.25}
-                side={DoubleSide}
-              />
-            )}
+            <meshStandardMaterial
+              color="#7B1824"
+              roughness={0.32}
+              metalness={0.18}
+              side={DoubleSide}
+            />
           </mesh>
 
-          {/* Real Silver Electroplated Gold Zari Border (Pallu) - Solid Opaque */}
-          <mesh position={[0, -0.84, 0.06]}>
-            <boxGeometry args={[1.28, 0.16, 0.04]} />
+          {/* Layer 2: Front Sweeping Saree Pleat / Fold (Undulating Wave with Volume) */}
+          <mesh position={[0.05, 0.08, 0.14]} rotation={[0, 0.12, -0.04]}>
+            <cylinderGeometry
+              args={[0.42, 0.52, 1.55, 36, 12, true, -Math.PI * 0.35, Math.PI * 0.7]}
+            />
+            <meshStandardMaterial
+              color="#942030"
+              roughness={0.28}
+              metalness={0.25}
+              side={DoubleSide}
+            />
+          </mesh>
+
+          {/* Layer 3: Overlapping Diagonally Draped Pallu (Royal Brocade Swag) */}
+          <mesh position={[-0.14, 0.22, 0.22]} rotation={[0.1, -0.15, -0.18]}>
+            <cylinderGeometry
+              args={[0.34, 0.42, 1.1, 28, 8, true, -Math.PI * 0.25, Math.PI * 0.55]}
+            />
+            <meshStandardMaterial
+              color="#851D2A"
+              roughness={0.3}
+              metalness={0.2}
+              side={DoubleSide}
+            />
+          </mesh>
+
+          {/* Real Silver Electroplated 24K Gold Zari Border (Heavy Brocade Hem) */}
+          <mesh position={[0, -0.74, 0.08]}>
+            <boxGeometry args={[1.32, 0.18, 0.05]} />
             <meshStandardMaterial
               color="#DFBD76"
-              metalness={0.88}
+              metalness={0.9}
               roughness={0.2}
             />
           </mesh>
 
-          {/* Hanging Gold Silk Tassels along Lower Hem - Solid Opaque */}
-          {[-0.45, -0.22, 0, 0.22, 0.45].map((x) => (
-            <group key={x} position={[x, -0.96, 0.06]}>
+          {/* Secondary Zari Filigree Accent Ribbon */}
+          <mesh position={[0, -0.58, 0.09]}>
+            <boxGeometry args={[1.28, 0.04, 0.04]} />
+            <meshStandardMaterial
+              color="#ECCB76"
+              metalness={0.92}
+              roughness={0.18}
+            />
+          </mesh>
+
+          {/* Dangling Silk & Gold Thread Tassels along Lower Hem */}
+          {[-0.52, -0.26, 0, 0.26, 0.52].map((x) => (
+            <group key={x} position={[x, -0.88, 0.08]}>
               <mesh>
-                <cylinderGeometry args={[0.006, 0.006, 0.12, 8]} />
+                <cylinderGeometry args={[0.006, 0.006, 0.14, 8]} />
                 <meshStandardMaterial color="#C89D42" metalness={0.8} />
               </mesh>
-              <mesh position={[0, -0.08, 0]}>
-                <sphereGeometry args={[0.025, 12, 12]} />
-                <meshStandardMaterial color="#DFBD76" metalness={0.85} />
+              <mesh position={[0, -0.1, 0]}>
+                <sphereGeometry args={[0.028, 12, 12]} />
+                <meshStandardMaterial color="#DFBD76" metalness={0.88} />
               </mesh>
             </group>
           ))}
@@ -432,154 +509,149 @@ export function renderSculptedMasterwork(
 
     /* ------------------------------------------------------------
        IV. BASTAR DHOKRA LOST-WAX BRONZE (Ceremonial Guardian Horse)
-       4,000-year Harappan cire-perdue cast, filigree ribs, saddle
+       True 3D Harappan cire-perdue cast bell-metal steed with
+       coiled wax-wire ribs, arched long neck, serrated mane,
+       flared hooves, ceremonial saddle, and antique patina.
        ------------------------------------------------------------ */
     case 'brass':
       return (
-        <group position={[0, -0.1, 0]}>
-          {/* Tubular Cast Bell-Metal Torso - Solid Opaque Bronze */}
-          <mesh position={[0, 0.14, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
-            <capsuleGeometry args={[0.28, 0.68, 20, 32]} />
+        <group position={[0, -0.06, 0]}>
+          {/* Volumetric Hollow Cast Bell-Metal Torso */}
+          <mesh position={[0, 0.14, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <capsuleGeometry args={[0.26, 0.66, 20, 32]} />
             <meshStandardMaterial
-              color="#9C752B"
-              metalness={0.86}
-              roughness={0.34}
+              color="#9A7328"
+              metalness={0.88}
+              roughness={0.32}
             />
           </mesh>
 
-          {/* Extruded Wax Wire Filigree Rings along Body - Solid Opaque */}
+          {/* Coiled Wax-Wire Filigree Rib Rings along Body */}
           {[-0.24, -0.12, 0, 0.12, 0.24].map((x) => (
             <mesh key={x} position={[x, 0.14, 0]} rotation={[0, Math.PI / 2, 0]}>
-              <torusGeometry args={[0.285, 0.018, 12, 32]} />
-              <meshStandardMaterial color="#BCA058" metalness={0.88} roughness={0.3} />
+              <torusGeometry args={[0.268, 0.018, 12, 32]} />
+              <meshStandardMaterial color="#BCA058" metalness={0.9} roughness={0.28} />
             </mesh>
           ))}
 
-          {/* Elongated Bastar Neck - Solid Opaque */}
-          <mesh position={[0.44, 0.48, 0]} rotation={[0, 0, -Math.PI / 5.5]}>
-            <cylinderGeometry args={[0.12, 0.2, 0.65, 24]} />
-            <meshStandardMaterial color="#946F28" metalness={0.85} roughness={0.35} />
+          {/* Arched Tribal Bastar Neck */}
+          <mesh position={[0.42, 0.46, 0]} rotation={[0, 0, -Math.PI / 5.5]}>
+            <cylinderGeometry args={[0.11, 0.19, 0.62, 24]} />
+            <meshStandardMaterial color="#946F28" metalness={0.86} roughness={0.34} />
           </mesh>
 
-          {/* Crested Archival Mane - Solid Opaque */}
-          <mesh position={[0.42, 0.62, 0]} rotation={[0, 0, -Math.PI / 5.5]}>
-            <boxGeometry args={[0.03, 0.48, 0.18]} />
-            <meshStandardMaterial color="#B08D38" metalness={0.88} roughness={0.3} />
+          {/* Raised Serrated Crest Mane */}
+          <mesh position={[0.39, 0.6, 0]} rotation={[0, 0, -Math.PI / 5.5]}>
+            <boxGeometry args={[0.035, 0.46, 0.16]} />
+            <meshStandardMaterial color="#B8943C" metalness={0.9} roughness={0.28} />
           </mesh>
 
-          {/* Muzzle & Sculpted Head - Solid Opaque */}
-          <mesh position={[0.66, 0.74, 0]} rotation={[0, 0, -Math.PI / 8]}>
-            <coneGeometry args={[0.15, 0.32, 20]} />
-            <meshStandardMaterial color="#946F28" metalness={0.85} roughness={0.35} />
+          {/* Conical Muzzle & Sculpted Head */}
+          <mesh position={[0.64, 0.72, 0]} rotation={[0, 0, -Math.PI / 8]}>
+            <coneGeometry args={[0.14, 0.3, 20]} />
+            <meshStandardMaterial color="#946F28" metalness={0.86} roughness={0.34} />
           </mesh>
 
-          {/* Tribal Ears - Solid Opaque */}
+          {/* Alert Tribal Ears */}
           {[-0.08, 0.08].map((z) => (
-            <mesh key={z} position={[0.62, 0.9, z]} rotation={[0, 0, Math.PI / 6]}>
-              <coneGeometry args={[0.04, 0.15, 12]} />
-              <meshStandardMaterial color="#BCA058" metalness={0.88} roughness={0.3} />
+            <mesh key={z} position={[0.6, 0.88, z]} rotation={[0, 0, Math.PI / 6]}>
+              <coneGeometry args={[0.038, 0.14, 12]} />
+              <meshStandardMaterial color="#BCA058" metalness={0.9} roughness={0.28} />
             </mesh>
           ))}
 
-          {/* Ceremonial Saddle with Medallion - Solid Opaque */}
+          {/* Ceremonial Saddle with Diamond Filigree */}
           <mesh position={[0, 0.38, 0]}>
-            <boxGeometry args={[0.38, 0.08, 0.36]} />
-            <meshStandardMaterial color="#C59B3C" metalness={0.9} roughness={0.28} />
+            <boxGeometry args={[0.36, 0.08, 0.34]} />
+            <meshStandardMaterial color="#C59B3C" metalness={0.92} roughness={0.26} />
           </mesh>
 
-          {/* Slender Ritual Legs with Flared Hooves - Solid Opaque */}
-          {[-0.34, 0.34].map((x) =>
+          {/* Four Sturdy Ritual Legs with Flared Hooves & Bells */}
+          {[-0.32, 0.32].map((x) =>
             [-0.14, 0.14].map((z) => (
-              <group key={`${x}-${z}`} position={[x, -0.42, z]}>
+              <group key={`${x}-${z}`} position={[x, -0.4, z]}>
                 <mesh>
-                  <cylinderGeometry args={[0.048, 0.065, 0.78, 16]} />
-                  <meshStandardMaterial color="#886420" metalness={0.86} roughness={0.36} />
+                  <cylinderGeometry args={[0.046, 0.062, 0.76, 16]} />
+                  <meshStandardMaterial color="#886420" metalness={0.88} roughness={0.34} />
                 </mesh>
-                <mesh position={[0, -0.38, 0]}>
-                  <cylinderGeometry args={[0.08, 0.09, 0.06, 16]} />
-                  <meshStandardMaterial color="#B58E38" metalness={0.9} roughness={0.28} />
+                <mesh position={[0, -0.36, 0]}>
+                  <cylinderGeometry args={[0.075, 0.085, 0.06, 16]} />
+                  <meshStandardMaterial color="#B58E38" metalness={0.92} roughness={0.26} />
                 </mesh>
               </group>
             ))
           )}
 
-          {/* Braided Bronze Tail - Solid Opaque */}
-          <mesh position={[-0.48, 0.08, 0]} rotation={[0, 0, Math.PI / 3]}>
-            <cylinderGeometry args={[0.025, 0.05, 0.48, 12]} />
-            <meshStandardMaterial color="#886420" metalness={0.86} roughness={0.36} />
+          {/* Braided Arched Bronze Tail */}
+          <mesh position={[-0.46, 0.08, 0]} rotation={[0, 0, Math.PI / 3]}>
+            <cylinderGeometry args={[0.024, 0.048, 0.46, 12]} />
+            <meshStandardMaterial color="#886420" metalness={0.88} roughness={0.34} />
           </mesh>
         </group>
       );
 
     /* ------------------------------------------------------------
        V. CHANNAPATNA LACQUER WOOD (Temple Shikhara Totem)
-       Ivory wood lathe turning, vegetable lac frictional gloss
+       True 3D lathe-turned sculpture combining polished natural
+       ivory wood with high-gloss vegetable lacquered tiers.
        ------------------------------------------------------------ */
     case 'woodcraft':
       return (
         <group position={[0, 0.08, 0]}>
-          {/* Rosewood Foundation Base - Solid Opaque */}
-          <mesh position={[0, -0.84, 0]} castShadow>
+          {/* Polished Indian Rosewood Base */}
+          <mesh position={[0, -0.82, 0]}>
             <cylinderGeometry args={[0.38, 0.44, 0.14, 48]} />
             <meshStandardMaterial color="#28150B" roughness={0.35} />
           </mesh>
 
-          {/* Lacquer Ring: Turmeric Gold Bead - Solid Opaque */}
-          <mesh position={[0, -0.72, 0]}>
+          {/* Lacquer Ring: Turmeric Gold Bead */}
+          <mesh position={[0, -0.7, 0]}>
             <torusGeometry args={[0.36, 0.05, 20, 48]} />
-            <meshStandardMaterial color="#D49B24" roughness={0.12} metalness={0.05} />
+            <meshStandardMaterial color="#D49B24" roughness={0.12} metalness={0.06} />
           </mesh>
 
-          {/* Main Ivory Wood Spherical Vessel - Solid Opaque */}
-          <mesh position={[0, -0.38, 0]} castShadow>
+          {/* Ivory Wood Spherical Vessel Body */}
+          <mesh position={[0, -0.36, 0]}>
             <sphereGeometry args={[0.46, 48, 48]} />
-            {texture ? (
-              <meshStandardMaterial
-                map={texture}
-                roughness={0.16}
-                metalness={0.04}
-              />
-            ) : (
-              <meshStandardMaterial
-                color="#A63A24"
-                roughness={0.15}
-                metalness={0.04}
-              />
-            )}
+            <meshStandardMaterial
+              color="#A63A24"
+              roughness={0.16}
+              metalness={0.04}
+            />
           </mesh>
 
-          {/* Concentric Turned Tier 01 (Sindoor Vermilion) - Solid Opaque */}
-          <mesh position={[0, 0.06, 0]}>
+          {/* Concentric Turned Tier 01: Sindoor Vermilion */}
+          <mesh position={[0, 0.08, 0]}>
             <cylinderGeometry args={[0.46, 0.52, 0.1, 48]} />
             <meshStandardMaterial color="#962A18" roughness={0.12} />
           </mesh>
 
-          {/* Concentric Turned Tier 02 (Turmeric Lacquer) - Solid Opaque */}
-          <mesh position={[0, 0.22, 0]}>
+          {/* Concentric Turned Tier 02: Turmeric Lacquer */}
+          <mesh position={[0, 0.24, 0]}>
             <cylinderGeometry args={[0.38, 0.44, 0.1, 48]} />
             <meshStandardMaterial color="#D49B24" roughness={0.12} />
           </mesh>
 
-          {/* Concentric Turned Tier 03 (Natural Ivory Wood) - Solid Opaque */}
-          <mesh position={[0, 0.38, 0]}>
+          {/* Concentric Turned Tier 03: Natural Ivory Wood (Aale Mara) */}
+          <mesh position={[0, 0.4, 0]}>
             <cylinderGeometry args={[0.3, 0.36, 0.1, 48]} />
-            <meshStandardMaterial color="#EFE3CE" roughness={0.25} />
+            <meshStandardMaterial color="#EFE3CE" roughness={0.28} />
           </mesh>
 
-          {/* Concentric Turned Tier 04 (Forest Indigo Lacquer) - Solid Opaque */}
-          <mesh position={[0, 0.54, 0]}>
+          {/* Concentric Turned Tier 04: Forest Indigo Lacquer */}
+          <mesh position={[0, 0.56, 0]}>
             <cylinderGeometry args={[0.22, 0.28, 0.1, 48]} />
             <meshStandardMaterial color="#2A453B" roughness={0.14} />
           </mesh>
 
-          {/* Lathe-Spun Shikhara Conical Spire - Solid Opaque */}
-          <mesh position={[0, 0.85, 0]}>
-            <coneGeometry args={[0.18, 0.55, 48]} />
+          {/* Lathe-Spun Shikhara Conical Spire */}
+          <mesh position={[0, 0.88, 0]}>
+            <coneGeometry args={[0.18, 0.56, 48]} />
             <meshStandardMaterial color="#D49B24" roughness={0.14} />
           </mesh>
 
-          {/* Mirror-Gloss Kalasha Finial Sphere - Solid Opaque */}
-          <mesh position={[0, 1.16, 0]}>
+          {/* Mirror-Gloss Kalasha Finial Sphere */}
+          <mesh position={[0, 1.18, 0]}>
             <sphereGeometry args={[0.08, 24, 24]} />
             <meshStandardMaterial color="#962A18" roughness={0.1} />
           </mesh>
@@ -587,20 +659,28 @@ export function renderSculptedMasterwork(
       );
 
     /* ------------------------------------------------------------
-       VI. KUNDAN & MEENAKARI JEWELLERY (Imperial Navratna Amulet)
-       24K gold foil, polki diamonds, emerald cabochon, champlevé reverse
+       VI. KUNDAN & MEENAKARI JEWELLERY (Imperial Royal Amulet)
+       True 3D museum display with arched velvet neck, 24K gold
+       champlevé amulet, sparkling emerald center, polki diamonds,
+       and cascading Basra seed pearls.
        ------------------------------------------------------------ */
     case 'jewellery':
       return (
         <group position={[0, 0.08, 0]}>
-          {/* Royal Bail Suspension Loop with Gold Filigree - Solid Opaque */}
+          {/* Black Velvet Archival Jewelry Display Stand */}
+          <mesh position={[0, -0.42, -0.08]}>
+            <cylinderGeometry args={[0.22, 0.32, 0.82, 32]} />
+            <meshStandardMaterial color="#1C1B1A" roughness={0.88} />
+          </mesh>
+
+          {/* Brass Suspension Arm */}
           <mesh position={[0, 0.82, 0]}>
             <torusGeometry args={[0.24, 0.03, 20, 36]} />
             <meshStandardMaterial color="#ECCB76" metalness={0.94} roughness={0.14} />
           </mesh>
 
-          {/* 22K Gold Octagonal Amulet Matrix - Solid Opaque */}
-          <mesh position={[0, 0, 0]} castShadow>
+          {/* 22K Gold Octagonal Amulet Matrix */}
+          <mesh position={[0, 0, 0]}>
             <cylinderGeometry args={[0.62, 0.65, 0.12, 8]} />
             <meshStandardMaterial
               color="#ECCB76"
@@ -609,7 +689,7 @@ export function renderSculptedMasterwork(
             />
           </mesh>
 
-          {/* Center Emerald Cabochon - Legitimately Transparent Physical Gemstone */}
+          {/* Center Emerald Cabochon Gemstone */}
           <mesh position={[0, 0, 0.07]}>
             <sphereGeometry args={[0.22, 32, 32]} />
             <meshPhysicalMaterial
@@ -622,24 +702,22 @@ export function renderSculptedMasterwork(
             />
           </mesh>
 
-          {/* Cold-Set Kundan 24K Gold Bezel Rim around Center Stone - Solid Opaque */}
+          {/* 24K Gold Kundan Bezel Rim around Center Emerald */}
           <mesh position={[0, 0, 0.075]}>
             <torusGeometry args={[0.225, 0.025, 16, 36]} />
             <meshStandardMaterial color="#F5DA88" metalness={0.96} roughness={0.12} />
           </mesh>
 
-          {/* Eight Faceted Uncut Natural Polki Diamonds in lac beds - Legitimately Translucent Diamond Crystals */}
+          {/* Eight Faceted Natural Polki Diamonds in Gold Bezels */}
           {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
             const angle = (i * Math.PI) / 4;
             const r = 0.44;
             return (
               <group key={i} position={[Math.cos(angle) * r, Math.sin(angle) * r, 0.065]}>
-                {/* 24K pure gold setting bezel - Solid Opaque */}
                 <mesh>
                   <cylinderGeometry args={[0.08, 0.095, 0.035, 6]} />
                   <meshStandardMaterial color="#ECCB76" metalness={0.94} roughness={0.14} />
                 </mesh>
-                {/* Flat Polki diamond with crystal refraction - Transparent with depthWrite false */}
                 <mesh position={[0, 0, 0.02]}>
                   <cylinderGeometry args={[0.06, 0.07, 0.015, 6]} />
                   <meshPhysicalMaterial
@@ -655,7 +733,7 @@ export function renderSculptedMasterwork(
             );
           })}
 
-          {/* Reverse Side Confidential Meenakari Enamel Garden - Solid Opaque */}
+          {/* Reverse Side Royal Meenakari Enamel Garden */}
           <mesh position={[0, 0, -0.065]} rotation={[0, Math.PI, 0]}>
             <circleGeometry args={[0.61, 8]} />
             <meshStandardMaterial
@@ -665,12 +743,8 @@ export function renderSculptedMasterwork(
               side={DoubleSide}
             />
           </mesh>
-          <mesh position={[0, 0, -0.066]} rotation={[0, Math.PI, 0]}>
-            <torusGeometry args={[0.38, 0.03, 16, 32]} />
-            <meshStandardMaterial color="#1B7853" roughness={0.12} metalness={0.2} />
-          </mesh>
 
-          {/* Basra Saltwater Seed Pearls - Solid Opaque */}
+          {/* Basra Saltwater Seed Pearls dangling from rim */}
           {[-0.38, -0.19, 0, 0.19, 0.38].map((x, idx) => (
             <group key={idx} position={[x, -0.72 - Math.abs(x) * 0.22, 0]}>
               <mesh>
@@ -687,40 +761,37 @@ export function renderSculptedMasterwork(
       );
 
     /* ------------------------------------------------------------
-       VII. ARCHIVAL EXHIBITION EASEL & DISPLAY PLAQUE
-       Curatorial fallback for custom/seller craft products without
-       dedicated sculpted geometry. Renders a museum-grade carved
-       rosewood easel, gold fillet bezel, textured archival mount,
-       and glass cover.
+       VII. ARCHIVAL EXHIBITION SHOWCASE (Fallback / Custom Products)
+       Museum pedestal showcase with rosewood base and brass mounts
        ------------------------------------------------------------ */
     case 'archival_easel':
     default:
       return (
         <group position={[0, 0.1, 0]}>
-          {/* Rosewood Easel Uprights - Solid Opaque */}
+          {/* Rosewood Easel Uprights */}
           {[-0.42, 0.42].map((x) => (
-            <mesh key={x} position={[x, -0.05, -0.12]} rotation={[0.16, 0, 0]} castShadow>
+            <mesh key={x} position={[x, -0.05, -0.12]} rotation={[0.16, 0, 0]}>
               <boxGeometry args={[0.045, 1.82, 0.045]} />
               <meshStandardMaterial color="#2B150A" roughness={0.4} metalness={0.08} />
             </mesh>
           ))}
 
-          {/* Easel Crossbar Rest - Solid Opaque */}
-          <mesh position={[0, -0.52, -0.04]} castShadow>
+          {/* Easel Crossbar Rest */}
+          <mesh position={[0, -0.52, -0.04]}>
             <boxGeometry args={[1.22, 0.07, 0.14]} />
             <meshStandardMaterial color="#381D0F" roughness={0.35} metalness={0.1} />
           </mesh>
 
-          {/* Retaining Lip on Crossbar (Brass) - Solid Opaque */}
+          {/* Retaining Lip on Crossbar (Brass) */}
           <mesh position={[0, -0.48, 0.035]}>
             <boxGeometry args={[1.18, 0.03, 0.02]} />
             <meshStandardMaterial color="#D4AF37" metalness={0.88} roughness={0.2} />
           </mesh>
 
-          {/* Exhibition Plaque Mount (Tilted back by 0.14 rad on easel) */}
+          {/* Exhibition Plaque Mount */}
           <group position={[0, 0.08, 0]} rotation={[-0.14, 0, 0]}>
-            {/* Dark Rosewood Framing Slab - Solid Opaque */}
-            <mesh castShadow receiveShadow>
+            {/* Dark Rosewood Framing Slab */}
+            <mesh>
               <boxGeometry args={[1.28, 1.48, 0.06]} />
               <meshStandardMaterial
                 color="#221208"
@@ -729,7 +800,7 @@ export function renderSculptedMasterwork(
               />
             </mesh>
 
-            {/* 24K Gold Leaf Inlay Margin - Solid Opaque */}
+            {/* 24K Gold Leaf Inlay Margin */}
             <mesh position={[0, 0, 0.032]}>
               <boxGeometry args={[1.18, 1.38, 0.01]} />
               <meshStandardMaterial
@@ -739,7 +810,7 @@ export function renderSculptedMasterwork(
               />
             </mesh>
 
-            {/* Museum Conservation Mounting Board (Raw Silk / Wasli) - Solid Opaque */}
+            {/* Museum Conservation Mounting Board */}
             <mesh position={[0, 0, 0.038]}>
               <planeGeometry args={[1.12, 1.32]} />
               {texture ? (
@@ -756,7 +827,7 @@ export function renderSculptedMasterwork(
               )}
             </mesh>
 
-            {/* Preservation Vitrine Glass - Legitimately Transparent */}
+            {/* Preservation Vitrine Glass */}
             <mesh position={[0, 0, 0.044]}>
               <planeGeometry args={[1.12, 1.32]} />
               <meshPhysicalMaterial
@@ -765,12 +836,12 @@ export function renderSculptedMasterwork(
                 transmission={0.94}
                 thickness={0.03}
                 transparent
-                opacity={0.3}
+                opacity={0.25}
                 depthWrite={false}
               />
             </mesh>
 
-            {/* Brass Archival Seal / Emblem at Top Center - Solid Opaque */}
+            {/* Brass Archival Seal / Emblem at Top Center */}
             <mesh position={[0, 0.68, 0.035]}>
               <cylinderGeometry args={[0.045, 0.045, 0.015, 24]} />
               <meshStandardMaterial color="#D4AF37" metalness={0.92} roughness={0.18} />
@@ -780,4 +851,3 @@ export function renderSculptedMasterwork(
       );
   }
 }
-

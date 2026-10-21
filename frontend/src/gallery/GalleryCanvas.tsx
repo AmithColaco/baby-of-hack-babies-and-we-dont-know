@@ -137,8 +137,8 @@ export const GalleryCanvas = ({
       }}
     >
       <Canvas
-        // Use "demand" frameloop — only renders when something changes, massively cuts idle GPU usage
-        frameloop="demand"
+        // Continuous smooth 60fps breathing and turntable rotation
+        frameloop="always"
         // Cap DPR at 1.5 to reduce pixel count on high-DPI screens
         dpr={[1, 1.5]}
         camera={{ position: [0, 1.2, 8.5], fov: 42, near: 0.1, far: 50 }}

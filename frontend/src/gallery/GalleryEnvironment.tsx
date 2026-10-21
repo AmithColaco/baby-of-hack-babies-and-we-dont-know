@@ -30,7 +30,10 @@ export const GalleryEnvironment = () => {
       <fog attach="fog" args={['#F9F5EE', 8.5, 26]} />
 
       {/* Warm Ambient Atelier Fill */}
-      <ambientLight intensity={1.15} color="#FFFDF7" />
+      <ambientLight intensity={1.35} color="#FFFDF7" />
+
+      {/* Hemispherical Gallery Fill to illuminate undercuts and sculptural reliefs */}
+      <hemisphereLight args={['#FFFDF7', '#D8CEBE', 0.9]} />
 
       {/* Key Warm Museum Spotlight */}
       <directionalLight
