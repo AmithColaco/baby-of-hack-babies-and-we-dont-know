@@ -13,16 +13,22 @@ interface GalleryCanvasProps {
   selectedObject: CraftObject | null;
   onSelectObject: (object: CraftObject | null) => void;
   filteredCategory?: string;
+  products?: CraftObject[];
 }
 
 export const GalleryCanvas = ({
   selectedObject,
   onSelectObject,
   filteredCategory = 'all',
+  products,
 }: GalleryCanvasProps) => {
-  const { products } = useProducts();
+  const { products: storeProducts } = useProducts();
   const [textures, setTextures] = useState<Record<string, Texture>>({});
   const [webGLSupported, setWebGLSupported] = useState<boolean>(true);
+
+  const allProducts = useMemo(() => {
+    return products && products.length > 0 ? products : storeProducts;
+  }, [products, storeProducts]);
 
   // Check WebGL availability
   useEffect(() => {
@@ -35,41 +41,77 @@ export const GalleryCanvas = ({
     }
   }, []);
 
-  // Lazy-load textures one at a time to avoid GPU memory spike
+  // Lazy-load textures with LinearFilter to avoid GPU memory spike and maintain 60 FPS
   useEffect(() => {
-    if (products.length === 0) return;
+    if (allProducts.length === 0) return;
     const loader = new TextureLoader();
 
     const loadNext = (index: number) => {
-      if (index >= products.length) return;
-      const obj = products[index];
+      if (index >= allProducts.length) return;
+      const obj = allProducts[index];
+      if (!obj.image) {
+        loadNext(index + 1);
+        return;
+      }
       loader.load(
         obj.image,
         (tex: Texture) => {
           tex.colorSpace = SRGBColorSpace;
           tex.wrapS = ClampToEdgeWrapping;
           tex.wrapT = ClampToEdgeWrapping;
-          // Reduce texture resolution to cut memory and improve GPU throughput
           tex.minFilter = LinearFilter;
           setTextures((prev) => ({ ...prev, [obj.id]: tex }));
           // Stagger loads with a small delay to avoid frame drops
-          setTimeout(() => loadNext(index + 1), 80);
+          setTimeout(() => loadNext(index + 1), 60);
         },
         undefined,
         () => {
-          // If one image fails, continue with the next
-          setTimeout(() => loadNext(index + 1), 80);
+          setTimeout(() => loadNext(index + 1), 60);
         }
       );
     };
 
     loadNext(0);
-  }, [products]);
+  }, [allProducts]);
 
-  const visibleObjects = useMemo(() => {
-    if (filteredCategory === 'all') return products;
-    return products.filter((o) => o.category === filteredCategory);
-  }, [products, filteredCategory]);
+  const rawVisible = useMemo(() => {
+    if (!filteredCategory || filteredCategory === 'all') return allProducts;
+    return allProducts.filter((o) => o.category === filteredCategory);
+  }, [allProducts, filteredCategory]);
+
+  // Curatorial Exhibition Arc: Arranges objects with intentional spacing, depth & hierarchy
+  const positionedObjects = useMemo(() => {
+    const count = rawVisible.length;
+    if (count === 0) return [];
+    if (count === 1) {
+      return [
+        {
+          ...rawVisible[0],
+          position3D: [0, 0.2, 0.4] as [number, number, number],
+          rotation3D: [0, 0, 0] as [number, number, number],
+        },
+      ];
+    }
+    const span = Math.min(10.6, Math.max(3.8, (count - 1) * 2.1));
+    return rawVisible.map((obj, i) => {
+      const u = -1 + (2 * i) / (count - 1);
+      const x = Number((u * (span / 2)).toFixed(2));
+      const z = Number((0.4 - Math.pow(Math.abs(u), 1.6) * 1.4).toFixed(2));
+      const yaw = Number((-u * 0.26).toFixed(3));
+      return {
+        ...obj,
+        position3D: [x, 0.2, z] as [number, number, number],
+        rotation3D: [0, yaw, 0] as [number, number, number],
+      };
+    });
+  }, [rawVisible]);
+
+  // Synchronize selectedObject with its computed 3D layout coordinates
+  const activeSelected = useMemo(() => {
+    if (!selectedObject) return null;
+    const matched = positionedObjects.find((p) => p.id === selectedObject.id);
+    return matched || selectedObject;
+  }, [selectedObject, positionedObjects]);
 
   if (!webGLSupported) {
     return (
@@ -97,26 +139,26 @@ export const GalleryCanvas = ({
       <Canvas
         // Use "demand" frameloop — only renders when something changes, massively cuts idle GPU usage
         frameloop="demand"
-        // Cap DPR at 1.5 (was 1.75) to reduce pixel count on high-DPI screens
+        // Cap DPR at 1.5 to reduce pixel count on high-DPI screens
         dpr={[1, 1.5]}
         camera={{ position: [0, 1.2, 8.5], fov: 42, near: 0.1, far: 50 }}
         gl={{
-          antialias: false,         // disable MSAA — big perf win; edges still look fine at craft scale
+          antialias: false,
           powerPreference: 'high-performance',
           alpha: false,
           preserveDrawingBuffer: false,
         }}
-        shadows={false}            // disable realtime shadow maps — major GPU cost
+        shadows={false}
         onPointerDown={(e) => {
           if (e.target === e.currentTarget && selectedObject) onSelectObject(null);
         }}
       >
         <Suspense fallback={null}>
           <GalleryEnvironment />
-          <GalleryCameraRig selectedObject={selectedObject} />
+          <GalleryCameraRig selectedObject={activeSelected} />
 
           <group position={[0, 0, 0]}>
-            {visibleObjects.map((obj) => (
+            {positionedObjects.map((obj) => (
               <ArtisanArtifact3D
                 key={obj.id}
                 object={obj}

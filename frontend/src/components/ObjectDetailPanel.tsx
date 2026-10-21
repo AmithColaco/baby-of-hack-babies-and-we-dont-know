@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { CraftObject } from '../types';
 import { useCart } from '../contexts/CartContext';
 
@@ -274,6 +275,23 @@ export const ObjectDetailPanel = ({
             <span>Acquire Masterwork · ₹ {object.price.toLocaleString('en-IN')}</span>
           )}
         </button>
+
+        <Link
+          to={`/shop/${object.id}`}
+          className="btn btn-outline"
+          style={{
+            textAlign: 'center',
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '0.65rem 1rem',
+            fontSize: '0.82rem',
+            letterSpacing: '0.04em',
+          }}
+        >
+          <span>Explore Full Storyboard & Acquisition →</span>
+        </Link>
 
         <button
           onClick={onClose}

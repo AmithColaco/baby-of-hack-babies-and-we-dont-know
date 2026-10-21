@@ -12,6 +12,7 @@ interface GalleryNavProps {
   onResetCamera?: () => void;
   hasIntroDismissed: boolean;
   onReturnToIntro: () => void;
+  totalCount?: number;
 }
 
 export const GalleryNav = ({
@@ -24,6 +25,7 @@ export const GalleryNav = ({
   onResetCamera,
   hasIntroDismissed,
   onReturnToIntro,
+  totalCount,
 }: GalleryNavProps) => {
   const { totalItems, setIsCartOpen } = useCart();
 
@@ -32,8 +34,8 @@ export const GalleryNav = ({
       <div className="gallery-header__inner">
         {/* Brand Identity */}
         <div className="gallery-header__brand">
-          <Link to="/" className="brand-back-home" title="Return to Main Store">
-            ← Home
+          <Link to="/shop" className="brand-back-home" title="Explore Curatorial Catalogue">
+            ← Catalogue
           </Link>
           <button
             onClick={() => {
@@ -121,7 +123,7 @@ export const GalleryNav = ({
           <div className="filter-inner">
             {(
               [
-                { id: 'all', label: 'All Works (6)' },
+                { id: 'all', label: `All Works (${totalCount ?? 6})` },
                 { id: 'paintings', label: 'Pahari Painting' },
                 { id: 'ceramics', label: 'Blue Pottery' },
                 { id: 'textiles', label: 'Handwoven Textile' },

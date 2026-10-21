@@ -113,11 +113,22 @@ export default function Catalogue() {
           </p>
 
           <div className="shop-header__stats">
-            <span className="stat-pill"><strong>6</strong> Masterworks</span>
+            <span className="stat-pill"><strong>{products.length}</strong> Masterworks</span>
             <span className="stat-pill"><strong>85%+</strong> Direct to Makers</span>
             <span className="stat-pill"><strong>6</strong> Heritage Centers</span>
             <span className="stat-pill"><strong>100%</strong> GI Provenance</span>
             <span className="stat-pill"><strong>Insured</strong> White-Glove Transit</span>
+          </div>
+
+          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <Link
+              to="/gallery"
+              className="hero-btn hero-btn--outline"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <span>✦ Experience All Masterworks in 3D Spatial Gallery</span>
+              <span className="arrow">→</span>
+            </Link>
           </div>
         </div>
       </section>
@@ -282,6 +293,13 @@ export default function Catalogue() {
                           loading="lazy"
                         />
                       </Link>
+                      <Link
+                        to={`/gallery?focus=${prod.id}`}
+                        className="card-3d-badge"
+                        title={`Inspect ${prod.title} in 3D Exhibition`}
+                      >
+                        ✦ 3D View
+                      </Link>
                       <button
                         type="button"
                         className={`wishlist-heart-btn ${isSaved ? 'active' : ''}`}
@@ -332,6 +350,14 @@ export default function Catalogue() {
                         >
                           <span>Discover Story</span>
                           <span className="arrow">→</span>
+                        </Link>
+
+                        <Link
+                          to={`/gallery?focus=${prod.id}`}
+                          className="card-btn-3d"
+                          title="View 3D Model in Exhibition"
+                        >
+                          ✦ 3D
                         </Link>
 
                         <button

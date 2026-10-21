@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useProducts, useWishlist } from '../data/productStore';
 import { useCart } from '../contexts/CartContext';
+import { ProductViewer3D } from '../components/ProductViewer3D';
 import type { CraftObject } from '../types';
 
 export default function Product() {
@@ -87,6 +88,10 @@ export default function Product() {
             <span className="current">{product.craftTradition}</span>
             <span className="sep">/</span>
             <span className="accession">{product.accessionNo}</span>
+            <span className="sep">/</span>
+            <Link to={`/gallery?focus=${product.id}`} className="storyboard-3d-crumb" title="Inspect in 3D Gallery">
+              ✦ View in 3D
+            </Link>
           </div>
 
           <div className="storyboard-mode-toggle">
@@ -132,12 +137,7 @@ export default function Product() {
             <div className="storyboard-scene scene-object">
               <div className="scene-object__grid">
                 <div className="scene-object__media">
-                  <div className="media-frame">
-                    <img src={product.image} alt={product.title} className="scene-img" />
-                    <div className="media-frame__badge">
-                      <span>{product.accessionNo}</span>
-                    </div>
-                  </div>
+                  <ProductViewer3D product={product} />
                 </div>
 
                 <div className="scene-object__narrative">
@@ -168,23 +168,73 @@ export default function Product() {
                     </div>
                   </div>
 
+                  {/* Prominent Purchase Section - Preserved Alongside Price & Provenance */}
+                  <div className="scene-purchase-box">
+                    <div className="scene-purchase-row">
+                      <div className="scene-qty-picker" aria-label="Quantity selector">
+                        <span className="qty-label">Quantity:</span>
+                        <div className="qty-controls">
+                          <button
+                            type="button"
+                            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                            disabled={quantity <= 1}
+                            aria-label="Decrease quantity"
+                          >
+                            −
+                          </button>
+                          <span className="qty-val">{quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => setQuantity((q) => q + 1)}
+                            aria-label="Increase quantity"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className={`scene-wish-btn ${isFavorited ? 'active' : ''}`}
+                        onClick={() => toggleWishlist(product.id)}
+                        aria-label={isFavorited ? 'Remove from wishlist' : 'Add to wishlist'}
+                      >
+                        {isFavorited ? '♥ Saved' : '♡ Save to Wishlist'}
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="scene-main-cart-btn"
+                      onClick={handleAddToCart}
+                      id="primary-add-to-bag"
+                    >
+                      <span className="cart-btn-icon">🛍</span>
+                      <span>Add to Shopping Bag · ₹{(clientPrice * quantity).toLocaleString('en-IN')}</span>
+                    </button>
+
+                    <div className="purchase-shipping-hint">
+                      <span>✓ Complimentary white-glove transit across India · Insured & certified</span>
+                    </div>
+                  </div>
+
                   <div className="scene-actions">
                     <button
                       type="button"
                       className="scene-next-btn"
                       onClick={() => setActiveChapter(1)}
                     >
-                      <span>Discover Its Sacred Story</span>
+                      <span>Explore Chapter 02: Meet the Maker</span>
                       <span className="arrow">→</span>
                     </button>
 
-                    <button
-                      type="button"
-                      className="scene-quick-cart"
-                      onClick={handleAddToCart}
+                    <Link
+                      to={`/gallery?focus=${product.id}`}
+                      className="scene-3d-btn"
+                      title="Inspect this artifact in the 3D Exhibition Pavilion"
                     >
-                      Add to Bag (₹{clientPrice.toLocaleString('en-IN')})
-                    </button>
+                      <span>✦ View in 3D Pavilion</span>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -426,6 +476,14 @@ export default function Product() {
                     >
                       {isFavorited ? '♥ In Your Wishlist' : '♡ Add to Wishlist'}
                     </button>
+
+                    <Link
+                      to={`/gallery?focus=${product.id}`}
+                      className="acquire-3d-btn"
+                      title="Inspect piece in 3D Exhibition space"
+                    >
+                      <span>✦ Inspect in 3D Gallery</span>
+                    </Link>
                   </div>
 
                   <div className="provenance-seal-card">

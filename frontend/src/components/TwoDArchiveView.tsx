@@ -5,18 +5,21 @@ interface TwoDArchiveViewProps {
   selectedCategory: CraftCategory;
   onSelectObject: (obj: CraftObject) => void;
   onEnter3D: () => void;
+  products?: CraftObject[];
 }
 
 export const TwoDArchiveView = ({
   selectedCategory,
   onSelectObject,
   onEnter3D,
+  products,
 }: TwoDArchiveViewProps) => {
-  const { products } = useProducts();
+  const { products: storeProducts } = useProducts();
+  const source = products && products.length > 0 ? products : storeProducts;
   const visibleObjects =
     selectedCategory === 'all'
-      ? products
-      : products.filter((o) => o.category === selectedCategory);
+      ? source
+      : source.filter((o) => o.category === selectedCategory);
 
   return (
     <div className="archive-2d-view">
@@ -75,7 +78,7 @@ export const TwoDArchiveView = ({
                   <div className="archive-card__price">
                     <span className="price-tag">Acquisition</span>
                     <span className="price-num">
-                      ₹ {obj.price.toLocaleString('en-IN')}
+                      ₹ {Math.round(obj.price * 1.05).toLocaleString('en-IN')}
                     </span>
                   </div>
 
