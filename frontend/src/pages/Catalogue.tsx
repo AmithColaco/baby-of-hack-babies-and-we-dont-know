@@ -126,7 +126,7 @@ export default function Catalogue() {
               className="hero-btn hero-btn--outline"
               style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
             >
-              <span>✦ Experience All Masterworks in 3D Spatial Gallery</span>
+              <span>✦ Explore Digital Exhibition Gallery</span>
               <span className="arrow">→</span>
             </Link>
           </div>
@@ -293,13 +293,6 @@ export default function Catalogue() {
                           loading="lazy"
                         />
                       </Link>
-                      <Link
-                        to={`/gallery?focus=${prod.id}`}
-                        className="card-3d-badge"
-                        title={`Inspect ${prod.title} in 3D Exhibition`}
-                      >
-                        ✦ 3D View
-                      </Link>
                       <button
                         type="button"
                         className={`wishlist-heart-btn ${isSaved ? 'active' : ''}`}
@@ -350,14 +343,6 @@ export default function Catalogue() {
                         >
                           <span>Discover Story</span>
                           <span className="arrow">→</span>
-                        </Link>
-
-                        <Link
-                          to={`/gallery?focus=${prod.id}`}
-                          className="card-btn-3d"
-                          title="View 3D Model in Exhibition"
-                        >
-                          ✦ 3D
                         </Link>
 
                         <button

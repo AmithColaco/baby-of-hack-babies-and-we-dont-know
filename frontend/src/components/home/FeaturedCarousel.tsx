@@ -189,7 +189,7 @@ export function FeaturedCarousel() {
                 className="inspector-btn inspector-btn--3d"
                 id="carousel-enter-3d"
               >
-                <span>✦ Inspect in 3D Gallery</span>
+                <span>✦ View in Exhibition</span>
               </Link>
             </div>
           </div>

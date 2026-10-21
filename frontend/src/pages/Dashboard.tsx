@@ -207,7 +207,7 @@ export default function Dashboard() {
             <div className="dashboard-tab-panel">
               <div className="panel-toolbar">
                 <span className="panel-info">
-                  Live inventory synchronized across 3D Virtual Gallery, Catalogue, and Mobile Storefront.
+                  Live inventory synchronized across Curatorial Exhibition, Catalogue, and Storefront.
                 </span>
                 <button
                   type="button"
@@ -342,7 +342,7 @@ export default function Dashboard() {
               ) : artisanOrders.length === 0 ? (
                 <div className="empty-panel">
                   <h3>No incoming orders yet</h3>
-                  <p>When buyers acquire pieces through the storefront or 3D gallery, their orders will appear here for dispatch.</p>
+                  <p>When buyers acquire pieces through the storefront or digital gallery, their orders will appear here for dispatch.</p>
                 </div>
               ) : (
                 <div className="orders-table-wrap">
@@ -352,7 +352,7 @@ export default function Dashboard() {
                         <th>Order ID</th>
                         <th>Pieces Ordered</th>
                         <th>Total Value</th>
-                        <th>Direct Payout (88%)</th>
+                        <th>Direct Payout (100% Maker Rate)</th>
                         <th>Current State</th>
                         <th>Workflow Action</th>
                       </tr>

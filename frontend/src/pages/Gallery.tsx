@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { GalleryCanvas } from '../gallery/GalleryCanvas';
-import { HeroIntro } from '../components/HeroIntro';
 import { GalleryNav } from '../components/GalleryNav';
 import { ObjectDetailPanel } from '../components/ObjectDetailPanel';
 import { CartDrawer } from '../components/CartDrawer';
@@ -16,8 +14,6 @@ export default function Gallery() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { products } = useProducts();
 
-  const [hasEntered, setHasEntered] = useState(true);
-  const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d');
   const [selectedObject, setSelectedObject] = useState<CraftObject | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<CraftCategory>('all');
   const [activeSection, setActiveSection] = useState<'collection' | 'stories' | 'making' | 'about'>('collection');
@@ -88,7 +84,7 @@ export default function Gallery() {
         handleNextObject();
       } else if (e.key === 'ArrowLeft' && selectedObject) {
         handlePrevObject();
-      } else if (hasEntered && e.key >= '1' && e.key <= '9') {
+      } else if (e.key >= '1' && e.key <= '9') {
         const index = parseInt(e.key, 10) - 1;
         if (products[index]) {
           handleSelectObject(products[index]);
@@ -98,7 +94,7 @@ export default function Gallery() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedObject, activeSection, hasEntered, handleNextObject, handlePrevObject, handleSelectObject, products]);
+  }, [selectedObject, activeSection, handleNextObject, handlePrevObject, handleSelectObject, products]);
 
   const handleOpenArtisanStory = (artisanCraftId: string) => {
     if (artisanCraftId === 'pahari-miniature') {
@@ -113,65 +109,27 @@ export default function Gallery() {
 
   return (
     <main className="kaarigar-app-container">
-      {/* 1. Restrained Introductory Gate */}
-      {!hasEntered && (
-        <HeroIntro
-          onEnterGallery={() => setHasEntered(true)}
-          onEnter2DArchive={() => {
-            setViewMode('2d');
-            setHasEntered(true);
-          }}
-        />
-      )}
-
-      {/* 2. Minimal Gallery Navigation Header */}
+      {/* 1. Minimal Gallery Navigation Header */}
       <GalleryNav
-        viewMode={viewMode}
-        onToggleViewMode={() => setViewMode((prev) => (prev === '3d' ? '2d' : '3d'))}
         activeSection={activeSection}
         onSelectSection={(sec: 'collection' | 'stories' | 'making' | 'about') => {
           setActiveSection(sec);
-          if (sec === 'collection' && !hasEntered) setHasEntered(true);
         }}
         selectedCategory={selectedCategory}
         onSelectCategory={(cat: CraftCategory) => setSelectedCategory(cat)}
-        onResetCamera={() => handleSelectObject(null)}
-        hasIntroDismissed={hasEntered}
-        onReturnToIntro={() => {
-          handleSelectObject(null);
-          setHasEntered(false);
-        }}
         totalCount={products.length}
       />
 
-      {/* 3. Main Exhibition Area: 3D Spatial Canvas OR 2D Curatorial Catalog */}
+      {/* 2. Main Exhibition Area: 2D Curatorial Catalog */}
       <div className="gallery-viewport">
-        {viewMode === '3d' ? (
-          <GalleryCanvas
-            selectedObject={selectedObject}
-            onSelectObject={handleSelectObject}
-            filteredCategory={selectedCategory}
-            products={products}
-          />
-        ) : (
-          <TwoDArchiveView
-            selectedCategory={selectedCategory}
-            onSelectObject={(obj: CraftObject) => handleSelectObject(obj)}
-            onEnter3D={() => setViewMode('3d')}
-            products={products}
-          />
-        )}
-
-        {/* 3D Spatial Controls Hint on bottom left */}
-        {viewMode === '3d' && !selectedObject && hasEntered && (
-          <div className="spatial-hint" aria-hidden="true">
-            <span className="hint-bullet">✦</span>
-            <span>Drag to rotate scene · Scroll to zoom · Click an artifact or press 1–6</span>
-          </div>
-        )}
+        <TwoDArchiveView
+          selectedCategory={selectedCategory}
+          onSelectObject={(obj: CraftObject) => handleSelectObject(obj)}
+          products={products}
+        />
       </div>
 
-      {/* 4. Editorial Object Detail Panel (Accession Dossier) */}
+      {/* 3. Editorial Object Detail Panel (Accession Dossier) */}
       {selectedObject && (
         <ObjectDetailPanel
           object={selectedObject}
@@ -182,10 +140,10 @@ export default function Gallery() {
         />
       )}
 
-      {/* 5. Curatorial Bag / Cart Drawer */}
+      {/* 4. Curatorial Bag / Cart Drawer */}
       <CartDrawer />
 
-      {/* 6. Curatorial Section Modals */}
+      {/* 5. Curatorial Section Modals */}
       {activeSection === 'stories' && (
         <StoriesModal
           onClose={() => setActiveSection('collection')}

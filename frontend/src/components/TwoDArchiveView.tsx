@@ -4,14 +4,12 @@ import { useProducts } from '../data/productStore';
 interface TwoDArchiveViewProps {
   selectedCategory: CraftCategory;
   onSelectObject: (obj: CraftObject) => void;
-  onEnter3D: () => void;
   products?: CraftObject[];
 }
 
 export const TwoDArchiveView = ({
   selectedCategory,
   onSelectObject,
-  onEnter3D,
   products,
 }: TwoDArchiveViewProps) => {
   const { products: storeProducts } = useProducts();
@@ -26,18 +24,11 @@ export const TwoDArchiveView = ({
       <div className="container">
         {/* Editorial Heading */}
         <div className="archive-intro-header">
-          <div className="archive-badge">CURATORIAL CATALOG · 2D ARCHIVE</div>
+          <div className="archive-badge">CURATORIAL ARCHIVE · DIGITAL EXHIBITION</div>
           <h2 className="archive-main-title">Permanent Collection</h2>
           <p className="archive-subtext">
             Handcrafted Indian masterworks cataloged with full material provenance, artisan lineages, and verified acquisition availability.
           </p>
-
-          <button
-            onClick={onEnter3D}
-            className="btn btn-outline btn-enter-3d-banner"
-          >
-            <span>Experience in 3D Spatial Gallery →</span>
-          </button>
         </div>
 
         {/* Catalog Grid */}

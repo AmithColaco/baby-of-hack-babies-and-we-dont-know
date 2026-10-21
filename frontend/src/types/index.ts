@@ -42,11 +42,11 @@ export interface CraftObject {
   artisanBio: string;
   artisanQuote: string;
   directArtisanSharePercent: number;
-  position3D: [number, number, number];
+  position3D?: [number, number, number];
   rotation3D?: [number, number, number];
   scale3D?: [number, number, number];
-  modelType: 'painting' | 'pottery' | 'textile' | 'brass' | 'woodcraft' | 'jewellery';
-  colorPalette: string[];
+  modelType?: 'painting' | 'pottery' | 'textile' | 'brass' | 'woodcraft' | 'jewellery';
+  colorPalette?: string[];
 }
 
 export interface CartItem {

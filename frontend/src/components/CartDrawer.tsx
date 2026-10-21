@@ -86,7 +86,7 @@ export const CartDrawer = () => {
             <div className="cart__empty-icon" style={{ fontSize: '2.5rem', color: 'var(--terracotta)' }}>✦</div>
             <h4 className="cart__empty-title">Your Curatorial Bag is Empty</h4>
             <p className="cart__empty-desc">
-              Explore the 3D exhibition space and select any handcrafted masterwork to inspect its provenance and reserve for acquisition.
+              Explore the digital exhibition space and select any handcrafted masterwork to inspect its provenance and reserve for acquisition.
             </p>
             <Link
               to="/shop"

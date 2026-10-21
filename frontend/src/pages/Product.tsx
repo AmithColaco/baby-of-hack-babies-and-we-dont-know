@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import { useProducts, useWishlist, listingToCraftObject } from '../data/productStore';
 import { getListingById } from '../api/listings';
 import { useCart } from '../contexts/CartContext';
-import { ProductViewer3D } from '../components/ProductViewer3D';
 import type { CraftObject } from '../types';
 
 export default function Product() {
@@ -124,8 +123,8 @@ export default function Product() {
             <span className="sep">/</span>
             <span className="accession">{product.accessionNo}</span>
             <span className="sep">/</span>
-            <Link to={`/gallery?focus=${product.id}`} className="storyboard-3d-crumb" title="Inspect in 3D Gallery">
-              ✦ View in 3D
+            <Link to={`/gallery?focus=${product.id}`} className="storyboard-3d-crumb" title="Inspect in Curatorial Gallery">
+              ✦ View in Gallery
             </Link>
           </div>
 
@@ -172,7 +171,17 @@ export default function Product() {
             <div className="storyboard-scene scene-object">
               <div className="scene-object__grid">
                 <div className="scene-object__media">
-                  <ProductViewer3D product={product} />
+                  <div className="product-image-frame" style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-light, #E8DFD3)', background: '#F8F5EE', boxShadow: '0 8px 30px rgba(0,0,0,0.06)' }}>
+                    <img
+                      src={product.image}
+                      alt={product.title}
+                      className="product-masterwork-img"
+                      style={{ width: '100%', height: '460px', objectFit: 'contain', padding: '1.5rem', display: 'block' }}
+                    />
+                    <div className="media-provenance-tag" style={{ position: 'absolute', bottom: '12px', left: '12px', background: 'rgba(28,28,26,0.75)', color: '#FDFBF7', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', letterSpacing: '0.08em' }}>
+                      <span>PLATE {product.romanNumeral} · {product.accessionNo}</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="scene-object__narrative">
@@ -266,9 +275,9 @@ export default function Product() {
                     <Link
                       to={`/gallery?focus=${product.id}`}
                       className="scene-3d-btn"
-                      title="Inspect this artifact in the 3D Exhibition Pavilion"
+                      title="Inspect this artifact in the Curatorial Gallery"
                     >
-                      <span>✦ View in 3D Pavilion</span>
+                      <span>✦ View in Curatorial Gallery</span>
                     </Link>
                   </div>
                 </div>
@@ -515,9 +524,9 @@ export default function Product() {
                     <Link
                       to={`/gallery?focus=${product.id}`}
                       className="acquire-3d-btn"
-                      title="Inspect piece in 3D Exhibition space"
+                      title="Inspect piece in Curatorial Gallery"
                     >
-                      <span>✦ Inspect in 3D Gallery</span>
+                      <span>✦ Curatorial Exhibition Dossier</span>
                     </Link>
                   </div>
 

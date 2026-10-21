@@ -20,7 +20,7 @@ export function HeroSection() {
 
             <p className="hero-editorial__lead">
               Discover and collect authentic handcrafted treasures directly from India’s master artisans. 
-              Learn how each object is born from fire, mineral, and generational wisdom—with over 85% of every acquisition flowing directly to the makers preserving our living heritage.
+              Learn how each object is born from fire, mineral, and generational wisdom—with 100% of every maker base acquisition flowing directly to the makers preserving our living heritage.
             </p>
 
             <div className="hero-editorial__cta-group">
@@ -30,7 +30,7 @@ export function HeroSection() {
               </Link>
 
               <Link to="/gallery" className="hero-btn hero-btn--secondary" id="hero-spatial-gallery">
-                <span>Enter 3D Spatial Gallery</span>
+                <span>Enter Digital Exhibition</span>
               </Link>
 
               <Link to="/login" className="hero-btn hero-btn--ghost" id="hero-sell-craft">
@@ -40,8 +40,8 @@ export function HeroSection() {
 
             <div className="hero-editorial__metrics">
               <div className="metric-item">
-                <span className="metric-val">85%+</span>
-                <span className="metric-lbl">Direct Artisan Payout</span>
+                <span className="metric-val">100%</span>
+                <span className="metric-lbl">Direct Maker Rate</span>
               </div>
               <div className="metric-divider" />
               <div className="metric-item">

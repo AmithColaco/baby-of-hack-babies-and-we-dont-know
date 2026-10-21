@@ -83,7 +83,7 @@ export function SiteHeader() {
           {/* Desktop Nav */}
           <nav className="site-header__nav" aria-label="Main Navigation">
             <NavLink to="/shop" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>Collection</NavLink>
-            <NavLink to="/gallery" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>3D Gallery</NavLink>
+            <NavLink to="/gallery" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>Gallery</NavLink>
             <Link to="/#artisans" className="site-nav-link">Artisans</Link>
             <Link to="/#process" className="site-nav-link">Craft Journey</Link>
             {isArtisan && (
@@ -201,7 +201,7 @@ export function SiteHeader() {
             <nav className="mobile-drawer__nav">
               <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home Archive</Link>
               <Link to="/shop" onClick={() => setMobileMenuOpen(false)}>Curated Collection</Link>
-              <Link to="/gallery" onClick={() => setMobileMenuOpen(false)}>3D Spatial Exhibition</Link>
+              <Link to="/gallery" onClick={() => setMobileMenuOpen(false)}>Curatorial Exhibition</Link>
               <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>My Wishlist {totalWishlist > 0 && `(${totalWishlist})`}</Link>
               {isLoggedIn && isArtisan && <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>Artisan Dashboard</Link>}
               {isLoggedIn && <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>Settings</Link>}
@@ -212,7 +212,7 @@ export function SiteHeader() {
               <Link to="/cart" onClick={() => setMobileMenuOpen(false)}>Shopping Bag ({totalItems})</Link>
             </nav>
             <div className="mobile-drawer__bottom">
-              <p>85%+ Direct Payout Guaranteed to Indigenous Makers.</p>
+              <p>100% Direct Maker Rate Guaranteed to Indigenous Artisans.</p>
               <span>Authenticity & Provenance Seal Included</span>
             </div>
           </div>

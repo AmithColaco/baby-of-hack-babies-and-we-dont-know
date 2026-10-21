@@ -28,8 +28,8 @@ export function SiteFooter() {
               We operate on an uncompromising standard of radical compensation, verifiable provenance, and reverence for traditional craftsmanship.
             </p>
             <div className="site-footer__payout-badge">
-              <span className="payout-num">85%+</span>
-              <span className="payout-desc">Direct revenue distributed into master artisan atelier accounts.</span>
+              <span className="payout-num">100%</span>
+              <span className="payout-desc">Direct maker rate distributed into master artisan atelier accounts.</span>
             </div>
           </div>
 
@@ -51,7 +51,7 @@ export function SiteFooter() {
             <h4 className="site-footer__heading">Curatorial Archive</h4>
             <ul className="site-footer__links">
               <li><Link to="/shop">Complete Collection</Link></li>
-              <li><Link to="/gallery">3D Spatial Exhibition</Link></li>
+              <li><Link to="/gallery">Digital Exhibition Gallery</Link></li>
               <li><Link to="/#artisans">Master Artisan Roster</Link></li>
               <li><Link to="/#process">Material Alchemy & Stages</Link></li>
               <li><Link to="/dashboard">Artisan Atelier Portal</Link></li>

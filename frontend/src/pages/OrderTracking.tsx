@@ -193,7 +193,7 @@ export default function OrderTracking() {
                 Continue to Storefront
               </Link>
               <Link to="/gallery" className="hero-btn hero-btn--secondary" style={{ flex: 1, textAlign: 'center', textDecoration: 'none' }}>
-                Visit 3D Pavilion
+                Visit Exhibition Gallery
               </Link>
             </div>
           </div>

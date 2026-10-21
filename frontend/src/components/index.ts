@@ -5,7 +5,6 @@ export { default as CraftBadge } from './CraftBadge';
 export { default as StoryCard } from './StoryCard';
 export { default as ProductCard } from './ProductCard';
 export { default as LoadingSpinner } from './LoadingSpinner';
-export { HeroIntro } from './HeroIntro';
 export { GalleryNav } from './GalleryNav';
 export { ObjectDetailPanel } from './ObjectDetailPanel';
 export { CartDrawer } from './CartDrawer';

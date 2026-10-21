@@ -6,26 +6,18 @@ import { useAuth } from '../contexts/AuthContext';
 import type { CraftCategory } from '../types';
 
 interface GalleryNavProps {
-  viewMode: '3d' | '2d';
-  onToggleViewMode: () => void;
   activeSection: 'collection' | 'stories' | 'making' | 'about';
   onSelectSection: (section: 'collection' | 'stories' | 'making' | 'about') => void;
   selectedCategory: CraftCategory;
   onSelectCategory: (category: CraftCategory) => void;
-  onResetCamera?: () => void;
-  hasIntroDismissed?: boolean;
-  onReturnToIntro?: () => void;
   totalCount?: number;
 }
 
 export const GalleryNav = ({
-  viewMode,
-  onToggleViewMode,
   activeSection,
   onSelectSection,
   selectedCategory,
   onSelectCategory,
-  onResetCamera,
   totalCount,
 }: GalleryNavProps) => {
   const { totalItems, setIsCartOpen } = useCart();
@@ -70,10 +62,7 @@ export const GalleryNav = ({
             ← Catalogue
           </Link>
           <button
-            onClick={() => {
-              onSelectSection('collection');
-              if (onResetCamera) onResetCamera();
-            }}
+            onClick={() => onSelectSection('collection')}
             className="brand-link"
             aria-label="Kaarigar Home"
           >
@@ -85,10 +74,7 @@ export const GalleryNav = ({
         {/* Minimal Curatorial Navigation */}
         <nav className="gallery-header__nav" aria-label="Curatorial sections">
           <button
-            onClick={() => {
-              onSelectSection('collection');
-              if (onResetCamera) onResetCamera();
-            }}
+            onClick={() => onSelectSection('collection')}
             className={`nav-link ${activeSection === 'collection' ? 'nav-link--active' : ''}`}
           >
             COLLECTION
@@ -110,14 +96,6 @@ export const GalleryNav = ({
             className={`nav-link ${activeSection === 'about' ? 'nav-link--active' : ''}`}
           >
             ABOUT
-          </button>
-          <button
-            onClick={onToggleViewMode}
-            className="nav-link"
-            style={{ opacity: 0.75 }}
-            title={viewMode === '3d' ? 'Switch to 2D Curatorial Catalog' : 'Enter 3D Spatial Gallery'}
-          >
-            {viewMode === '3d' ? '2D CATALOG' : '3D GALLERY'}
           </button>
         </nav>
 
