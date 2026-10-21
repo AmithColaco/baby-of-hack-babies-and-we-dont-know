@@ -220,41 +220,67 @@ export default function CreateListing() {
 
     let backendId: string | null = null;
 
-    try {
-      // 1. Create on backend
-      const created = await createListing({
-        title: title.trim(),
-        description: summary.trim(),
-        craft_type: craftTradition.trim(),
-        materials: materialsStr.trim(),
-        technique: technique.trim(),
-        dimensions: dimensions.trim(),
-        hours_to_make: Number(hoursToMake) || 8,
-        price_inr: Number(price) || 2500,
-        stock: Number(stock) || 1,
-      });
-      backendId = created.id;
-
-      // 2. Upload images if attached
-      if (selectedFiles.length > 0) {
-        try {
-          await uploadListingImages(backendId, selectedFiles);
-        } catch (imgErr) {
-          console.warn('Image upload error:', imgErr);
-        }
-      }
-
-      // 3. Publish on backend
+    if (isEditing && id) {
       try {
-        await publishListing(backendId);
-      } catch (pubErr) {
-        console.warn('Publish error:', pubErr);
+        await updateListing(id, {
+          title: title.trim(),
+          description: summary.trim(),
+          craft_type: craftTradition.trim(),
+          materials: materialsStr.trim(),
+          technique: technique.trim(),
+          dimensions: dimensions.trim(),
+          hours_to_make: Number(hoursToMake) || 8,
+          price_inr: Number(price) || 2500,
+          stock: Number(stock) || 1,
+        });
+
+        if (selectedFiles.length > 0) {
+          try {
+            await uploadListingImages(id, selectedFiles);
+          } catch (imgErr) {
+            console.warn('Image upload error on update:', imgErr);
+          }
+        }
+      } catch (backendErr) {
+        console.warn('Backend update failed, using local update:', backendErr);
       }
-    } catch (backendErr) {
-      console.warn('Backend listing creation fallback to local store:', backendErr);
+    } else {
+      try {
+        // 1. Create on backend
+        const created = await createListing({
+          title: title.trim(),
+          description: summary.trim(),
+          craft_type: craftTradition.trim(),
+          materials: materialsStr.trim(),
+          technique: technique.trim(),
+          dimensions: dimensions.trim(),
+          hours_to_make: Number(hoursToMake) || 8,
+          price_inr: Number(price) || 2500,
+          stock: Number(stock) || 1,
+        });
+        backendId = created.id;
+
+        // 2. Upload images if attached
+        if (selectedFiles.length > 0) {
+          try {
+            await uploadListingImages(backendId, selectedFiles);
+          } catch (imgErr) {
+            console.warn('Image upload error:', imgErr);
+          }
+        }
+
+        // 3. Publish on backend
+        try {
+          await publishListing(backendId);
+        } catch (pubErr) {
+          console.warn('Publish error:', pubErr);
+        }
+      } catch (backendErr) {
+        console.warn('Backend listing creation fallback to local store:', backendErr);
+      }
     }
 
-    const productId = backendId || (isEditing && id ? id : `craft-${Date.now().toString(36)}`);
+    const productId = isEditing && id ? id : (backendId || `craft-${Date.now().toString(36)}`);
     const accessionNo = existingProduct?.accessionNo || `KH-2026-${Math.floor(Math.random() * 900 + 100)}`;
 
     const newCraftObject: CraftObject = {
@@ -296,21 +322,6 @@ export default function CreateListing() {
     };
 
     if (isEditing && id) {
-      try {
-        await updateListing(id, {
-          title: title.trim(),
-          description: summary.trim(),
-          craft_type: craftTradition.trim(),
-          materials: materialsStr.trim(),
-          technique: technique.trim(),
-          dimensions: dimensions.trim(),
-          hours_to_make: Number(hoursToMake) || 8,
-          price_inr: Number(price) || 2500,
-          stock: Number(stock) || 1,
-        });
-      } catch (e) {
-        console.warn('Backend update failed:', e);
-      }
       updateProduct(id, newCraftObject);
     } else {
       addProduct(newCraftObject);

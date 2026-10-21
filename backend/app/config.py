@@ -1,13 +1,14 @@
-"""KalaHaat – application configuration (pydantic-settings)."""
-
+import os
 from pydantic_settings import BaseSettings
+
+_DEFAULT_DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "kalahaat.db"))
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables / .env file."""
 
     # Database – defaults to SQLite for instant local demo
-    DATABASE_URL: str = "sqlite:///./kalahaat.db"
+    DATABASE_URL: str = f"sqlite:///{_DEFAULT_DB_PATH}"
 
     # Auth
     SECRET_KEY: str = "change-me-in-production"

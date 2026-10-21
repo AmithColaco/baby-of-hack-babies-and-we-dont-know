@@ -62,6 +62,23 @@ def get_current_user(
     return user
 
 
+def get_current_user_optional(
+    creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """FastAPI dependency – returns authenticated User if Bearer token present & valid, else None."""
+    if creds is None or not creds.credentials:
+        return None
+    try:
+        payload = decode_token(creds.credentials)
+        user_id: str | None = payload.get("sub")
+        if user_id:
+            return db.get(User, user_id)
+    except Exception:
+        return None
+    return None
+
+
 def require_role(*roles: str):
     """Return a dependency that checks the current user has one of the given roles."""
 

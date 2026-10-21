@@ -64,7 +64,7 @@ export default function Onboarding() {
     setLoading(true);
 
     try {
-      await loginWithOtp(fullPhone, cleanOtp);
+      const loggedUser = await loginWithOtp(fullPhone, cleanOtp);
 
       if (mode === 'artisan-signup') {
         await updateProfileOnBackend({
@@ -76,6 +76,9 @@ export default function Onboarding() {
         });
         navigate('/dashboard');
       } else if (mode === 'artisan-login') {
+        if (loggedUser.role !== 'artisan') {
+          await updateProfileOnBackend({ role: 'artisan' });
+        }
         navigate('/dashboard');
       } else if (mode === 'collector-signup') {
         await updateProfileOnBackend({

@@ -110,6 +110,7 @@ class ListingUpdate(BaseModel):
     hours_to_make: Optional[float] = None
     price_inr: Optional[float] = None
     stock: Optional[int] = None
+    status: Optional[str] = None
 
     # story fields (optional – updated alongside)
     story_origin_text: Optional[str] = None

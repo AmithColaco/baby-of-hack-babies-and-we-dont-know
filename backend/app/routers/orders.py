@@ -9,11 +9,12 @@ Endpoints:
 """
 
 import json
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.auth import get_current_user
+from app.auth import get_current_user, get_current_user_optional
 from app.database import get_db
 from app.models import (
     Listing,
@@ -78,22 +79,40 @@ def _order_to_out(order: Order) -> OrderOut:
 @router.post("", response_model=OrderOut, status_code=201, summary="Checkout – create order (atomic)")
 def checkout(
     body: CheckoutRequest,
-    user: User = Depends(get_current_user),
+    user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
     """Atomic checkout:
     1. Check idempotency key – return existing order if duplicate.
-    2. Lock and validate stock for each item.
-    3. Create order + items in one transaction.
-    4. Process mock payment.
-    5. Commit or rollback.
+    2. Resolve buyer (logged-in user or auto-provisioned guest).
+    3. Lock and validate stock for each item.
+    4. Create order + items in one transaction.
+    5. Process mock payment.
+    6. Commit or rollback.
     """
     # 1. Idempotency – return existing order if key already used
     existing = db.query(Order).filter(Order.idempotency_key == body.idempotency_key).first()
     if existing:
         return _order_to_out(existing)
 
-    # 2. Lock listings and validate stock
+    # 2. Resolve buyer
+    if user is None:
+        guest_phone = body.address.get("phone") if isinstance(body.address, dict) else None
+        if not guest_phone:
+            guest_phone = f"+91{uuid.uuid4().int % 10000000000:010d}"
+        user = db.query(User).filter(User.phone == guest_phone).first()
+        if user is None:
+            guest_name = body.address.get("full_name") if isinstance(body.address, dict) else "Guest Patron"
+            user = User(
+                phone=guest_phone,
+                role=UserRole.buyer,
+                name=guest_name or "Guest Patron",
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+    # 3. Lock listings and validate stock
     total = 0.0
     order_items: list[dict] = []
 
@@ -260,7 +279,7 @@ def list_artisan_orders(
 @router.get("/{order_id}", response_model=OrderOut, summary="Get order detail")
 def get_order(
     order_id: str,
-    user: User = Depends(get_current_user),
+    user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
     order = (
@@ -275,12 +294,13 @@ def get_order(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    # Buyer can see their own order; artisan can see orders containing their listings
-    if order.buyer_id != user.id:
-        artisan_listing_ids = {l.id for l in user.listings} if user.listings else set()
-        order_listing_ids = {item.listing_id for item in order.items}
-        if not artisan_listing_ids & order_listing_ids and user.role not in ("admin",):
-            raise HTTPException(status_code=403, detail="Not your order")
+    # If authenticated, enforce ownership unless admin or artisan who made the piece
+    if user is not None and user.role not in ("admin",):
+        if order.buyer_id != user.id:
+            artisan_listing_ids = {l.id for l in user.listings} if user.listings else set()
+            order_listing_ids = {item.listing_id for item in order.items}
+            if not artisan_listing_ids & order_listing_ids:
+                raise HTTPException(status_code=403, detail="Not your order")
 
     return _order_to_out(order)
 

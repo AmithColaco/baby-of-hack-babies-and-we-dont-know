@@ -1,5 +1,4 @@
-"""KalaHaat – End-to-end API test suite."""
-
+import uuid
 import pytest
 from fastapi.testclient import TestClient
 from main import app
@@ -271,3 +270,103 @@ def test_checkout_order_flow_and_inventory_guard():
         # Invalid transition: CONFIRMED -> DELIVERED (skipping SHIPPED)
         bad_res = client.patch(f"/orders/{order_id}/status", json={"status": "DELIVERED"}, headers=art_headers)
         assert bad_res.status_code == 400
+
+
+def test_guest_checkout_and_unauthenticated_order_tracking():
+    """Verify that unauthenticated guest patrons can place orders and track them."""
+    # Find a published listing with stock
+    listings = client.get("/listings?status=PUBLISHED").json()
+    assert len(listings) > 0
+    target = listings[0]
+
+    guest_payload = {
+        "items": [{"listing_id": target["id"], "qty": 1}],
+        "address": {
+            "full_name": "Radha Iyengar",
+            "phone": "+919123456789",
+            "address_line": "12 Temple Street",
+            "city": "Mangalore",
+            "state": "Karnataka",
+            "pincode": "575001",
+        },
+        "payment_method": "mock_upi",
+        "idempotency_key": f"guest-test-{uuid.uuid4().hex}",
+    }
+
+    res = client.post("/orders", json=guest_payload)
+    assert res.status_code == 201
+    order = res.json()
+    order_id = order["id"]
+    assert order["payment_status"] == "SUCCESS"
+
+    # Guest tracking: unauthenticated GET /orders/{order_id} must succeed
+    track_res = client.get(f"/orders/{order_id}")
+    assert track_res.status_code == 200
+    assert track_res.json()["id"] == order_id
+
+
+def test_artisan_listings_filtering_and_draft_visibility():
+    """Verify that artisan queries return all listings (including drafts) without hiding them."""
+    # 1. Login as an artisan
+    art_phone = "+919845012345"
+    token_res = client.post("/auth/otp/verify", json={"phone": art_phone, "otp": "123456"}).json()
+    token = token_res["access_token"]
+    art_id = token_res["user_id"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 2. Create a DRAFT listing
+    draft_payload = {
+        "title": "Unfinished Test Craft Item",
+        "description": "Work in progress",
+        "craft_type": "Kasuti",
+        "materials": "Cotton",
+        "technique": "Handloom",
+        "dimensions": "50cm x 50cm",
+        "hours_to_make": 12.0,
+        "price_inr": 1500.0,
+        "stock": 2,
+    }
+    draft_res = client.post("/listings", json=draft_payload, headers=headers)
+    assert draft_res.status_code == 201
+    draft_listing = draft_res.json()
+    assert draft_listing["status"] == "DRAFT"
+
+    # 3. Public catalogue browse (without artisan_id) must NOT show the draft
+    public_res = client.get("/listings?status=PUBLISHED").json()
+    assert not any(l["id"] == draft_listing["id"] for l in public_res)
+
+    # 4. Artisan dashboard query (with artisan_id) MUST return the draft
+    artisan_all_res = client.get(f"/listings?artisan_id={art_id}").json()
+    assert any(l["id"] == draft_listing["id"] for l in artisan_all_res)
+
+
+def test_validation_and_error_edge_cases():
+    """Verify system resilience across negative paths and invalid inputs."""
+    # Invalid OTP formats
+    res = client.post("/auth/otp/verify", json={"phone": "+919845012345", "otp": "123"})
+    assert res.status_code in (400, 422)
+
+    res = client.post("/auth/otp/verify", json={"phone": "+919845012345", "otp": "abcdef"})
+    assert res.status_code in (400, 422)
+
+    # Non-existent listing 404
+    res = client.get("/listings/non-existent-listing-uuid")
+    assert res.status_code == 404
+
+    # Non-existent order 404
+    res = client.get("/orders/non-existent-order-uuid")
+    assert res.status_code == 404
+
+    # Payment card decline failure path
+    listings = client.get("/listings?status=PUBLISHED").json()
+    assert len(listings) > 0
+    target = listings[0]
+    decline_payload = {
+        "items": [{"listing_id": target["id"], "qty": 1}],
+        "address": {"card_number": "4000000000000002", "phone": "+919999888877"},
+        "payment_method": "mock_card",
+        "idempotency_key": f"decline-test-{uuid.uuid4().hex}",
+    }
+    res = client.post("/orders", json=decline_payload)
+    assert res.status_code == 402
+

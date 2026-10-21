@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useProducts, useWishlist } from '../data/productStore';
+import { useProducts, useWishlist, listingToCraftObject } from '../data/productStore';
+import { getListingById } from '../api/listings';
 import { useCart } from '../contexts/CartContext';
 import { ProductViewer3D } from '../components/ProductViewer3D';
 import type { CraftObject } from '../types';
@@ -15,9 +16,32 @@ export default function Product() {
   const [viewMode, setViewMode] = useState<'story' | 'specs'>('story');
   const [quantity, setQuantity] = useState(1);
   const [addedToast, setAddedToast] = useState(false);
+  const [asyncProduct, setAsyncProduct] = useState<CraftObject | null>(null);
+  const [isLoadingAsync, setIsLoadingAsync] = useState(false);
 
-  // Find product from store
-  const product: CraftObject | undefined = products.find((p) => p.id === id) || products[0];
+  // Find product from store or async backend
+  const localProduct = products.find((p) => p.id === id);
+  const product: CraftObject | undefined = localProduct || asyncProduct || (id ? undefined : products[0]);
+
+  useEffect(() => {
+    if (id && !localProduct) {
+      let isMounted = true;
+      setIsLoadingAsync(true);
+      getListingById(id)
+        .then((record) => {
+          if (isMounted) setAsyncProduct(listingToCraftObject(record));
+        })
+        .catch(() => {
+          // not found on backend either
+        })
+        .finally(() => {
+          if (isMounted) setIsLoadingAsync(false);
+        });
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [id, localProduct]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -38,6 +62,17 @@ export default function Product() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [viewMode]);
+
+  if (isLoadingAsync) {
+    return (
+      <main className="storyboard-page">
+        <div className="container" style={{ padding: '6rem 1rem', textAlign: 'center' }}>
+          <h2>Retrieving Craft Piece Archive...</h2>
+          <p style={{ color: 'var(--graphite)', marginTop: '0.5rem' }}>Loading authentic provenance documentation...</p>
+        </div>
+      </main>
+    );
+  }
 
   if (!product) {
     return (

@@ -119,7 +119,7 @@ def list_listings(
     q: Optional[str] = Query(None, description="Search title/description"),
     min_price: Optional[float] = Query(None, alias="min", ge=0),
     max_price: Optional[float] = Query(None, alias="max", ge=0),
-    status_filter: Optional[str] = Query("PUBLISHED", alias="status"),
+    status_filter: Optional[str] = Query(None, alias="status"),
     artisan_id: Optional[str] = Query(None, description="Filter by artisan"),
     limit: int = Query(50, le=200),
     offset: int = Query(0, ge=0),
@@ -134,8 +134,14 @@ def list_listings(
         )
     )
 
-    if status_filter:
+    # Status filtering:
+    # If explicitly passed, filter by it (unless 'ALL' or empty)
+    if status_filter and status_filter.upper() != "ALL":
         query = query.filter(Listing.status == status_filter)
+    elif not status_filter and not artisan_id:
+        # Default public catalogue browse shows PUBLISHED listings only
+        query = query.filter(Listing.status == ListingStatus.PUBLISHED)
+    # When artisan_id is provided without an explicit status, return all listings for that artisan
     if craft:
         query = query.filter(Listing.craft_type == craft)
     if artisan_id:

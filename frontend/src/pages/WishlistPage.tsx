@@ -1,4 +1,4 @@
-﻿import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useWishlist, useProducts } from '../data/productStore';
 import { useCart } from '../contexts/CartContext';
 
@@ -6,7 +6,6 @@ export default function WishlistPage() {
   const { wishlist, toggleWishlist } = useWishlist();
   const { products } = useProducts();
   const { addToCart } = useCart();
-  const navigate = useNavigate();
 
   const wishlistedItems = products.filter((p) => wishlist.includes(p.id));
   // Price with platform fee: artisan price + 5%
@@ -84,7 +83,7 @@ export default function WishlistPage() {
                         <Link to={`/shop/${prod.id}`} className="card-btn-story">
                           <span>Discover Story</span><span className="arrow">→</span>
                         </Link>
-                        <button type="button" className="card-btn-cart" onClick={() => { addToCart(prod); navigate('/shop'); }}>
+                        <button type="button" className="card-btn-cart" onClick={() => addToCart(prod)}>
                           Add to Bag
                         </button>
                       </div>
