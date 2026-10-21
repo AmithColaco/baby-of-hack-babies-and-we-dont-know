@@ -260,9 +260,9 @@ export default function Dashboard() {
                       </div>
 
                       <div className="piece-row__financials">
-                        <span className="piece-price">₹{item.price.toLocaleString('en-IN')}</span>
+                        <span className="piece-price">₹{item.price.toLocaleString('en-IN')} Maker Base</span>
                         <span className="piece-payout-rate">
-                          {item.directArtisanSharePercent || 88}% Direct (₹{Math.round(item.price * (item.directArtisanSharePercent || 88) / 100).toLocaleString('en-IN')})
+                          100% Direct Payout (Client rate: ₹{Math.round(item.price * 1.05).toLocaleString('en-IN')})
                         </span>
                         <span className="piece-stock">Stock: {item.availability || 'Available'}</span>
                       </div>

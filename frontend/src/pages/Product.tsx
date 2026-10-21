@@ -303,7 +303,7 @@ export default function Product() {
 
                   <div className="artisan-metrics-row">
                     <div className="a-metric">
-                      <span className="a-metric__num">{product.directArtisanSharePercent || 88}%</span>
+                      <span className="a-metric__num">100%</span>
                       <span className="a-metric__lbl">Direct Financial Return</span>
                     </div>
                     <div className="a-metric">

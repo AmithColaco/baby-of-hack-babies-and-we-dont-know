@@ -312,7 +312,7 @@ export default function Catalogue() {
                         {isSaved ? '♥' : '♡'}
                       </button>
                       <div className="craft-payout-pill">
-                        <span>{prod.directArtisanSharePercent || 85}% Direct Payout</span>
+                        <span>100% Direct to Maker</span>
                       </div>
                     </div>
 

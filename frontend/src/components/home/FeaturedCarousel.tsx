@@ -160,7 +160,7 @@ export function FeaturedCarousel() {
                 </div>
                 <div className="spec-item">
                   <span className="spec-label">Direct Payout</span>
-                  <span className="spec-val highlight-green">{currentProduct.directArtisanSharePercent || 85}% Direct to Maker</span>
+                  <span className="spec-val highlight-green">100% Direct to Maker</span>
                 </div>
               </div>
             </div>

@@ -38,7 +38,7 @@ export default function CreateListing() {
   const [craftTradition, setCraftTradition] = useState(existingProduct?.craftTradition || 'Kasuti');
   const [category, setCategory] = useState<CraftCategory>((existingProduct?.category as CraftCategory) || 'textiles');
   const [price, setPrice] = useState<number>(existingProduct?.price || 3800);
-  const [directShare, setDirectShare] = useState<number>(existingProduct?.directArtisanSharePercent || 88);
+  const [directShare, setDirectShare] = useState<number>(existingProduct?.directArtisanSharePercent || 100);
   const [region] = useState(existingProduct?.region || profile.region || 'Ankola');
   const [state] = useState(existingProduct?.state || profile.state || 'Karnataka');
   const [atelier] = useState(existingProduct?.atelier || profile.atelier || 'Ankola Kasuti Mahila Kendra');
@@ -670,7 +670,7 @@ export default function CreateListing() {
 
                   <div className="form-grid-2" style={{ marginTop: '14px' }}>
                     <div className="form-group">
-                      <label htmlFor="craft-price">Final Selling Price (₹ INR) *</label>
+                      <label htmlFor="craft-price">Artisan Selling Price (₹ INR) *</label>
                       <input
                         id="craft-price"
                         type="number"
@@ -680,6 +680,9 @@ export default function CreateListing() {
                         onChange={(e) => setPrice(Number(e.target.value))}
                         className="form-input"
                       />
+                      <span style={{ fontSize: '0.78rem', color: '#666', marginTop: '4px', display: 'block' }}>
+                        Client rate: ₹{Math.round(price * 1.05).toLocaleString('en-IN')} (includes 5% platform fee: ₹{Math.round(price * 0.05).toLocaleString('en-IN')})
+                      </span>
                     </div>
                     <div className="form-group">
                       <label htmlFor="direct-share">Artisan Direct Share (%)</label>
@@ -692,6 +695,9 @@ export default function CreateListing() {
                         onChange={(e) => setDirectShare(Number(e.target.value))}
                         className="form-input"
                       />
+                      <span style={{ fontSize: '0.78rem', color: '#666', marginTop: '4px', display: 'block' }}>
+                        You receive 100% of your listed selling price (₹{price.toLocaleString('en-IN')}).
+                      </span>
                     </div>
                   </div>
                 </fieldset>

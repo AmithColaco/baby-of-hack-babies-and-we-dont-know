@@ -90,8 +90,6 @@ export const ObjectDetailPanel = ({
     setTimeout(() => setAddedAnimation(false), 1800);
   };
 
-  const directShareAmount = Math.round((object.price * object.directArtisanSharePercent) / 100);
-
   return (
     <aside
       className="object-detail-panel"
@@ -164,8 +162,11 @@ export const ObjectDetailPanel = ({
             <div>
               <span className="panel__price-label">Curatorial Acquisition Price</span>
               <div className="panel__price-value">
-                ₹ {object.price.toLocaleString('en-IN')}
+                ₹ {Math.round(object.price * 1.05).toLocaleString('en-IN')}
               </div>
+              <span style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginTop: '2px' }}>
+                Maker rate: ₹{object.price.toLocaleString('en-IN')} + 5% platform fee: ₹{Math.round(object.price * 0.05).toLocaleString('en-IN')}
+              </span>
             </div>
 
             <span className={`panel__availability-pill ${object.availability === 'Available' ? 'avail--in-stock' : 'avail--edition'}`}>
@@ -177,11 +178,11 @@ export const ObjectDetailPanel = ({
             <div className="panel__equity-bar">
               <div
                 className="panel__equity-fill"
-                style={{ width: `${object.directArtisanSharePercent}%` }}
+                style={{ width: '100%' }}
               />
             </div>
             <div className="panel__equity-text">
-              <strong>{object.directArtisanSharePercent}% (₹{directShareAmount.toLocaleString('en-IN')})</strong> proceeds transfer directly to {object.artisan} & the {object.atelier}.
+              <strong>100% of Maker Rate (₹{object.price.toLocaleString('en-IN')})</strong> transfers directly to {object.artisan} & the {object.atelier}.
             </div>
           </div>
         </div>
@@ -415,7 +416,7 @@ export const ObjectDetailPanel = ({
           {addedAnimation ? (
             <span>✓ Reserved for Acquisition</span>
           ) : (
-            <span>Acquire Masterwork · ₹ {object.price.toLocaleString('en-IN')}</span>
+            <span>Acquire Masterwork · ₹ {Math.round(object.price * 1.05).toLocaleString('en-IN')}</span>
           )}
         </button>
 

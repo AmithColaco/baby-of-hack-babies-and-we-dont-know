@@ -167,11 +167,11 @@ export default function OrderTracking() {
                 <span>₹{totalAmount.toLocaleString('en-IN')}</span>
               </div>
               <div className="equity-row highlight-row">
-                <span>Direct Artisan Guild Payout (88%)</span>
+                <span>Direct Artisan Guild Payout (100% of Maker Rate)</span>
                 <strong className="text-green">₹{directArtisanTotal.toLocaleString('en-IN')}</strong>
               </div>
               <div className="equity-row">
-                <span>Platform Archival & Escrow Fee</span>
+                <span>Platform Archival & Escrow Fee (5%)</span>
                 <span>₹{(totalAmount - directArtisanTotal).toLocaleString('en-IN')}</span>
               </div>
               <div className="equity-row">

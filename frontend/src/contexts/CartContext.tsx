@@ -84,7 +84,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     0
   );
   const directArtisanTotal = cart.reduce(
-    (sum, item) => sum + Math.round((item.object.price * item.object.directArtisanSharePercent) / 100) * item.quantity,
+    (sum, item) => sum + item.object.price * item.quantity,
     0
   );
 

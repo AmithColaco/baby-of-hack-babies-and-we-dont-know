@@ -4841,7 +4841,7 @@ legend.section-legend {
 
 .object-detail-panel {
   position: fixed !important;
-  top: 56px !important;
+  top: 96px !important;
   right: 0 !important;
   bottom: 0 !important;
   width: 500px !important;
@@ -6977,4 +6977,168 @@ img {
   align-items: center;
   gap: 0.4rem;
   line-height: 1.4;
+}
+
+/* ============================================================
+   22. ORDER SUMMARY & EQUITY DISBURSAL BREAKDOWN
+   ============================================================ */
+.order-summary-card {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 2.5rem;
+  background: #FFFFFF;
+  border: 1px solid var(--border-light, #E8DFD3);
+  border-radius: var(--r-md, 8px);
+  padding: 2.25rem;
+  margin-top: 2rem;
+  box-shadow: 0 4px 24px rgba(28, 28, 26, 0.05);
+}
+
+@media (max-width: 860px) {
+  .order-summary-card {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+    padding: 1.5rem;
+  }
+}
+
+.summary-heading {
+  font-family: var(--font-display, 'Cormorant Garamond', serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--charcoal, #1C1C1A);
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-light, #E8DFD3);
+  padding-bottom: 0.5rem;
+}
+
+.summary-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.summary-item-row {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px dashed var(--border-light, #E8DFD3);
+}
+
+.summary-item-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.summary-thumb {
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border-light, #E8DFD3);
+}
+
+.summary-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.summary-item-info .item-title {
+  font-family: var(--font-display, 'Cormorant Garamond', serif);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--charcoal, #1C1C1A);
+  margin: 0;
+}
+
+.summary-item-info .item-tradition {
+  font-size: 0.78rem;
+  color: var(--terracotta, #B34B2C);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.summary-item-info .item-maker {
+  font-size: 0.82rem;
+  color: var(--graphite, #5A5852);
+}
+
+.summary-item-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.summary-item-price .qty-tag {
+  font-size: 0.8rem;
+  color: var(--muted, #8A8880);
+}
+
+.summary-item-price .val-tag {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--charcoal, #1C1C1A);
+}
+
+.equity-breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+.equity-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.92rem;
+  color: var(--graphite, #5A5852);
+  padding: 0.4rem 0;
+}
+
+.equity-row.highlight-row {
+  background: rgba(46, 139, 87, 0.08);
+  border-left: 3px solid #2E8B57;
+  padding: 0.6rem 0.85rem;
+  border-radius: 0 4px 4px 0;
+  color: #1a4a2b;
+}
+
+.equity-row .text-green {
+  color: #2E8B57;
+  font-weight: 600;
+}
+
+.equity-row .text-free {
+  color: #2E8B57;
+  font-weight: 600;
+}
+
+.provenance-security-seal {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: rgba(179, 75, 44, 0.05);
+  border: 1px solid rgba(179, 75, 44, 0.2);
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  font-size: 0.82rem;
+  color: var(--charcoal, #1C1C1A);
+}
+
+.provenance-security-seal .seal-icon {
+  color: var(--terracotta, #B34B2C);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.provenance-security-seal p {
+  margin: 0.2rem 0 0;
+  color: var(--graphite, #5A5852);
+  font-size: 0.78rem;
 }
