@@ -54,6 +54,13 @@ export default function Product() {
   const isFavorited = isInWishlist(product.id);
   const relatedProducts = products.filter((p) => p.id !== product.id && (p.category === product.category || p.region === product.region)).slice(0, 3);
 
+  // Rate calculation: artist price + 5% platform fee
+  const clientPrice = Math.round(product.price * 1.05);
+  const platformFee = clientPrice - product.price;
+  const totalClientPrice = clientPrice * quantity;
+  const totalArtisanBase = product.price * quantity;
+  const totalFee = platformFee * quantity;
+
   const handleAddToCart = () => {
     addToCart(product, quantity);
     setAddedToast(true);
@@ -150,11 +157,14 @@ export default function Product() {
                   <div className="scene-price-block">
                     <div className="price-item">
                       <span className="price-label">Acquisition Value</span>
-                      <span className="price-val">₹{product.price.toLocaleString('en-IN')}</span>
+                      <span className="price-val">₹{clientPrice.toLocaleString('en-IN')}</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginTop: '2px' }}>
+                        ₹{product.price.toLocaleString('en-IN')} maker rate + 5% platform fee (₹{platformFee.toLocaleString('en-IN')})
+                      </span>
                     </div>
                     <div className="price-payout-guarantee">
-                      <span className="payout-pill">✓ {product.directArtisanSharePercent || 85}% Direct to Master Maker</span>
-                      <span className="payout-note">Zero middleman deductions</span>
+                      <span className="payout-pill">✓ 100% of Maker Rate (₹{product.price.toLocaleString('en-IN')}) to Artisan</span>
+                      <span className="payout-note">Zero middleman deductions · Transparent 5% platform fee</span>
                     </div>
                   </div>
 
@@ -173,7 +183,7 @@ export default function Product() {
                       className="scene-quick-cart"
                       onClick={handleAddToCart}
                     >
-                      Add to Bag (₹{product.price.toLocaleString('en-IN')})
+                      Add to Bag (₹{clientPrice.toLocaleString('en-IN')})
                     </button>
                   </div>
                 </div>
@@ -373,7 +383,10 @@ export default function Product() {
                   <span className="acquire-artisan">Crafted by {product.artisan}</span>
 
                   <div className="acquire-price-display">
-                    <span className="price-num">₹{product.price.toLocaleString('en-IN')}</span>
+                    <span className="price-num">₹{totalClientPrice.toLocaleString('en-IN')}</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--muted)', display: 'block', margin: '4px 0 8px' }}>
+                      Maker rate: ₹{totalArtisanBase.toLocaleString('en-IN')} + 5% platform fee: ₹{totalFee.toLocaleString('en-IN')}
+                    </span>
                     <span className="shipping-note">Complimentary insured archival transit across India</span>
                   </div>
 
@@ -403,7 +416,7 @@ export default function Product() {
                       className="acquire-cart-btn"
                       onClick={handleAddToCart}
                     >
-                      <span>Add to Shopping Bag (₹{(product.price * quantity).toLocaleString('en-IN')})</span>
+                      <span>Add to Shopping Bag (₹{totalClientPrice.toLocaleString('en-IN')})</span>
                     </button>
 
                     <button
@@ -418,7 +431,7 @@ export default function Product() {
                   <div className="provenance-seal-card">
                     <div className="seal-icon">✦</div>
                     <div className="seal-text">
-                      <strong>KAARIGAR Provenance Covenant:</strong> Over {product.directArtisanSharePercent || 88}% of your acquisition (₹{(Math.round(product.price * (product.directArtisanSharePercent || 88) / 100) * quantity).toLocaleString('en-IN')}) will be paid directly to {product.artisan}’s guild account.
+                      <strong>KAARIGAR Provenance Covenant:</strong> 100% of the maker price (₹{totalArtisanBase.toLocaleString('en-IN')}) is transferred directly to {product.artisan}’s guild account. The 5% platform fee (₹{totalFee.toLocaleString('en-IN')}) maintains archival documentation and digital preservation.
                     </div>
                   </div>
                 </div>
@@ -458,7 +471,12 @@ export default function Product() {
                 <span className="section-eyebrow">{product.craftTradition}</span>
                 <h1 className="specs-main-title">{product.title}</h1>
                 <span className="specs-artisan-line">By {product.artisan} · {product.atelier}</span>
-                <div className="specs-price-tag">₹{product.price.toLocaleString('en-IN')}</div>
+                <div className="specs-price-tag">
+                  ₹{clientPrice.toLocaleString('en-IN')}{' '}
+                  <span style={{ fontSize: '0.85rem', fontWeight: 'normal', color: 'var(--muted)' }}>
+                    (₹{product.price.toLocaleString('en-IN')} maker rate + 5% platform fee)
+                  </span>
+                </div>
 
                 <p className="specs-desc">{product.makingStory.summary}</p>
 
@@ -481,7 +499,11 @@ export default function Product() {
                   </div>
                   <div className="spec-row">
                     <span className="spec-label">Direct Artisan Payout</span>
-                    <span className="spec-value highlight-green">{product.directArtisanSharePercent || 88}%</span>
+                    <span className="spec-value highlight-green">100% of Maker Rate (₹{product.price.toLocaleString('en-IN')})</span>
+                  </div>
+                  <div className="spec-row">
+                    <span className="spec-label">Platform Maintenance Fee</span>
+                    <span className="spec-value">5% (₹{platformFee.toLocaleString('en-IN')})</span>
                   </div>
                 </div>
 

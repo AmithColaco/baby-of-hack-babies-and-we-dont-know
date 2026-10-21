@@ -6,7 +6,7 @@ export const GalleryEnvironment = () => {
   const particlesRef = useRef<Points>(null);
 
   // Floating ambient atmospheric gold dust particles
-  const particleCount = 140;
+  const particleCount = 80;  // Reduced from 140 — halves particle draw calls
   const particlePositions = useMemo(() => {
     const pos = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount; i++) {
@@ -32,14 +32,11 @@ export const GalleryEnvironment = () => {
       {/* Warm Ambient Atelier Fill */}
       <ambientLight intensity={1.2} color="#FFFBF0" />
 
-      {/* Key Warm Museum Spotlight */}
+      {/* Key Warm Museum Spotlight — no shadow maps (handled by Canvas) */}
       <directionalLight
         position={[6, 10, 7]}
         intensity={2.0}
         color="#FFF4DE"
-        castShadow
-        shadow-mapSize={[1024, 1024]}
-        shadow-bias={-0.0001}
       />
 
       {/* Cool Sky Fill for Contrast */}
@@ -56,11 +53,10 @@ export const GalleryEnvironment = () => {
         color="#FFE8CC"
       />
 
-      {/* Museum Ground Reflection Plane */}
+      {/* Museum Ground Plane */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, -1.2, 0]}
-        receiveShadow
       >
         <planeGeometry args={[65, 65]} />
         <meshStandardMaterial

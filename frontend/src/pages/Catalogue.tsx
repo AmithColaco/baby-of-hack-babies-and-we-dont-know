@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useProducts, useWishlist } from '../data/productStore';
 import { useCart } from '../contexts/CartContext';
@@ -18,6 +18,19 @@ export default function Catalogue() {
   const [selectedCategory, setSelectedCategory] = useState<CraftCategory>(categoryParam);
   const [sortBy, setSortBy] = useState<'curated' | 'price-asc' | 'price-desc' | 'payout'>('curated');
   const [onlyWishlist, setOnlyWishlist] = useState<boolean>(filterParam === 'wishlist');
+
+  // Reactively synchronize internal state when URL searchParams change
+  useEffect(() => {
+    setSelectedCategory(categoryParam);
+  }, [categoryParam]);
+
+  useEffect(() => {
+    setSearchQuery(queryParam);
+  }, [queryParam]);
+
+  useEffect(() => {
+    setOnlyWishlist(filterParam === 'wishlist');
+  }, [filterParam]);
 
   // Handle category change
   const handleCategoryChange = (cat: CraftCategory) => {
@@ -110,43 +123,20 @@ export default function Catalogue() {
       </section>
 
       {/* Filter and Search Toolbar */}
-      <section className="shop-toolbar">
+      <section className="shop-toolbar" aria-label="Craft catalogue filters and search">
         <div className="shop-toolbar__inner">
-          {/* Category Tabs */}
-          <div className="shop-category-tabs" role="tablist">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.key}
-                type="button"
-                role="tab"
-                aria-selected={selectedCategory === cat.key && !onlyWishlist}
-                className={`category-tab ${selectedCategory === cat.key && !onlyWishlist ? 'active' : ''}`}
-                onClick={() => {
-                  setOnlyWishlist(false);
-                  handleCategoryChange(cat.key);
-                }}
-              >
-                {cat.label}
-              </button>
-            ))}
-
-            <button
-              type="button"
-              className={`category-tab wishlist-tab ${onlyWishlist ? 'active' : ''}`}
-              onClick={() => setOnlyWishlist(!onlyWishlist)}
-            >
-              ♥ Wishlist ({wishlist.length})
-            </button>
-          </div>
-
-          {/* Search & Sort Controls */}
-          <div className="shop-controls-row">
-            <div className="shop-search-box">
+          {/* Top Tier: Search Bar + Utilities (Wishlist & Sort) */}
+          <div className="shop-toolbar__top">
+            <div className="shop-search-bar">
+              <svg className="shop-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
               <input
                 type="search"
                 value={searchQuery}
                 onChange={handleSearchChange}
-                placeholder="Search by craft, artisan, region, or mineral…"
+                placeholder="Search masterworks by craft lineage, artisan, region, or mineral…"
                 className="shop-search-input"
                 aria-label="Filter crafts"
               />
@@ -160,25 +150,72 @@ export default function Catalogue() {
                     p.delete('q');
                     setSearchParams(p);
                   }}
+                  aria-label="Clear search query"
                 >
                   ✕
                 </button>
               )}
             </div>
 
-            <div className="shop-sort-box">
-              <label htmlFor="shop-sort-select">Sort By:</label>
-              <select
-                id="shop-sort-select"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="shop-sort-select"
+            <div className="shop-toolbar__actions">
+              {/* Wishlist Quick Filter */}
+              <button
+                type="button"
+                className={`shop-util-btn wishlist-toggle ${onlyWishlist ? 'active' : ''}`}
+                onClick={() => setOnlyWishlist(!onlyWishlist)}
+                aria-pressed={onlyWishlist}
+                title="View saved wishlist masterworks"
               >
-                <option value="curated">Curated Lineage</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-                <option value="payout">Highest Direct Artisan Payout</option>
-              </select>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill={onlyWishlist ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                <span>Wishlist</span>
+                <span className="util-badge">{wishlist.length}</span>
+              </button>
+
+              {/* Sort Dropdown */}
+              <div className="shop-sort-wrap">
+                <label htmlFor="shop-sort-select" className="sort-label">Sort:</label>
+                <div className="sort-select-container">
+                  <select
+                    id="shop-sort-select"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="shop-sort-select"
+                    aria-label="Sort masterworks"
+                  >
+                    <option value="curated">Curated Lineage</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                    <option value="payout">Highest Direct Artisan Payout</option>
+                  </select>
+                  <svg className="sort-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Tier: Craft Heritage Disciplines */}
+          <div className="shop-toolbar__disciplines">
+            <span className="disciplines-label">Discipline Archive</span>
+            <div className="shop-category-tabs" role="tablist" aria-label="Craft disciplines">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={selectedCategory === cat.key && !onlyWishlist}
+                  className={`category-tab ${selectedCategory === cat.key && !onlyWishlist ? 'active' : ''}`}
+                  onClick={() => {
+                    setOnlyWishlist(false);
+                    handleCategoryChange(cat.key);
+                  }}
+                >
+                  {cat.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -283,8 +320,9 @@ export default function Catalogue() {
                       <div className="card-price-row">
                         <div className="card-price">
                           <span className="cur">₹</span>
-                          <span className="val">{prod.price.toLocaleString('en-IN')}</span>
+                          <span className="val">{Math.round(prod.price * 1.05).toLocaleString('en-IN')}</span>
                         </div>
+                        <span style={{ fontSize: '0.72rem', color: '#8a7a6a' }}>incl. 5% platform fee</span>
                       </div>
 
                       <div className="card-actions">

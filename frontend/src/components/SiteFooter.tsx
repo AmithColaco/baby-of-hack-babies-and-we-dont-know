@@ -1,6 +1,18 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export function SiteFooter() {
+  const [email, setEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email.trim()) {
+      setSubscribed(true);
+      setEmail('');
+    }
+  };
+
   return (
     <footer className="site-footer" role="contentinfo">
       <div className="site-footer__inner">
@@ -40,8 +52,8 @@ export function SiteFooter() {
             <ul className="site-footer__links">
               <li><Link to="/shop">Complete Collection</Link></li>
               <li><Link to="/gallery">3D Spatial Exhibition</Link></li>
-              <li><a href="/#artisans">Master Artisan Roster</a></li>
-              <li><a href="/#process">Material Alchemy & Stages</a></li>
+              <li><Link to="/#artisans">Master Artisan Roster</Link></li>
+              <li><Link to="/#process">Material Alchemy & Stages</Link></li>
               <li><Link to="/dashboard">Artisan Atelier Portal</Link></li>
               <li><Link to="/login">Onboard Your Guild</Link></li>
             </ul>
@@ -53,17 +65,26 @@ export function SiteFooter() {
             <p className="site-footer__newsletter-desc">
               Receive limited notices when a master artisan completes a museum-edition piece. Zero spam.
             </p>
-            <form onSubmit={(e) => { e.preventDefault(); alert('Thank you for subscribing to our curatorial dispatches.'); }} className="site-footer__form">
-              <input
-                type="email"
-                required
-                placeholder="Enter your email address…"
-                className="site-footer__input"
-              />
-              <button type="submit" className="site-footer__submit-btn">
-                Inscribe
-              </button>
-            </form>
+            {subscribed ? (
+              <div className="footer-subscribed-msg" style={{ padding: '0.85rem 1rem', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', fontSize: '0.82rem', color: '#88d8b0', border: '1px solid rgba(136,216,176,0.3)' }}>
+                ✓ Inscribed in Curatorial Dispatches.
+              </div>
+            ) : (
+              <form onSubmit={handleSubscribe} className="site-footer__form">
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email address…"
+                  className="site-footer__input"
+                  aria-label="Email address for curatorial dispatches"
+                />
+                <button type="submit" className="site-footer__submit-btn">
+                  Inscribe
+                </button>
+              </form>
+            )}
             <div className="site-footer__cert">
               <span>✓ Certified Indigenous Provenance</span>
               <span>✓ GI Protected Traditions</span>

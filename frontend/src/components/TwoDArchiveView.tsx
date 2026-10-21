@@ -1,5 +1,5 @@
 import type { CraftObject, CraftCategory } from '../types';
-import { CRAFT_OBJECTS } from '../data/craftsData';
+import { useProducts } from '../data/productStore';
 
 interface TwoDArchiveViewProps {
   selectedCategory: CraftCategory;
@@ -12,10 +12,11 @@ export const TwoDArchiveView = ({
   onSelectObject,
   onEnter3D,
 }: TwoDArchiveViewProps) => {
+  const { products } = useProducts();
   const visibleObjects =
     selectedCategory === 'all'
-      ? CRAFT_OBJECTS
-      : CRAFT_OBJECTS.filter((o) => o.category === selectedCategory);
+      ? products
+      : products.filter((o) => o.category === selectedCategory);
 
   return (
     <div className="archive-2d-view">

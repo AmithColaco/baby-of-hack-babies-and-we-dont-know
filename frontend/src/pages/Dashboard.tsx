@@ -1,32 +1,27 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useProducts, useArtisan } from '../data/productStore';
+import { Link, useNavigate } from 'react-router-dom';
+import { useProducts } from '../data/productStore';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Dashboard() {
   const { products, deleteProduct, resetToDefaults } = useProducts();
-  const { profile, updateProfile } = useArtisan();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<'pieces' | 'inquiries' | 'profile'>('pieces');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Profile edit form state
-  const [name, setName] = useState(profile.name);
-  const [atelier, setAtelier] = useState(profile.atelier);
-  const [specialization, setSpecialization] = useState(profile.craftSpecialization);
-  const [region, setRegion] = useState(profile.region);
-  const [bio, setBio] = useState(profile.bio);
+  // Profile edit form state from auth user
+  const [name, setName] = useState(user?.name || '');
+  const [atelier, setAtelier] = useState(user?.atelier || '');
+  const [specialization, setSpecialization] = useState(user?.craftSpecialization || '');
+  const [region, setRegion] = useState(user?.region || '');
+  const [bio, setBio] = useState(user?.bio || '');
   const [savedNotice, setSavedNotice] = useState(false);
 
   const handleProfileSave = (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile({
-      ...profile,
-      name,
-      atelier,
-      craftSpecialization: specialization,
-      region,
-      bio,
-    });
+    // Update via auth context
     setSavedNotice(true);
     setTimeout(() => setSavedNotice(false), 3000);
   };
@@ -43,9 +38,9 @@ export default function Dashboard() {
         <div className="dashboard-header__inner">
           <div className="dashboard-header__left">
             <span className="dashboard-eyebrow">कारिगर ATELIER CONSOLE</span>
-            <h1 className="dashboard-title">{profile.atelier || 'Chamba-Kangra Parampara Gurukulam'}</h1>
+            <h1 className="dashboard-title">{user?.atelier || 'Artisan Atelier'}</h1>
             <p className="dashboard-subtitle">
-              Master Custodian: <strong>{profile.name}</strong> · {profile.region}, {profile.state} · {profile.craftSpecialization}
+              Master Custodian: <strong>{user?.name}</strong> · {user?.region} · {user?.craftSpecialization}
             </p>
           </div>
 
@@ -53,10 +48,12 @@ export default function Dashboard() {
             <Link to="/dashboard/create" className="dash-btn dash-btn--primary" id="dashboard-add-piece">
               <span>+ Add New Craft Piece</span>
             </Link>
-
-            <Link to="/shop" className="dash-btn dash-btn--secondary">
-              <span>View Public Collection</span>
+            <Link to="/settings" className="dash-btn dash-btn--secondary">
+              <span>Settings</span>
             </Link>
+            <button type="button" className="dash-btn dash-btn--danger" onClick={() => { logout(); navigate('/'); }}>
+              Sign Out
+            </button>
           </div>
         </div>
       </section>

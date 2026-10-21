@@ -11,6 +11,7 @@ interface CartContextType {
   setIsCartOpen: (open: boolean) => void;
   totalItems: number;
   totalAmount: number;
+  platformFeeTotal: number;
   directArtisanTotal: number;
 }
 
@@ -71,8 +72,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const clearCart = () => setCart([]);
 
+  // Platform fee = 5% on top of artisan price. Buyer pays price * 1.05.
+  const PLATFORM_FEE_RATE = 0.05;
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalAmount = cart.reduce((sum, item) => sum + item.object.price * item.quantity, 0);
+  const totalAmount = cart.reduce(
+    (sum, item) => sum + Math.round(item.object.price * (1 + PLATFORM_FEE_RATE)) * item.quantity,
+    0
+  );
+  const platformFeeTotal = cart.reduce(
+    (sum, item) => sum + Math.round(item.object.price * PLATFORM_FEE_RATE) * item.quantity,
+    0
+  );
   const directArtisanTotal = cart.reduce(
     (sum, item) => sum + Math.round((item.object.price * item.object.directArtisanSharePercent) / 100) * item.quantity,
     0
@@ -90,6 +100,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         setIsCartOpen,
         totalItems,
         totalAmount,
+        platformFeeTotal,
         directArtisanTotal,
       }}
     >

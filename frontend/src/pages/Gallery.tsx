@@ -8,10 +8,11 @@ import { StoriesModal } from '../components/StoriesModal';
 import { MakingOfModal } from '../components/MakingOfModal';
 import { AboutModal } from '../components/AboutModal';
 import { TwoDArchiveView } from '../components/TwoDArchiveView';
-import { CRAFT_OBJECTS } from '../data/craftsData';
+import { useProducts } from '../data/productStore';
 import type { CraftObject, CraftCategory } from '../types';
 
 export default function Gallery() {
+  const { products } = useProducts();
   const [hasEntered, setHasEntered] = useState(true);
   const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d');
   const [selectedObject, setSelectedObject] = useState<CraftObject | null>(null);
@@ -22,8 +23,8 @@ export default function Gallery() {
   // Filtered objects
   const filteredObjects =
     selectedCategory === 'all'
-      ? CRAFT_OBJECTS
-      : CRAFT_OBJECTS.filter((o) => o.category === selectedCategory);
+      ? products
+      : products.filter((o) => o.category === selectedCategory);
 
   // Next and Previous navigation across objects
   const handleNextObject = useCallback(() => {
@@ -58,8 +59,8 @@ export default function Gallery() {
         handlePrevObject();
       } else if (['1', '2', '3', '4', '5', '6'].includes(e.key) && hasEntered) {
         const index = parseInt(e.key, 10) - 1;
-        if (CRAFT_OBJECTS[index]) {
-          setSelectedObject(CRAFT_OBJECTS[index]);
+        if (products[index]) {
+          setSelectedObject(products[index]);
         }
       }
     };

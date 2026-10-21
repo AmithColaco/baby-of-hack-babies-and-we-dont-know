@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 
 export const CartDrawer = () => {
+  const navigate = useNavigate();
   const {
     cart,
     isCartOpen,
@@ -11,6 +13,7 @@ export const CartDrawer = () => {
     clearCart,
     totalAmount,
     totalItems,
+    platformFeeTotal,
     directArtisanTotal,
   } = useCart();
 
@@ -29,6 +32,7 @@ export const CartDrawer = () => {
     clearCart();
     setIsReserved(false);
     setIsCartOpen(false);
+    navigate('/shop');
   };
 
   return (
@@ -84,12 +88,14 @@ export const CartDrawer = () => {
             <p className="cart__empty-desc">
               Explore the 3D exhibition space and select any handcrafted masterwork to inspect its provenance and reserve for acquisition.
             </p>
-            <button
+            <Link
+              to="/shop"
               onClick={() => setIsCartOpen(false)}
               className="btn btn-outline"
+              style={{ textDecoration: 'none', display: 'inline-block' }}
             >
               Explore the Collection
-            </button>
+            </Link>
           </div>
         ) : (
           <>
@@ -110,7 +116,8 @@ export const CartDrawer = () => {
                       By {object.artisan} · {object.state}
                     </div>
                     <div className="cart-item__price">
-                      ₹ {(object.price * quantity).toLocaleString('en-IN')}
+                      ₹ {(Math.round(object.price * 1.05) * quantity).toLocaleString('en-IN')}
+                      <span style={{ fontSize: '0.7rem', color: '#8a7a6a', display: 'block' }}>incl. 5% platform fee</span>
                     </div>
 
                     <div className="cart-item__controls">
@@ -159,10 +166,16 @@ export const CartDrawer = () => {
               </div>
 
               <div className="cart__total-row">
-                <span className="total-label">Total Value</span>
-                <span className="total-value">
-                  ₹ {totalAmount.toLocaleString('en-IN')}
-                </span>
+                <span className="total-label">Artisan Price</span>
+                <span className="total-value">₹ {(totalAmount - platformFeeTotal).toLocaleString('en-IN')}</span>
+              </div>
+              <div className="cart__total-row" style={{ fontSize: '0.82rem', color: '#7A7570' }}>
+                <span className="total-label">Platform Fee (5%)</span>
+                <span className="total-value">₹ {platformFeeTotal.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="cart__total-row" style={{ borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '0.6rem', marginTop: '0.25rem' }}>
+                <span className="total-label"><strong>Total</strong></span>
+                <span className="total-value"><strong>₹ {totalAmount.toLocaleString('en-IN')}</strong></span>
               </div>
 
               <p className="cart__shipping-note">
@@ -170,15 +183,15 @@ export const CartDrawer = () => {
               </p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                <a
-                  href="/cart"
+                <Link
+                  to="/cart"
                   onClick={() => setIsCartOpen(false)}
                   className="btn btn-primary btn-block btn-reserve"
                   id="btn-go-to-cart"
                   style={{ textDecoration: 'none', textAlign: 'center', display: 'block' }}
                 >
                   Proceed to Secure Checkout →
-                </a>
+                </Link>
                 <button
                   onClick={handleReserve}
                   className="btn btn-outline btn-block"
