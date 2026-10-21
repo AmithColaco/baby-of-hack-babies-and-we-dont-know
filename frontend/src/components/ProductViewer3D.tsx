@@ -121,7 +121,7 @@ export const ProductViewer3D = ({ product }: ProductViewer3DProps) => {
             <Canvas
               shadows
               dpr={[1, 1.75]}
-              camera={{ position: [0, 0.4, 2.7], fov: 42, near: 0.1, far: 20 }}
+              camera={{ position: [0, 0.2, 3.4], fov: 42, near: 0.1, far: 20 }}
               gl={{ antialias: true, powerPreference: 'high-performance' }}
               style={{ width: '100%', height: '100%', background: '#F8F4EC' }}
             >
@@ -165,6 +165,7 @@ export const ProductViewer3D = ({ product }: ProductViewer3DProps) => {
                 {/* Intuitive Orbit Controls */}
                 <OrbitControls
                   ref={controlsRef}
+                  target={[0, 0.08, 0]}
                   autoRotate={isAutoRotating}
                   autoRotateSpeed={1.8}
                   enableDamping
@@ -311,7 +312,7 @@ export const ProductViewer3D = ({ product }: ProductViewer3DProps) => {
                 <Canvas
                   shadows
                   dpr={[1, 2]}
-                  camera={{ position: [0, 0.4, 2.7], fov: 40, near: 0.1, far: 20 }}
+                  camera={{ position: [0, 0.2, 3.4], fov: 40, near: 0.1, far: 20 }}
                   gl={{ antialias: true, powerPreference: 'high-performance' }}
                   style={{ width: '100%', height: '100%', background: '#1C1C1A' }}
                 >
@@ -338,6 +339,7 @@ export const ProductViewer3D = ({ product }: ProductViewer3DProps) => {
 
                     <OrbitControls
                       ref={fullscreenControlsRef}
+                      target={[0, 0.08, 0]}
                       autoRotate={isAutoRotating}
                       autoRotateSpeed={1.8}
                       enableDamping

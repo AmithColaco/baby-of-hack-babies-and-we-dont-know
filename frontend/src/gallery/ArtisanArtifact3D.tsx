@@ -394,116 +394,216 @@ export function renderSculptedMasterwork(
       );
 
     /* ------------------------------------------------------------
-       III. CHANDERI HANDWOVEN ROYAL SILK (Gossamer Zari Saree)
-       Full 3D sculptural textile exhibition on a carved rosewood &
-       turned brass architectural stand. Rich fluid undulating 3D folds,
-       overlapping drape, heavy golden zari border, and hanging tassels.
-       (Replaces the flat 2D hanging sheet with authentic 3D volume!)
+       III. CHANDERI HANDWOVEN ROYAL SILK (Royal Peacock Zari Saree)
+       Displayed on a haute-couture sartorial dress form / mannequin.
+       Features an authentic Indian Nivi drape: structured vertical front
+       pleats (patli), form-fitting hip wrap, diagonal cross-bodice drape,
+       wide 24K electroplated gold zari border, and a dramatic, sweeping
+       peacock brocade pallu cascading over the shoulder with embossed
+       golden peacock medallions and swinging latkan tassels.
        ------------------------------------------------------------ */
     case 'textile':
       return (
-        <group position={[0, 0.08, 0]}>
-          {/* Architectural Rosewood & Turned Brass Display Stand */}
-          {/* Top Hanging Bar */}
-          <mesh position={[0, 0.96, 0]} rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[0.032, 0.032, 1.56, 32]} />
-            <meshStandardMaterial color="#2B1408" roughness={0.4} />
+        <group position={[0, -0.05, 0]}>
+          {/* 1. Museum Sartorial Display Stand (Polished Brass & Teak Tripod) */}
+          {/* Floor Mount Disc Base */}
+          <mesh position={[0, -0.58, 0]}>
+            <cylinderGeometry args={[0.34, 0.38, 0.04, 36]} />
+            <meshStandardMaterial color="#D4AF37" metalness={0.92} roughness={0.18} />
           </mesh>
 
-          {/* Turned Brass Finials on Rod Ends */}
-          {[-0.8, 0.8].map((x) => (
-            <group key={x} position={[x, 0.96, 0]}>
-              <mesh>
-                <sphereGeometry args={[0.06, 20, 20]} />
-                <meshStandardMaterial color="#D4AF37" metalness={0.88} roughness={0.2} />
-              </mesh>
-              <mesh position={[x > 0 ? 0.04 : -0.04, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-                <coneGeometry args={[0.035, 0.08, 16]} />
-                <meshStandardMaterial color="#D4AF37" metalness={0.88} roughness={0.2} />
-              </mesh>
-            </group>
-          ))}
+          {/* Stepped Teak Collar on Stand */}
+          <mesh position={[0, -0.54, 0]}>
+            <cylinderGeometry args={[0.18, 0.22, 0.05, 32]} />
+            <meshStandardMaterial color="#2B150A" roughness={0.4} />
+          </mesh>
 
-          {/* Vertical Support Stanchions (Rosewood) */}
-          {[-0.68, 0.68].map((x) => (
-            <mesh key={x} position={[x, 0.06, -0.1]}>
-              <cylinderGeometry args={[0.024, 0.024, 1.82, 16]} />
-              <meshStandardMaterial color="#2B1408" roughness={0.45} />
+          {/* Vertical Brass Support Stem */}
+          <mesh position={[0, -0.32, 0]}>
+            <cylinderGeometry args={[0.024, 0.024, 0.44, 20]} />
+            <meshStandardMaterial color="#D4AF37" metalness={0.92} roughness={0.18} />
+          </mesh>
+
+          {/* 2. Haute Couture Tailored Mannequin Torso (Dark Velvet Dress Form) */}
+          {/* Mannequin Neck Finial in Polished Brass */}
+          <mesh position={[0, 0.94, 0]}>
+            <sphereGeometry args={[0.055, 20, 20]} />
+            <meshStandardMaterial color="#ECCB76" metalness={0.94} roughness={0.15} />
+          </mesh>
+          <mesh position={[0, 0.86, 0]}>
+            <cylinderGeometry args={[0.065, 0.075, 0.1, 24]} />
+            <meshStandardMaterial color="#D4AF37" metalness={0.92} roughness={0.18} />
+          </mesh>
+
+          {/* Mannequin Upper Torso / Shoulders (Tailored Black Velvet) */}
+          <mesh position={[0, 0.68, 0]}>
+            <cylinderGeometry args={[0.22, 0.27, 0.26, 32]} />
+            <meshStandardMaterial color="#1B1A19" roughness={0.88} />
+          </mesh>
+          {/* Left & Right Shoulder Caps */}
+          {[-0.24, 0.24].map((x) => (
+            <mesh key={x} position={[x, 0.74, 0]}>
+              <sphereGeometry args={[0.08, 16, 16]} />
+              <meshStandardMaterial color="#1B1A19" roughness={0.88} />
             </mesh>
           ))}
 
-          {/* 3D Volumetric Sculpted Silk Drapery - Layer 1: Main Fluid Cascading Curtain */}
-          <mesh position={[0, 0.06, 0]}>
-            <cylinderGeometry
-              args={[0.66, 0.74, 1.72, 48, 16, true, -Math.PI * 0.45, Math.PI * 0.9]}
-            />
-            <meshStandardMaterial
-              color="#7B1824"
-              roughness={0.32}
-              metalness={0.18}
-              side={DoubleSide}
-            />
+          {/* Inner Madder Red Silk Blouse / Choli with Gold Zari Piping */}
+          <mesh position={[0, 0.66, 0.02]}>
+            <cylinderGeometry args={[0.225, 0.26, 0.22, 32]} />
+            <meshStandardMaterial color="#5C1019" roughness={0.32} metalness={0.2} />
+          </mesh>
+          {/* Blouse Golden Neckline Piping */}
+          <mesh position={[0, 0.77, 0.04]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.13, 0.015, 12, 32, Math.PI]} />
+            <meshStandardMaterial color="#ECCB76" metalness={0.92} roughness={0.18} />
           </mesh>
 
-          {/* Layer 2: Front Sweeping Saree Pleat / Fold (Undulating Wave with Volume) */}
-          <mesh position={[0.05, 0.08, 0.14]} rotation={[0, 0.12, -0.04]}>
-            <cylinderGeometry
-              args={[0.42, 0.52, 1.55, 36, 12, true, -Math.PI * 0.35, Math.PI * 0.7]}
-            />
+          {/* 3. The Chanderi Silk Saree Skirt (Petticoat Wrap with Volumetric Flare) */}
+          {/* Flared Saree Skirt Body */}
+          <mesh position={[0, 0.04, 0]}>
+            <cylinderGeometry args={[0.25, 0.44, 0.68, 40]} />
             <meshStandardMaterial
-              color="#942030"
-              roughness={0.28}
-              metalness={0.25}
-              side={DoubleSide}
-            />
-          </mesh>
-
-          {/* Layer 3: Overlapping Diagonally Draped Pallu (Royal Brocade Swag) */}
-          <mesh position={[-0.14, 0.22, 0.22]} rotation={[0.1, -0.15, -0.18]}>
-            <cylinderGeometry
-              args={[0.34, 0.42, 1.1, 28, 8, true, -Math.PI * 0.25, Math.PI * 0.55]}
-            />
-            <meshStandardMaterial
-              color="#851D2A"
+              color="#821A28"
               roughness={0.3}
-              metalness={0.2}
-              side={DoubleSide}
+              metalness={0.22}
             />
           </mesh>
 
-          {/* Real Silver Electroplated 24K Gold Zari Border (Heavy Brocade Hem) */}
-          <mesh position={[0, -0.74, 0.08]}>
-            <boxGeometry args={[1.32, 0.18, 0.05]} />
+          {/* Saree Base Zari Pallu Hem (Heavy Pure Silver-Electroplated 24K Gold Zari Border) */}
+          <mesh position={[0, -0.28, 0]}>
+            <cylinderGeometry args={[0.435, 0.45, 0.12, 40]} />
             <meshStandardMaterial
               color="#DFBD76"
-              metalness={0.9}
-              roughness={0.2}
-            />
-          </mesh>
-
-          {/* Secondary Zari Filigree Accent Ribbon */}
-          <mesh position={[0, -0.58, 0.09]}>
-            <boxGeometry args={[1.28, 0.04, 0.04]} />
-            <meshStandardMaterial
-              color="#ECCB76"
               metalness={0.92}
               roughness={0.18}
             />
           </mesh>
+          {/* Secondary Upper Zari Piping on Skirt Hem */}
+          <mesh position={[0, -0.21, 0]}>
+            <cylinderGeometry args={[0.425, 0.43, 0.02, 40]} />
+            <meshStandardMaterial color="#ECCB76" metalness={0.94} roughness={0.16} />
+          </mesh>
 
-          {/* Dangling Silk & Gold Thread Tassels along Lower Hem */}
-          {[-0.52, -0.26, 0, 0.26, 0.52].map((x) => (
-            <group key={x} position={[x, -0.88, 0.08]}>
+          {/* 4. Front Knife Pleats (Patli) — Iconic Waterfall Fan of Saree Pleats */}
+          {[-0.08, -0.04, 0, 0.04, 0.08].map((x, i) => (
+            <group key={i} position={[x, -0.06, 0.28 + (4 - i) * 0.015]} rotation={[0, 0, (x * 0.2)]}>
+              {/* Individual Pleat Blade */}
               <mesh>
-                <cylinderGeometry args={[0.006, 0.006, 0.14, 8]} />
-                <meshStandardMaterial color="#C89D42" metalness={0.8} />
+                <boxGeometry args={[0.048, 0.54, 0.024]} />
+                <meshStandardMaterial color={i % 2 === 0 ? '#8E1D2D' : '#7A1825'} roughness={0.28} metalness={0.25} />
               </mesh>
-              <mesh position={[0, -0.1, 0]}>
-                <sphereGeometry args={[0.028, 12, 12]} />
-                <meshStandardMaterial color="#DFBD76" metalness={0.88} />
+              {/* Gold Zari Piping along each Pleat Ridge */}
+              <mesh position={[0, 0, 0.014]}>
+                <boxGeometry args={[0.008, 0.53, 0.008]} />
+                <meshStandardMaterial color="#ECCB76" metalness={0.92} roughness={0.2} />
+              </mesh>
+              {/* Gold Border at base of each pleat */}
+              <mesh position={[0, -0.23, 0.006]}>
+                <boxGeometry args={[0.05, 0.08, 0.026]} />
+                <meshStandardMaterial color="#DFBD76" metalness={0.92} roughness={0.18} />
               </mesh>
             </group>
           ))}
+
+          {/* Waist Tuck Knot (Navel Gather / Kamarbandh) */}
+          <mesh position={[0, 0.36, 0.25]} rotation={[0, 0, Math.PI / 4]}>
+            <boxGeometry args={[0.11, 0.07, 0.05]} />
+            <meshStandardMaterial color="#DFBD76" metalness={0.9} roughness={0.2} />
+          </mesh>
+
+          {/* 5. Diagonal Cross-Bodice Drape (Nivi Swag across Chest) */}
+          <group position={[0.04, 0.54, 0.12]} rotation={[0.08, -0.15, -0.42]}>
+            <mesh>
+              <boxGeometry args={[0.22, 0.44, 0.04]} />
+              <meshStandardMaterial color="#881C2B" roughness={0.3} metalness={0.22} />
+            </mesh>
+            {/* Diagonal Gold Zari Selvedge running from waist to left shoulder */}
+            <mesh position={[-0.105, 0, 0.018]}>
+              <boxGeometry args={[0.035, 0.45, 0.02]} />
+              <meshStandardMaterial color="#DFBD76" metalness={0.92} roughness={0.18} />
+            </mesh>
+          </group>
+
+          {/* 6. The Royal Peacock Pallu (Dramatic Sweeping Brocade Cascade) */}
+          {/* Shoulder Wrap Over Left Shoulder */}
+          <mesh position={[-0.22, 0.77, 0.02]} rotation={[0.2, 0.1, 0.25]}>
+            <boxGeometry args={[0.16, 0.22, 0.06]} />
+            <meshStandardMaterial color="#7A1825" roughness={0.28} metalness={0.22} />
+          </mesh>
+          <mesh position={[-0.22, 0.78, 0.05]} rotation={[0.2, 0.1, 0.25]}>
+            <boxGeometry args={[0.04, 0.23, 0.02]} />
+            <meshStandardMaterial color="#ECCB76" metalness={0.94} roughness={0.16} />
+          </mesh>
+
+          {/* Sweeping Waterfall Cascade of the Pallu Down the Side/Back */}
+          {/* Upper Cascade Swag */}
+          <mesh position={[-0.28, 0.48, -0.06]} rotation={[-0.1, 0.2, 0.1]}>
+            <cylinderGeometry args={[0.22, 0.28, 0.48, 24, 1, true, -Math.PI * 0.4, Math.PI * 0.8]} />
+            <meshStandardMaterial color="#821A28" roughness={0.3} metalness={0.2} side={DoubleSide} />
+          </mesh>
+
+          {/* Lower Sweeping Billow of the Pallu Swiveling Forward */}
+          <mesh position={[-0.32, 0.08, 0.1]} rotation={[0.15, -0.3, -0.12]}>
+            <cylinderGeometry args={[0.26, 0.36, 0.52, 24, 1, true, -Math.PI * 0.45, Math.PI * 0.85]} />
+            <meshStandardMaterial color="#8E1D2D" roughness={0.28} metalness={0.22} side={DoubleSide} />
+          </mesh>
+
+          {/* Grand Gold Zari Brocade Panel on the Pallu Tail */}
+          <group position={[-0.34, -0.08, 0.22]} rotation={[0.1, -0.35, -0.08]}>
+            {/* Woven Real Gold Zari Extra-Weft Panel */}
+            <mesh>
+              <boxGeometry args={[0.34, 0.28, 0.035]} />
+              <meshStandardMaterial color="#DFBD76" metalness={0.92} roughness={0.18} />
+            </mesh>
+
+            {/* Embossed Royal Peacock Medallions (Dancing Peacocks of Chanderi) */}
+            {[-0.08, 0.08].map((px) => (
+              <group key={px} position={[px, 0.02, 0.022]}>
+                {/* Peacock Medallion Ring */}
+                <mesh>
+                  <torusGeometry args={[0.042, 0.007, 12, 24]} />
+                  <meshStandardMaterial color="#F5DA88" metalness={0.96} roughness={0.12} />
+                </mesh>
+                {/* Peacock Body & Crown */}
+                <mesh position={[0, -0.005, 0]}>
+                  <sphereGeometry args={[0.02, 12, 12]} />
+                  <meshStandardMaterial color="#2E7D32" metalness={0.4} roughness={0.3} />
+                </mesh>
+                {/* Peacock Fan Tail Feather Sprays */}
+                <mesh position={[0, 0.02, 0]}>
+                  <coneGeometry args={[0.03, 0.04, 12]} />
+                  <meshStandardMaterial color="#00838F" metalness={0.4} roughness={0.3} />
+                </mesh>
+              </group>
+            ))}
+
+            {/* Pallu Lower Fringe Band */}
+            <mesh position={[0, -0.13, 0.008]}>
+              <boxGeometry args={[0.35, 0.04, 0.04]} />
+              <meshStandardMaterial color="#ECCB76" metalness={0.94} roughness={0.15} />
+            </mesh>
+
+            {/* Hand-Tied Hanging Latkan Tassels with Seed Pearls */}
+            {[-0.12, -0.06, 0, 0.06, 0.12].map((tx) => (
+              <group key={tx} position={[tx, -0.21, 0.01]}>
+                <mesh>
+                  <cylinderGeometry args={[0.004, 0.004, 0.12, 8]} />
+                  <meshStandardMaterial color="#C89D42" metalness={0.88} />
+                </mesh>
+                {/* Pearl Bead */}
+                <mesh position={[0, -0.07, 0]}>
+                  <sphereGeometry args={[0.018, 12, 12]} />
+                  <meshStandardMaterial color="#FAF7ED" roughness={0.2} metalness={0.1} />
+                </mesh>
+                {/* Gold Bell Cap */}
+                <mesh position={[0, -0.09, 0]}>
+                  <coneGeometry args={[0.016, 0.025, 12]} />
+                  <meshStandardMaterial color="#ECCB76" metalness={0.94} />
+                </mesh>
+              </group>
+            ))}
+          </group>
         </group>
       );
 
