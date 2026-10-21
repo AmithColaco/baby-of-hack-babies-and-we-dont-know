@@ -236,7 +236,7 @@ export const ObjectDetailPanel = ({
                 <div>
                   <h4 className="artisan-name">{object.artisan}</h4>
                   <div className="artisan-title">{object.artisanTitle}</div>
-                  <div className="artisan-loc">📍 {object.region}, {object.state}</div>
+                  <div className="artisan-loc">{object.region}, {object.state}</div>
                 </div>
               </div>
 

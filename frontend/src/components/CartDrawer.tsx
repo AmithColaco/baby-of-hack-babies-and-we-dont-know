@@ -79,7 +79,7 @@ export const CartDrawer = () => {
           </div>
         ) : cart.length === 0 ? (
           <div className="cart__empty">
-            <div className="cart__empty-icon">🏛️</div>
+            <div className="cart__empty-icon" style={{ fontSize: '2.5rem', color: 'var(--terracotta)' }}>✦</div>
             <h4 className="cart__empty-title">Your Curatorial Bag is Empty</h4>
             <p className="cart__empty-desc">
               Explore the 3D exhibition space and select any handcrafted masterwork to inspect its provenance and reserve for acquisition.
@@ -169,13 +169,24 @@ export const CartDrawer = () => {
                 Includes museum-grade insured packaging & provenance certificate signed by master craftsman.
               </p>
 
-              <button
-                onClick={handleReserve}
-                className="btn btn-primary btn-block btn-reserve"
-                id="btn-reserve-acquisition"
-              >
-                Place Acquisition Reservation
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <a
+                  href="/cart"
+                  onClick={() => setIsCartOpen(false)}
+                  className="btn btn-primary btn-block btn-reserve"
+                  id="btn-go-to-cart"
+                  style={{ textDecoration: 'none', textAlign: 'center', display: 'block' }}
+                >
+                  Proceed to Secure Checkout →
+                </a>
+                <button
+                  onClick={handleReserve}
+                  className="btn btn-outline btn-block"
+                  id="btn-reserve-acquisition"
+                >
+                  Quick Reserve Inquiry
+                </button>
+              </div>
             </div>
           </>
         )}

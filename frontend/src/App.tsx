@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import Navbar from './components/Navbar';
+import { SiteHeader } from './components/SiteHeader';
+import { SiteFooter } from './components/SiteFooter';
+import { CartDrawer } from './components/CartDrawer';
 import Home from './pages/Home';
 import Catalogue from './pages/Catalogue';
 import Product from './pages/Product';
@@ -13,24 +15,29 @@ import { CartProvider } from './contexts/CartContext';
 
 function AppLayout() {
   const location = useLocation();
-  const isKaarigarGalleryRoute = location.pathname === '/' || location.pathname === '/gallery';
+  const isDedicated3DGallery = location.pathname === '/gallery';
 
   return (
-    <>
-      {!isKaarigarGalleryRoute && <Navbar />}
+    <div className="kaarigar-shell">
+      {!isDedicated3DGallery && <SiteHeader />}
+      <CartDrawer />
+      
       <Routes>
         <Route path="/"                   element={<Home />} />
-        <Route path="/login"              element={<Onboarding />} />
         <Route path="/shop"               element={<Catalogue />} />
         <Route path="/shop/:id"           element={<Product />} />
         <Route path="/gallery"            element={<Gallery />} />
         <Route path="/cart"               element={<Checkout />} />
+        <Route path="/login"              element={<Onboarding />} />
+        <Route path="/become-a-seller"    element={<Onboarding />} />
         <Route path="/dashboard"          element={<Dashboard />} />
         <Route path="/dashboard/create"   element={<CreateListing />} />
         <Route path="/dashboard/edit/:id" element={<CreateListing />} />
         <Route path="/orders/:id"         element={<OrderTracking />} />
       </Routes>
-    </>
+
+      {!isDedicated3DGallery && <SiteFooter />}
+    </div>
   );
 }
 

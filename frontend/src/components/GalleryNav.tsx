@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import type { CraftCategory } from '../types';
 
@@ -31,6 +32,9 @@ export const GalleryNav = ({
       <div className="gallery-header__inner">
         {/* Brand Identity */}
         <div className="gallery-header__brand">
+          <Link to="/" className="brand-back-home" title="Return to Main Store">
+            ← Home
+          </Link>
           <button
             onClick={() => {
               onSelectSection('collection');
@@ -84,7 +88,7 @@ export const GalleryNav = ({
             title={viewMode === '3d' ? 'Switch to 2D Curatorial Catalog' : 'Enter 3D Spatial Gallery'}
             aria-label="Toggle exhibition view mode"
           >
-            <span className="mode-icon">{viewMode === '3d' ? '🏛️' : '✦'}</span>
+            <span className="mode-icon">✦</span>
             <span className="mode-label">{viewMode === '3d' ? '3D Gallery' : '2D Archive'}</span>
           </button>
 

@@ -32,7 +32,7 @@ export const TwoDArchiveView = ({
             onClick={onEnter3D}
             className="btn btn-outline btn-enter-3d-banner"
           >
-            <span>Experience in 3D Spatial Gallery 🏛️</span>
+            <span>Experience in 3D Spatial Gallery →</span>
           </button>
         </div>
 
@@ -57,7 +57,7 @@ export const TwoDArchiveView = ({
 
               <div className="archive-card__content">
                 <div className="archive-card__geo">
-                  📍 {obj.region}, {obj.state}
+                  {obj.region}, {obj.state}
                 </div>
 
                 <h3 className="archive-card__title">{obj.title}</h3>

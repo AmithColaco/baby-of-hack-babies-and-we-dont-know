@@ -12,7 +12,7 @@ import { CRAFT_OBJECTS } from '../data/craftsData';
 import type { CraftObject, CraftCategory } from '../types';
 
 export default function Gallery() {
-  const [hasEntered, setHasEntered] = useState(false);
+  const [hasEntered, setHasEntered] = useState(true);
   const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d');
   const [selectedObject, setSelectedObject] = useState<CraftObject | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<CraftCategory>('all');

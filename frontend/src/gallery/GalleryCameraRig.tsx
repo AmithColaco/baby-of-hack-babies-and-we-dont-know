@@ -41,9 +41,9 @@ export const GalleryCameraRig = ({ selectedObject }: GalleryCameraRigProps) => {
       dampingFactor={0.06}
       maxPolarAngle={Math.PI / 2 - 0.02}
       minPolarAngle={Math.PI / 6}
-      minDistance={1.8}
-      maxDistance={12}
-      rotateSpeed={0.65}
+      minDistance={1.2}
+      maxDistance={14}
+      rotateSpeed={0.7}
       panSpeed={0.5}
       screenSpacePanning
     />

@@ -5,13 +5,14 @@ import type { Points } from 'three';
 export const GalleryEnvironment = () => {
   const particlesRef = useRef<Points>(null);
 
-  const particleCount = 120;
+  // Floating ambient atmospheric gold dust particles
+  const particleCount = 140;
   const particlePositions = useMemo(() => {
     const pos = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 20;
-      pos[i * 3 + 1] = Math.random() * 5 - 0.5;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 16;
+      pos[i * 3] = (Math.random() - 0.5) * 22;
+      pos[i * 3 + 1] = Math.random() * 5.5 - 0.5;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 18;
     }
     return pos;
   }, []);
@@ -19,61 +20,69 @@ export const GalleryEnvironment = () => {
   useFrame((state) => {
     if (!particlesRef.current) return;
     const t = state.clock.getElapsedTime();
-    particlesRef.current.rotation.y = t * 0.015;
+    particlesRef.current.rotation.y = t * 0.012;
   });
 
   return (
     <>
-      <color attach="background" args={['#FAF7F2']} />
-      <fog attach="fog" args={['#FAF7F2', 8, 22]} />
+      {/* Background & Atmospheric Depth Fog */}
+      <color attach="background" args={['#F9F5EE']} />
+      <fog attach="fog" args={['#F9F5EE', 9, 24]} />
 
-      <ambientLight intensity={1.15} color="#FFFDF7" />
+      {/* Warm Ambient Atelier Fill */}
+      <ambientLight intensity={1.2} color="#FFFBF0" />
 
+      {/* Key Warm Museum Spotlight */}
       <directionalLight
-        position={[6, 9, 7]}
-        intensity={1.8}
-        color="#FFF6E8"
+        position={[6, 10, 7]}
+        intensity={2.0}
+        color="#FFF4DE"
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0001}
       />
 
+      {/* Cool Sky Fill for Contrast */}
       <directionalLight
-        position={[-6, 4, -4]}
+        position={[-6, 5, -4]}
         intensity={0.65}
-        color="#E4EDF5"
+        color="#E6EFF8"
       />
 
+      {/* Rim & Back Light */}
       <directionalLight
         position={[0, 6, -8]}
-        intensity={0.9}
-        color="#FFEAD0"
+        intensity={1.1}
+        color="#FFE8CC"
       />
 
+      {/* Museum Ground Reflection Plane */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -1.18, 0]}
+        position={[0, -1.2, 0]}
         receiveShadow
       >
-        <planeGeometry args={[60, 60]} />
+        <planeGeometry args={[65, 65]} />
         <meshStandardMaterial
-          color="#FAF7F2"
-          roughness={0.85}
-          metalness={0.02}
+          color="#F9F5EE"
+          roughness={0.82}
+          metalness={0.03}
         />
       </mesh>
 
-      {[2.5, 5.0, 7.5, 10.5].map((radius, i) => (
+      {/* Concentric Architectural Rings on Floor */}
+      {[2.6, 5.2, 7.8, 10.8].map((radius, i) => (
         <mesh
           key={i}
           rotation={[-Math.PI / 2, 0, 0]}
-          position={[0, -1.175, 0]}
+          position={[0, -1.19, 0]}
         >
-          <ringGeometry args={[radius, radius + 0.015, 64]} />
-          <meshBasicMaterial color="#E8DFD0" transparent opacity={0.6} />
+          <ringGeometry args={[radius, radius + 0.018, 64]} />
+          <meshBasicMaterial color="#E5DAC9" transparent opacity={0.65} />
         </mesh>
       ))}
 
+      {/* Floating Gold Leaf Dust Specks */}
       <points ref={particlesRef}>
         <bufferGeometry>
           <bufferAttribute
@@ -82,10 +91,10 @@ export const GalleryEnvironment = () => {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.035}
-          color="#C6A15B"
+          size={0.032}
+          color="#C89D42"
           transparent
-          opacity={0.35}
+          opacity={0.4}
           sizeAttenuation
         />
       </points>

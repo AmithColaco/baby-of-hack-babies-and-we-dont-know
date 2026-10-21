@@ -14,6 +14,7 @@
     "@react-three/fiber": "^9.8.2",
     "@rolldown/binding-win32-x64-msvc": "^1.2.14",
     "axios": "^1.20.0",
+    "framer-motion": "^14.4.0",
     "hls.js": "^1.7.3",
     "i18next": "^26.5.3",
     "react": "^19.3.1",
