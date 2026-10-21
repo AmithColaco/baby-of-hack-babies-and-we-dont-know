@@ -219,6 +219,7 @@ export default function CreateListing() {
       .filter(Boolean);
 
     let backendId: string | null = null;
+    let uploadedImageUrl = imageUrl;
 
     if (isEditing && id) {
       try {
@@ -236,7 +237,10 @@ export default function CreateListing() {
 
         if (selectedFiles.length > 0) {
           try {
-            await uploadListingImages(id, selectedFiles);
+            const updatedRec = await uploadListingImages(id, selectedFiles);
+            if (updatedRec.images && updatedRec.images.length > 0) {
+              uploadedImageUrl = updatedRec.images[0].url;
+            }
           } catch (imgErr) {
             console.warn('Image upload error on update:', imgErr);
           }
@@ -263,7 +267,10 @@ export default function CreateListing() {
         // 2. Upload images if attached
         if (selectedFiles.length > 0) {
           try {
-            await uploadListingImages(backendId, selectedFiles);
+            const updatedRec = await uploadListingImages(backendId, selectedFiles);
+            if (updatedRec.images && updatedRec.images.length > 0) {
+              uploadedImageUrl = updatedRec.images[0].url;
+            }
           } catch (imgErr) {
             console.warn('Image upload error:', imgErr);
           }
@@ -282,6 +289,9 @@ export default function CreateListing() {
 
     const productId = isEditing && id ? id : (backendId || `craft-${Date.now().toString(36)}`);
     const accessionNo = existingProduct?.accessionNo || `KH-2026-${Math.floor(Math.random() * 900 + 100)}`;
+    const finalImage = uploadedImageUrl
+      ? (uploadedImageUrl.startsWith('/uploads') ? `http://localhost:8000${uploadedImageUrl}` : uploadedImageUrl)
+      : (imageUrl || PRESET_IMAGES[0].url);
 
     const newCraftObject: CraftObject = {
       id: productId,
@@ -304,7 +314,7 @@ export default function CreateListing() {
       weight: '1.2 kg',
       materials: materialsArray.length > 0 ? materialsArray : ['Authentic Coastal Materials'],
       technique: technique.trim() || `${craftTradition} canonical guild practice`,
-      image: imageUrl || PRESET_IMAGES[0].url,
+      image: finalImage,
       makingStory: {
         summary: summary.trim(),
         stages: [
@@ -316,7 +326,6 @@ export default function CreateListing() {
       artisanBio: profile.bio || `Preserving indigenous coastal mastercraft passed down through generations in ${region}.`,
       artisanQuote: 'In handcraft, time is not counted in minutes, but in strokes of devotion and living tradition.',
       directArtisanSharePercent: directShare,
-      position3D: [0, 0, 0],
       modelType: (category as any) || 'textile',
       colorPalette: ['#A0522D', '#D2B48C', '#2E8B57', '#DEB887'],
     };
@@ -399,15 +408,17 @@ export default function CreateListing() {
                       multiple
                       accept="image/jpeg,image/png,image/webp"
                       onChange={(e) => {
-                        if (e.target.files) {
-                          setSelectedFiles(Array.from(e.target.files).slice(0, 4));
+                        if (e.target.files && e.target.files.length > 0) {
+                          const files = Array.from(e.target.files).slice(0, 4);
+                          setSelectedFiles(files);
+                          setImageUrl(URL.createObjectURL(files[0]));
                         }
                       }}
                       style={{ fontSize: '0.82rem', width: '100%' }}
                     />
                     {selectedFiles.length > 0 && (
                       <span style={{ fontSize: '0.78rem', color: '#2E8B57', marginTop: '4px', display: 'block' }}>
-                        ✓ {selectedFiles.length} photo(s) selected
+                        ✓ {selectedFiles.length} photo(s) selected & previewed
                       </span>
                     )}
                   </div>
@@ -753,9 +764,31 @@ export default function CreateListing() {
 
                 {/* 5. Visual Preset or Upload */}
                 <fieldset className="form-section">
-                  <legend className="section-legend">05. Primary Display Image</legend>
+                  <legend className="section-legend">05. Primary Display Image & Upload</legend>
                   <div className="form-group">
-                    <label htmlFor="image-url">Image URL</label>
+                    <label htmlFor="primary-image-file">Upload Photograph from Atelier Device</label>
+                    <input
+                      id="primary-image-file"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          const files = Array.from(e.target.files).slice(0, 4);
+                          setSelectedFiles(files);
+                          setImageUrl(URL.createObjectURL(files[0]));
+                        }
+                      }}
+                      className="form-input"
+                    />
+                    {selectedFiles.length > 0 && (
+                      <span style={{ fontSize: '0.8rem', color: '#2E8B57', marginTop: '6px', display: 'block', fontWeight: 600 }}>
+                        ✓ {selectedFiles.length} file(s) attached ({selectedFiles[0].name})
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="form-group" style={{ marginTop: '12px' }}>
+                    <label htmlFor="image-url">Or Curatorial Image URL</label>
                     <input
                       id="image-url"
                       type="text"
@@ -789,6 +822,7 @@ export default function CreateListing() {
 
                 <div className="form-actions-bar" style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
                   <button
+                    id="publish-listing-btn"
                     type="submit"
                     disabled={isSubmitting}
                     className="dash-btn dash-btn--primary"

@@ -13,4 +13,12 @@ export default defineConfig({
       'hls.js': path.resolve(__dirname, 'node_modules/hls.js/dist/hls.js'),
     },
   },
+  server: {
+    proxy: {
+      '/uploads': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
 })
