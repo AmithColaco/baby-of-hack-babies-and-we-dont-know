@@ -82,7 +82,6 @@ export function SiteHeader() {
 
           {/* Desktop Nav */}
           <nav className="site-header__nav" aria-label="Main Navigation">
-            <NavLink to="/shop" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>Collection</NavLink>
             <NavLink to="/gallery" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>Gallery</NavLink>
             <Link to="/#artisans" className="site-nav-link">Artisans</Link>
             <Link to="/#process" className="site-nav-link">Craft Journey</Link>
@@ -118,41 +117,67 @@ export function SiteHeader() {
 
             {/* Auth / User menu */}
             {isLoggedIn ? (
-              <div className="site-header__user-menu-wrap" ref={userMenuRef} style={{ position: 'relative' }}>
+              <div className="site-header__user-menu-wrap" ref={userMenuRef}>
                 <button
+                  id="user-account-menu-btn"
                   type="button"
                   className="site-header__seller-cta"
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   aria-label="User account menu"
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                  aria-expanded={showUserMenu}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}
                 >
                   <span>{user?.name?.split(' ')[0] || 'Account'}</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    style={{
+                      transform: showUserMenu ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease',
+                    }}
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <polyline points="6 9 12 15 18 9" />
                   </svg>
                 </button>
                 {showUserMenu && (
-                  <div className="user-dropdown">
+                  <div className="user-dropdown" role="menu">
                     <div className="user-dropdown__header">
-                      <div className="user-dropdown__name">{user?.name}</div>
-                      <div className="user-dropdown__role">{isArtisan ? 'Master Artisan' : 'Art Collector'}</div>
+                      <div className="user-dropdown__name">{user?.name || (isArtisan ? 'Master Artisan' : 'Art Connoisseur')}</div>
+                      <div className="user-dropdown__role">
+                        {isArtisan ? '✦ Master Artisan & Atelier' : '✦ Verified Art Collector'}
+                      </div>
                     </div>
                     {isArtisan && (
                       <Link to="/dashboard" className="user-dropdown__link" onClick={() => setShowUserMenu(false)}>
-                        <span>Seller Atelier</span>
-                        <span>→</span>
+                        <span className="user-dropdown__link-text">
+                          <span className="user-dropdown__link-icon">🏛</span>
+                          <span>Seller Atelier</span>
+                        </span>
+                        <span className="user-dropdown__arrow">→</span>
                       </Link>
                     )}
                     <Link to="/wishlist" className="user-dropdown__link" onClick={() => setShowUserMenu(false)}>
-                      <span>My Wishlist</span>
+                      <span className="user-dropdown__link-text">
+                        <span className="user-dropdown__link-icon">♡</span>
+                        <span>My Wishlist</span>
+                      </span>
                       {totalWishlist > 0 && <span className="site-badge" style={{ position: 'static' }}>{totalWishlist}</span>}
                     </Link>
                     <Link to="/settings" className="user-dropdown__link" onClick={() => setShowUserMenu(false)}>
-                      <span>Account Settings</span>
-                      <span>⚙</span>
+                      <span className="user-dropdown__link-text">
+                        <span className="user-dropdown__link-icon">⚙</span>
+                        <span>Account Settings</span>
+                      </span>
                     </Link>
                     <button type="button" className="user-dropdown__btn" onClick={handleLogout}>
-                      Sign Out
+                      <span className="user-dropdown__link-icon">⎋</span>
+                      <span>Sign Out</span>
                     </button>
                   </div>
                 )}
@@ -200,8 +225,7 @@ export function SiteHeader() {
             </div>
             <nav className="mobile-drawer__nav">
               <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home Archive</Link>
-              <Link to="/shop" onClick={() => setMobileMenuOpen(false)}>Curated Collection</Link>
-              <Link to="/gallery" onClick={() => setMobileMenuOpen(false)}>Curatorial Exhibition</Link>
+              <Link to="/gallery" onClick={() => setMobileMenuOpen(false)}>Living Gallery</Link>
               <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>My Wishlist {totalWishlist > 0 && `(${totalWishlist})`}</Link>
               {isLoggedIn && isArtisan && <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>Artisan Dashboard</Link>}
               {isLoggedIn && <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>Settings</Link>}

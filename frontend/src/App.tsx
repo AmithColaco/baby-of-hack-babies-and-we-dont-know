@@ -1,4 +1,4 @@
-﻿import { useEffect } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { SiteHeader } from './components/SiteHeader';
 import { SiteFooter } from './components/SiteFooter';
@@ -6,7 +6,6 @@ import { CartDrawer } from './components/CartDrawer';
 import Home from './pages/Home';
 import Catalogue from './pages/Catalogue';
 import Product from './pages/Product';
-import Gallery from './pages/Gallery';
 import Checkout from './pages/Checkout';
 import Dashboard from './pages/Dashboard';
 import CreateListing from './pages/CreateListing';
@@ -36,25 +35,22 @@ function ScrollToTop() {
 function ProtectedArtisanRoute({ children }: { children: React.ReactNode }) {
   const { isLoggedIn, isArtisan } = useAuth();
   if (!isLoggedIn) return <Navigate to="/login" replace />;
-  if (!isArtisan) return <Navigate to="/shop" replace />;
+  if (!isArtisan) return <Navigate to="/gallery" replace />;
   return <>{children}</>;
 }
 
 function AppLayout() {
-  const location = useLocation();
-  const isDedicated3DGallery = location.pathname === '/gallery';
-
   return (
     <div className="kaarigar-shell">
       <ScrollToTop />
-      {!isDedicated3DGallery && <SiteHeader />}
+      <SiteHeader />
       <CartDrawer />
 
       <Routes>
         <Route path="/"                   element={<Home />} />
-        <Route path="/shop"               element={<Catalogue />} />
+        <Route path="/gallery"            element={<Catalogue />} />
+        <Route path="/shop"               element={<Navigate to="/gallery" replace />} />
         <Route path="/shop/:id"           element={<Product />} />
-        <Route path="/gallery"            element={<Gallery />} />
         <Route path="/cart"               element={<Checkout />} />
         <Route path="/wishlist"           element={<WishlistPage />} />
         <Route path="/login"              element={<Onboarding />} />
@@ -70,7 +66,7 @@ function AppLayout() {
         <Route path="*"                   element={<Navigate to="/" replace />} />
       </Routes>
 
-      {!isDedicated3DGallery && <SiteFooter />}
+      <SiteFooter />
     </div>
   );
 }
