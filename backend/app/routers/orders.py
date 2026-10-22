@@ -79,12 +79,12 @@ def _order_to_out(order: Order) -> OrderOut:
 @router.post("", response_model=OrderOut, status_code=201, summary="Checkout – create order (atomic)")
 def checkout(
     body: CheckoutRequest,
-    user: User | None = Depends(get_current_user_optional),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Atomic checkout:
     1. Check idempotency key – return existing order if duplicate.
-    2. Resolve buyer (logged-in user or auto-provisioned guest).
+    2. Require authenticated buyer.
     3. Lock and validate stock for each item.
     4. Create order + items in one transaction.
     5. Process mock payment.
@@ -94,23 +94,6 @@ def checkout(
     existing = db.query(Order).filter(Order.idempotency_key == body.idempotency_key).first()
     if existing:
         return _order_to_out(existing)
-
-    # 2. Resolve buyer
-    if user is None:
-        guest_phone = body.address.get("phone") if isinstance(body.address, dict) else None
-        if not guest_phone:
-            guest_phone = f"+91{uuid.uuid4().int % 10000000000:010d}"
-        user = db.query(User).filter(User.phone == guest_phone).first()
-        if user is None:
-            guest_name = body.address.get("full_name") if isinstance(body.address, dict) else "Guest Patron"
-            user = User(
-                phone=guest_phone,
-                role=UserRole.buyer,
-                name=guest_name or "Guest Patron",
-            )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
 
     # 3. Lock listings and validate stock
     total = 0.0

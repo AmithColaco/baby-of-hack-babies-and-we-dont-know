@@ -1,26 +1,84 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 import { checkoutOrder } from '../api/orders';
 import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { cart, removeFromCart, updateQuantity, clearCart, totalAmount, directArtisanTotal } = useCart();
+  const { cart, removeFromCart, updateQuantity, clearCart, totalAmount, platformFeeTotal, taxTotal, directArtisanTotal } = useCart();
+  const { user, isLoggedIn, requestOtp, loginWithOtp } = useAuth();
 
-  const [name, setName] = useState('Ananya Sen');
-  const [email, setEmail] = useState('ananya.sen@example.com');
-  const [phone, setPhone] = useState('+91 98201 55432');
+  const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState(user?.phone || '');
   const [address, setAddress] = useState('42, Gulmohar Enclave, Malabar Hill');
-  const [city, setCity] = useState('Mumbai');
+  const [city, setCity] = useState(user?.city || 'Mumbai');
   const [state, setState] = useState('Maharashtra');
   const [pinCode, setPinCode] = useState('400006');
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'card' | 'inspection'>('upi');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
 
+  // Inline login state when unauthenticated
+  const [loginPhone, setLoginPhone] = useState('+91 98201 55432');
+  const [loginOtp, setLoginOtp] = useState('123456');
+  const [otpSent, setOtpSent] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      if (user.name) setName(user.name);
+      if (user.phone) setPhone(user.phone);
+      if (user.email) setEmail(user.email);
+      if (user.city) setCity(user.city);
+    }
+  }, [user]);
+
+  const handleInlineSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const digits = loginPhone.replace(/\D/g, '');
+    if (digits.length < 10) {
+      setAuthError('Please enter a valid 10-digit mobile number');
+      return;
+    }
+    setAuthError('');
+    setAuthLoading(true);
+    const fullPhone = `+91${digits.slice(-10)}`;
+    try {
+      await requestOtp(fullPhone);
+      setOtpSent(true);
+    } catch (err: any) {
+      setAuthError(err.response?.data?.detail || 'Failed to dispatch OTP. Proceed with demo OTP: 123456');
+      setOtpSent(true);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleInlineVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const digits = loginPhone.replace(/\D/g, '');
+    const fullPhone = `+91${digits.slice(-10)}`;
+    setAuthError('');
+    setAuthLoading(true);
+    try {
+      await loginWithOtp(fullPhone, loginOtp.trim() || '123456');
+    } catch (err: any) {
+      setAuthError(err.response?.data?.detail || 'Invalid verification code. Demo code is 123456');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isLoggedIn) {
+      setCheckoutError('Please log in with your collector account to complete acquisition.');
+      return;
+    }
     setIsSubmitting(true);
     setCheckoutError('');
 
@@ -34,8 +92,8 @@ export default function Checkout() {
           qty: it.quantity,
         })),
         address: {
-          full_name: name,
-          phone,
+          full_name: name || user?.name || 'Collector',
+          phone: phone || user?.phone || '',
           address_line: address,
           city,
           state,
@@ -110,6 +168,107 @@ export default function Checkout() {
           <div className="checkout-form-col">
             <form onSubmit={handlePlaceOrder} className="checkout-form">
               {checkoutError && <div className="form-error-banner" style={{ marginBottom: '14px' }}>{checkoutError}</div>}
+
+              {/* Collector Authentication Gate */}
+              {!isLoggedIn ? (
+                <div className="checkout-card checkout-auth-gate" style={{ borderLeft: '4px solid var(--terracotta)', background: '#FAF6F0' }}>
+                  <span className="checkout-card__step" style={{ background: 'var(--terracotta)', color: '#fff' }}>AUTHENTICATION REQUIRED</span>
+                  <h2 className="checkout-card__title">Sign In to Authenticate Acquisition</h2>
+                  <p className="checkout-card__desc">
+                    To safeguard artisanal provenance and bind registered ownership deeds to your collector profile, please sign in with your mobile number before checkout.
+                  </p>
+
+                  {authError && <div className="form-error-banner" style={{ marginBottom: '1rem' }}>{authError}</div>}
+
+                  {!otpSent ? (
+                    <div className="checkout-inline-auth">
+                      <div className="form-group" style={{ marginBottom: '0.85rem' }}>
+                        <label htmlFor="auth-phone">Mobile Number (+91)</label>
+                        <div style={{ display: 'flex', gap: '0.65rem' }}>
+                          <input
+                            id="auth-phone"
+                            type="tel"
+                            value={loginPhone}
+                            onChange={(e) => setLoginPhone(e.target.value)}
+                            placeholder="+91 98201 55432"
+                            className="form-input"
+                            style={{ flex: 1 }}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleInlineSendOtp}
+                            disabled={authLoading}
+                            className="hero-btn hero-btn--primary"
+                            style={{ padding: '0.65rem 1.4rem', whiteSpace: 'nowrap' }}
+                          >
+                            {authLoading ? 'Sending…' : 'Send Code'}
+                          </button>
+                        </div>
+                      </div>
+                      <span className="auth-hint-text" style={{ fontSize: '0.78rem', color: 'var(--stone)' }}>
+                        A one-time SMS verification code will be sent. Demo code: <strong>123456</strong>
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="checkout-inline-auth">
+                      <p style={{ fontSize: '0.88rem', color: 'var(--graphite)', marginBottom: '0.75rem' }}>
+                        Passcode dispatched to <strong>{loginPhone}</strong>.{' '}
+                        <button
+                          type="button"
+                          onClick={() => setOtpSent(false)}
+                          style={{ background: 'none', border: 'none', color: 'var(--terracotta)', textDecoration: 'underline', cursor: 'pointer', padding: 0 }}
+                        >
+                          Change number
+                        </button>
+                      </p>
+                      <div className="form-group" style={{ marginBottom: '0.85rem' }}>
+                        <label htmlFor="auth-otp">Enter 6-Digit Passcode</label>
+                        <div style={{ display: 'flex', gap: '0.65rem' }}>
+                          <input
+                            id="auth-otp"
+                            type="text"
+                            maxLength={6}
+                            value={loginOtp}
+                            onChange={(e) => setLoginOtp(e.target.value)}
+                            placeholder="123456"
+                            className="form-input"
+                            style={{ flex: 1, letterSpacing: '0.2em', fontWeight: 600 }}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleInlineVerifyOtp}
+                            disabled={authLoading}
+                            className="hero-btn hero-btn--primary"
+                            style={{ padding: '0.65rem 1.4rem', whiteSpace: 'nowrap' }}
+                          >
+                            {authLoading ? 'Verifying…' : 'Verify & Continue'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="checkout-card checkout-auth-verified" style={{ borderLeft: '4px solid #2e7d32', backgroundColor: 'rgba(46, 125, 50, 0.04)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#2e7d32', letterSpacing: '0.06em' }}>
+                        ✓ Authenticated Collector Session
+                      </span>
+                      <h3 style={{ margin: '0.3rem 0 0.2rem', fontFamily: 'var(--font-display)', fontSize: '1.15rem' }}>
+                        {user?.name || 'Patron of Heritage Crafts'}
+                      </h3>
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--graphite)' }}>
+                        {user?.phone || user?.email} · Provenance deeds will be minted to this profile.
+                      </p>
+                    </div>
+                    <span className="checkout-secure-badge" style={{ backgroundColor: '#e8f5e9', color: '#2e7d32', borderColor: '#c8e6c9' }}>
+                      Verified Collector
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Shipping Address */}
               <div className="checkout-card">
                 <span className="checkout-card__step">STEP 01</span>
@@ -261,15 +420,32 @@ export default function Checkout() {
               </div>
 
               {/* Place Order CTA */}
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="checkout-submit-btn"
-                id="checkout-confirm"
-              >
-                <span>{isSubmitting ? 'Inscribing Order…' : `Confirm Acquisition · ₹${totalAmount.toLocaleString('en-IN')}`}</span>
-                <span className="arrow">→</span>
-              </button>
+              {!isLoggedIn ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  <button
+                    type="button"
+                    disabled={true}
+                    className="checkout-submit-btn checkout-submit-btn--locked"
+                    style={{ opacity: 0.65, cursor: 'not-allowed', backgroundColor: 'var(--graphite)' }}
+                  >
+                    <span>🔒 Log In Required to Complete Acquisition</span>
+                    <span className="arrow">→</span>
+                  </button>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--terracotta)', textAlign: 'center', margin: 0 }}>
+                    Please authenticate with your collector phone number above to proceed to acquisition.
+                  </p>
+                </div>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="checkout-submit-btn"
+                  id="checkout-confirm"
+                >
+                  <span>{isSubmitting ? 'Inscribing Order…' : `Confirm Acquisition · ₹${totalAmount.toLocaleString('en-IN')}`}</span>
+                  <span className="arrow">→</span>
+                </button>
+              )}
             </form>
           </div>
 
@@ -328,8 +504,16 @@ export default function Checkout() {
               {/* Financial Totals */}
               <div className="summary-financials">
                 <div className="fin-row">
-                  <span>Gross Masterpiece Value</span>
-                  <span>₹{totalAmount.toLocaleString('en-IN')}</span>
+                  <span>Actual Price (Base Artisan Valuation)</span>
+                  <span>₹{directArtisanTotal.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="fin-row">
+                  <span>Platform Fee (5%)</span>
+                  <span>₹{platformFeeTotal.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="fin-row">
+                  <span>Tax (5% GST)</span>
+                  <span>₹{taxTotal.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="fin-row">
                   <span>Insured Archival Courier</span>

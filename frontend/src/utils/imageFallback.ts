@@ -24,6 +24,25 @@ export function getFallbackForCraft(traditionOrCategory = ''): string {
   return DEFAULT_FALLBACK_IMAGE;
 }
 
+export const DEFAULT_ARTISAN_IMAGE = '/images/artisan.jpg';
+
+export function getArtisanImage(artisanOrCraft = ''): string {
+  const lower = artisanOrCraft.toLowerCase();
+  if (lower.includes('bismillah') || lower.includes('weaver') || lower.includes('chanderi')) {
+    return '/images/artisan_weaver.jpg';
+  }
+  if (lower.includes('sukhruram') || lower.includes('ghadwa') || lower.includes('dhokra') || lower.includes('bronze') || lower.includes('metal')) {
+    return '/images/artisan_metalcraft.jpg';
+  }
+  if (lower.includes('mahesh') || lower.includes('potter') || lower.includes('ceramic') || lower.includes('blue pottery')) {
+    return '/images/artisan_potter.jpg';
+  }
+  if (lower.includes('savitri') || lower.includes('kasuti') || lower.includes('embroid') || lower.includes('lakshmi') || lower.includes('shell') || lower.includes('beedu')) {
+    return '/images/artisan_embroiderer.jpg';
+  }
+  return DEFAULT_ARTISAN_IMAGE;
+}
+
 export function handleImageError(
   e: React.SyntheticEvent<HTMLImageElement, Event>,
   fallback = DEFAULT_FALLBACK_IMAGE
@@ -34,3 +53,4 @@ export function handleImageError(
     target.src = fallback;
   }
 }
+

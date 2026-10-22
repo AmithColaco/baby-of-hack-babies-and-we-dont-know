@@ -2089,40 +2089,61 @@
 }
 
 .scene-price-block {
-  background-color: var(--ivory);
-  border: 1px solid var(--border);
-  padding: 1.25rem;
-  border-radius: var(--r-sm);
-  display: flex;
-  justify-content: space-between;
+  background-color: #FFFFFF;
+  border: 1px solid rgba(184, 92, 56, 0.2);
+  padding: 1.25rem 1.4rem;
+  border-radius: var(--r-md, 10px);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) 1.2fr;
+  gap: 1rem;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.75rem;
+  box-shadow: 0 4px 16px rgba(28, 28, 26, 0.04);
 }
 
 .price-item .price-label {
   font-size: 0.72rem;
   text-transform: uppercase;
-  color: var(--stone);
+  color: var(--stone, #6B655B);
   display: block;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
 }
 
 .price-item .price-val {
-  font-family: var(--font-display);
-  font-size: 2.25rem;
+  font-family: var(--font-display, serif);
+  font-size: 1.25rem;
   font-weight: 600;
-  color: var(--charcoal);
+  color: var(--charcoal, #1C1C1A);
 }
 
-.payout-pill {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--forest);
-  display: block;
+.price-item.total-item {
+  border-left: 1.5px solid rgba(28, 28, 26, 0.12);
+  padding-left: 1rem;
 }
 
-.payout-note {
-  font-size: 0.72rem;
-  color: var(--stone);
+.price-item.total-item .price-label {
+  color: var(--terracotta, #B85C38);
+}
+
+.price-item.total-item .price-val.total-val {
+  font-size: 1.6rem;
+  color: var(--terracotta, #B85C38);
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .scene-price-block {
+    grid-template-columns: 1fr 1fr;
+  }
+  .price-item.total-item {
+    border-left: none;
+    border-top: 1.5px solid rgba(28, 28, 26, 0.12);
+    padding-left: 0;
+    padding-top: 0.75rem;
+    grid-column: span 2;
+  }
 }
 
 /* ── Chapter 01 Exploration & Experience Actions ── */
@@ -2637,8 +2658,12 @@
 
 .related-card__img {
   width: 100%;
-  height: 180px;
+  max-width: 340.8px;
+  height: 340.8px;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
+  margin: 0 auto;
+  display: block;
 }
 
 .related-card__content {
@@ -3088,13 +3113,18 @@
 
 .shop-craft-card__media {
   position: relative;
-  aspect-ratio: 4/3;
+  width: 100%;
+  max-width: 340.8px;
+  height: 340.8px;
+  margin: 0 auto;
+  aspect-ratio: 1 / 1;
   background-color: var(--linen);
+  overflow: hidden;
 }
 
 .craft-card-img {
   width: 100%;
-  height: 100%;
+  height: 340.8px;
   object-fit: cover;
   transition: transform 0.5s var(--ease);
 }

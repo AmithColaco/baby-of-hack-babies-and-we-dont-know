@@ -1118,13 +1118,18 @@ input, textarea, select { font-family: inherit; }
 
 .product-card-k__img-wrap {
   position: relative;
-  aspect-ratio: 4/5;
+  width: 100%;
+  max-width: 340.8px;
+  height: 340.8px;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
+  margin: 0 auto;
   background: var(--bg-alt);
 }
 
 .product-card-k__img {
-  width: 100%; height: 100%;
+  width: 100%;
+  height: 340.8px;
   object-fit: cover;
   transition: transform var(--dur-slow) var(--ease-out);
 }

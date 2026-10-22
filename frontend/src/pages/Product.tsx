@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useProducts, useWishlist, listingToCraftObject } from '../data/productStore';
 import { getListingById } from '../api/listings';
 import { useCart } from '../contexts/CartContext';
-import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
+import { handleImageError, getFallbackForCraft, getArtisanImage } from '../utils/imageFallback';
 import type { CraftObject } from '../types';
 
 export default function Product() {
@@ -88,14 +88,21 @@ export default function Product() {
   }
 
   const isFavorited = isInWishlist(product.id);
-  const relatedProducts = products.filter((p) => p.id !== product.id && (p.category === product.category || p.region === product.region)).slice(0, 3);
+  // For items, strictly keep similar items only (matching craft category or tradition)
+  const relatedProducts = products
+    .filter((p) => p.id !== product.id && (p.category === product.category || p.craftTradition.toLowerCase().includes(product.category.toLowerCase())))
+    .slice(0, 3);
 
-  // Rate calculation: artist price + 5% platform fee
-  const clientPrice = Math.round(product.price * 1.05);
-  const platformFee = clientPrice - product.price;
+  // Rate calculation: Actual Price + 5% platform fee + 5% tax (GST)
+  const actualPrice = product.price;
+  const platformFee = Math.round(actualPrice * 0.05);
+  const tax = Math.round(actualPrice * 0.05);
+  const clientPrice = actualPrice + platformFee + tax;
+
+  const totalActualPrice = actualPrice * quantity;
+  const totalPlatformFee = platformFee * quantity;
+  const totalTax = tax * quantity;
   const totalClientPrice = clientPrice * quantity;
-  const totalArtisanBase = product.price * quantity;
-  const totalFee = platformFee * quantity;
 
   const handleAddToCart = () => {
     addToCart(product, quantity);
@@ -202,15 +209,20 @@ export default function Product() {
 
                   <div className="scene-price-block">
                     <div className="price-item">
-                      <span className="price-label">Acquisition Value</span>
-                      <span className="price-val">₹{clientPrice.toLocaleString('en-IN')}</span>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginTop: '2px' }}>
-                        Includes 5% archival platform fee (₹{platformFee.toLocaleString('en-IN')})
-                      </span>
+                      <span className="price-label">Actual Price</span>
+                      <span className="price-val">₹{actualPrice.toLocaleString('en-IN')}</span>
                     </div>
-                    <div className="price-payout-guarantee">
-                      <span className="payout-pill">✓ Direct Artisan Compensation</span>
-                      <span className="payout-note">Zero middleman deductions · Transparent 5% platform fee</span>
+                    <div className="price-item">
+                      <span className="price-label">Platform Fee (5%)</span>
+                      <span className="price-val">₹{platformFee.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="price-item">
+                      <span className="price-label">Tax (5% GST)</span>
+                      <span className="price-val">₹{tax.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="price-item total-item">
+                      <span className="price-label">Total Price</span>
+                      <span className="price-val total-val">₹{clientPrice.toLocaleString('en-IN')}</span>
                     </div>
                   </div>
 
@@ -263,38 +275,6 @@ export default function Product() {
                       <span>✓ Complimentary white-glove transit across India · Insured & certified</span>
                     </div>
                   </div>
-
-                  <div className="scene-actions">
-                    <button
-                      type="button"
-                      className="scene-next-btn"
-                      onClick={() => setActiveChapter(1)}
-                    >
-                      <span>Explore Chapter 02: Meet the Maker</span>
-                      <span className="arrow">→</span>
-                    </button>
-
-                    <div className="scene-secondary-actions">
-                      <Link
-                        to={`/gallery?focus=${product.id}`}
-                        className="scene-3d-btn"
-                        title="Inspect this artifact in the Curatorial Gallery"
-                      >
-                        <span className="btn-icon">✦</span>
-                        <span>Curatorial Gallery</span>
-                      </Link>
-
-                      <button
-                        type="button"
-                        className="scene-stylist-trigger-btn"
-                        onClick={() => window.dispatchEvent(new CustomEvent('open-space-stylist'))}
-                        title="Style this craft piece in your room with AI"
-                      >
-                        <span className="btn-icon">✦</span>
-                        <span>Style My Space</span>
-                      </button>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -307,7 +287,7 @@ export default function Product() {
                 <div className="scene-artisan__media">
                   <div className="artisan-media-box">
                     <img
-                      src="/images/artisan.jpg"
+                      src={product.artisanImage || getArtisanImage(product.artisan + ' ' + (product.craftTradition || ''))}
                       alt={product.artisan}
                       className="artisan-portrait"
                       onError={(e) => handleImageError(e, '/images/artisan.jpg')}
@@ -502,11 +482,24 @@ export default function Product() {
                   <span className="acquire-artisan">Crafted by {product.artisan}</span>
 
                   <div className="acquire-price-display">
-                    <span className="price-num">₹{totalClientPrice.toLocaleString('en-IN')}</span>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--muted)', display: 'block', margin: '4px 0 8px' }}>
-                      Base price: ₹{totalArtisanBase.toLocaleString('en-IN')} + 5% platform fee: ₹{totalFee.toLocaleString('en-IN')}
-                    </span>
-                    <span className="shipping-note">Complimentary insured archival transit across India</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '0.75rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: '#5A564F' }}>
+                        <span>Actual Price:</span>
+                        <span>₹{totalActualPrice.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: '#5A564F' }}>
+                        <span>Platform Fee (5%):</span>
+                        <span>₹{totalPlatformFee.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: '#5A564F' }}>
+                        <span>Tax (5% GST):</span>
+                        <span>₹{totalTax.toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+                    <div style={{ borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '0.6rem' }}>
+                      <span className="price-num">₹{totalClientPrice.toLocaleString('en-IN')}</span>
+                      <span className="shipping-note">Complimentary insured archival transit across India</span>
+                    </div>
                   </div>
 
                   <div className="acquire-quantity-selector">
@@ -558,16 +551,16 @@ export default function Product() {
                   <div className="provenance-seal-card">
                     <div className="seal-icon">✦</div>
                     <div className="seal-text">
-                      <strong>KAARIGAR Provenance Covenant:</strong> Proceeds (₹{totalArtisanBase.toLocaleString('en-IN')}) are transferred directly to {product.artisan}’s guild account. The 5% platform fee (₹{totalFee.toLocaleString('en-IN')}) maintains archival documentation and digital preservation.
+                      <strong>KAARIGAR Provenance Covenant:</strong> Proceeds (₹{totalActualPrice.toLocaleString('en-IN')}) are transferred directly to {product.artisan}’s guild account. The 5% platform fee (₹{totalPlatformFee.toLocaleString('en-IN')}) maintains archival documentation and digital preservation.
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Related Collection Pieces */}
+              {/* Related Collection Pieces - Strictly Similar Items Only */}
               {relatedProducts.length > 0 && (
                 <div className="related-crafts-section">
-                  <h3 className="related-title">Complementary Pieces from the Same Guild</h3>
+                  <h3 className="related-title">Similar Works in {product.craftTradition}</h3>
                   <div className="related-grid">
                     {relatedProducts.map((rel) => (
                       <Link key={rel.id} to={`/shop/${rel.id}`} className="related-card">

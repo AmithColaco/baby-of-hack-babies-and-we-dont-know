@@ -273,13 +273,13 @@ def test_checkout_order_flow_and_inventory_guard():
 
 
 def test_guest_checkout_and_unauthenticated_order_tracking():
-    """Verify that unauthenticated guest patrons can place orders and track them."""
+    """Verify that checkout requires authentication (unauthenticated is rejected with 401)."""
     # Find a published listing with stock
     listings = client.get("/listings?status=PUBLISHED").json()
     assert len(listings) > 0
     target = listings[0]
 
-    guest_payload = {
+    checkout_payload = {
         "items": [{"listing_id": target["id"], "qty": 1}],
         "address": {
             "full_name": "Radha Iyengar",
@@ -293,14 +293,23 @@ def test_guest_checkout_and_unauthenticated_order_tracking():
         "idempotency_key": f"guest-test-{uuid.uuid4().hex}",
     }
 
-    res = client.post("/orders", json=guest_payload)
+    # 1. Unauthenticated request must be rejected with 401
+    res_unauth = client.post("/orders", json=checkout_payload)
+    assert res_unauth.status_code == 401
+
+    # 2. Authenticated user can checkout successfully
+    login_res = client.post("/auth/otp/verify", json={"phone": "+919123456789", "otp": "123456"})
+    token = login_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.post("/orders", json=checkout_payload, headers=headers)
     assert res.status_code == 201
     order = res.json()
     order_id = order["id"]
     assert order["payment_status"] == "SUCCESS"
 
-    # Guest tracking: unauthenticated GET /orders/{order_id} must succeed
-    track_res = client.get(f"/orders/{order_id}")
+    # Tracking order with token
+    track_res = client.get(f"/orders/{order_id}", headers=headers)
     assert track_res.status_code == 200
     assert track_res.json()["id"] == order_id
 
@@ -367,6 +376,13 @@ def test_validation_and_error_edge_cases():
         "payment_method": "mock_card",
         "idempotency_key": f"decline-test-{uuid.uuid4().hex}",
     }
-    res = client.post("/orders", json=decline_payload)
+    # Unauthenticated checkout must return 401
+    res_unauth = client.post("/orders", json=decline_payload)
+    assert res_unauth.status_code == 401
+
+    # Authenticated checkout with declined card returns 402
+    buyer_login = client.post("/auth/otp/verify", json={"phone": "+919444555666", "otp": "123456"})
+    buyer_headers = {"Authorization": f"Bearer {buyer_login.json()['access_token']}"}
+    res = client.post("/orders", json=decline_payload, headers=buyer_headers)
     assert res.status_code == 402
 

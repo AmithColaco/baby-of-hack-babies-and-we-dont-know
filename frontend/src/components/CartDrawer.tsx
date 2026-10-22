@@ -15,6 +15,7 @@ export const CartDrawer = () => {
     totalAmount,
     totalItems,
     platformFeeTotal,
+    taxTotal,
     directArtisanTotal,
   } = useCart();
 
@@ -168,12 +169,16 @@ export const CartDrawer = () => {
               </div>
 
               <div className="cart__total-row">
-                <span className="total-label">Artisan Price</span>
-                <span className="total-value">₹ {(totalAmount - platformFeeTotal).toLocaleString('en-IN')}</span>
+                <span className="total-label">Actual Price</span>
+                <span className="total-value">₹ {directArtisanTotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="cart__total-row" style={{ fontSize: '0.82rem', color: '#7A7570' }}>
                 <span className="total-label">Platform Fee (5%)</span>
                 <span className="total-value">₹ {platformFeeTotal.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="cart__total-row" style={{ fontSize: '0.82rem', color: '#7A7570' }}>
+                <span className="total-label">Tax (5% GST)</span>
+                <span className="total-value">₹ {taxTotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="cart__total-row" style={{ borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '0.6rem', marginTop: '0.25rem' }}>
                 <span className="total-label"><strong>Total</strong></span>

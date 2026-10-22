@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { CraftObject } from '../types';
 import { useCart } from '../contexts/CartContext';
 import { getGuideNarration } from '../api/gallery';
+import { getArtisanImage, handleImageError } from '../utils/imageFallback';
 
 interface ObjectDetailPanelProps {
   object: CraftObject;
@@ -375,9 +376,13 @@ export const ObjectDetailPanel = ({
           <div className="panel__tab-body">
             <div className="artisan-profile-card">
               <div className="artisan-header">
-                <div className="artisan-avatar-placeholder">
-                  {object.artisan.split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
-                </div>
+                <img
+                  src={object.artisanImage || getArtisanImage(object.artisan + ' ' + (object.craftTradition || ''))}
+                  alt={object.artisan}
+                  className="artisan-avatar-img"
+                  style={{ width: 60, height: 60, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--terracotta)' }}
+                  onError={(e) => handleImageError(e, '/images/artisan.jpg')}
+                />
                 <div>
                   <h4 className="artisan-name">{object.artisan}</h4>
                   <div className="artisan-title">{object.artisanTitle}</div>

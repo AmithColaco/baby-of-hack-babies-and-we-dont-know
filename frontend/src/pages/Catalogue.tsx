@@ -122,11 +122,6 @@ export default function Catalogue() {
           <p className="shop-header__desc">
             Authentic Indian craftsmanship directly from living master artisans.
           </p>
-
-          <div className="shop-header__stats">
-            <span className="stat-pill"><strong>{products.length}</strong> Works</span>
-            <span className="stat-pill"><strong>Authentic</strong> Living Heritage</span>
-          </div>
         </div>
       </section>
 
@@ -358,12 +353,14 @@ export default function Catalogue() {
                           By <strong>{prod.artisan}</strong>
                         </p>
 
-                        <div className="card-price-row">
+                        <div className="card-price-row" style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'flex-start' }}>
                           <div className="card-price">
                             <span className="cur">₹</span>
-                            <span className="val">{Math.round(prod.price * 1.05).toLocaleString('en-IN')}</span>
+                            <span className="val">{(prod.price + Math.round(prod.price * 0.05) + Math.round(prod.price * 0.05)).toLocaleString('en-IN')}</span>
                           </div>
-                          <span style={{ fontSize: '0.72rem', color: '#8a7a6a' }}>incl. 5% platform fee</span>
+                          <span style={{ fontSize: '0.74rem', color: 'var(--stone)' }}>
+                            Actual: ₹{prod.price.toLocaleString('en-IN')} · Fee: 5% · Tax: 5%
+                          </span>
                         </div>
 
                         <div className="card-actions">

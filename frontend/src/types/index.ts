@@ -41,6 +41,7 @@ export interface CraftObject {
   };
   artisanBio: string;
   artisanQuote: string;
+  artisanImage?: string;
   directArtisanSharePercent: number;
   position3D?: [number, number, number];
   rotation3D?: [number, number, number];

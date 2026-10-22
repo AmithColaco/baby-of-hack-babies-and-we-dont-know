@@ -134,9 +134,14 @@ export function FeaturedCarousel() {
                 <span className="inspector-accession">{currentProduct.accessionNo} · {currentProduct.craftTradition}</span>
                 <span className="inspector-region">{currentProduct.region}, {currentProduct.state}</span>
               </div>
-              <div className="inspector-price">
-                <span className="currency">₹</span>
-                <span className="amount">{currentProduct.price.toLocaleString('en-IN')}</span>
+              <div className="inspector-price" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                  <span className="currency">₹</span>
+                  <span className="amount">{(currentProduct.price + Math.round(currentProduct.price * 0.05) + Math.round(currentProduct.price * 0.05)).toLocaleString('en-IN')}</span>
+                </div>
+                <span style={{ fontSize: '0.72rem', color: 'var(--stone)' }}>
+                  Actual: ₹{currentProduct.price.toLocaleString('en-IN')} · Fee: 5% · Tax: 5%
+                </span>
               </div>
             </div>
 

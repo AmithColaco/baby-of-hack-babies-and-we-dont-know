@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { CRAFT_OBJECTS } from './craftsData';
 import type { CraftObject } from '../types';
 import { getListings, type ListingRecord } from '../api/listings';
+import { getArtisanImage } from '../utils/imageFallback';
 
 const PRODUCTS_STORAGE_KEY = 'kaarigar_products_catalog_v2';
 const WISHLIST_STORAGE_KEY = 'kaarigar_wishlist_v1';
@@ -111,6 +112,7 @@ export function listingToCraftObject(listing: ListingRecord): CraftObject {
     },
     artisanBio: `Master artisan from ${listing.artisan_village || 'coastal Karnataka'}, maintaining centuries of ancestral craft wisdom.`,
     artisanQuote: 'In handcraft, time is not counted in minutes, but in strokes of devotion and living tradition.',
+    artisanImage: getArtisanImage(listing.artisan_name || listing.craft_type),
     directArtisanSharePercent: 88,
     position3D: [0, 0, 0],
     modelType: category === 'textiles' ? 'textile' : category === 'ceramics' ? 'pottery' : 'brass',
@@ -198,8 +200,18 @@ export function useProducts() {
           const nonDupExisting = existing.filter((e) => !backendIds.has(e.id));
           const merged = [...converted, ...nonDupExisting];
 
-          saveProductsToStorage(merged);
-          setProducts(merged);
+          // Deduplicate items strictly by unique ID
+          const seenIds = new Set<string>();
+          const deduped: CraftObject[] = [];
+          for (const item of merged) {
+            if (!seenIds.has(item.id)) {
+              seenIds.add(item.id);
+              deduped.push(item);
+            }
+          }
+
+          saveProductsToStorage(deduped);
+          setProducts(deduped);
           setBackendLoaded(true);
         }
       } catch (err) {
