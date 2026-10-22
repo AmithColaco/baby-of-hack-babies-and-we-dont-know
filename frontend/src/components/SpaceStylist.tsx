@@ -2,7 +2,7 @@
 // A floating premium chatbot that analyzes a user's interior photograph
 // and recommends matching products from the KAARIGAR catalogue.
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../data/productStore';
 import { useCart } from '../contexts/CartContext';
@@ -149,6 +149,15 @@ export function SpaceStylist() {
     setIsOpen(true);
     setState('welcome');
   };
+
+  useEffect(() => {
+    const handleGlobalOpen = () => {
+      setIsOpen(true);
+      setState('welcome');
+    };
+    window.addEventListener('open-space-stylist', handleGlobalOpen);
+    return () => window.removeEventListener('open-space-stylist', handleGlobalOpen);
+  }, []);
 
   const handleClose = () => {
     setIsOpen(false);

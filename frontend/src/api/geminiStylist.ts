@@ -160,7 +160,7 @@ export async function analyzeSpaceWithBackend(
       '/chatbot/analyze-space',
       formData,
       {
-        timeout: 30000,
+        timeout: 45000,
         headers: { 'Content-Type': undefined },
       }
     );
@@ -175,14 +175,14 @@ export async function analyzeSpaceWithBackend(
       };
     }
 
-    if (data && data.spaceAnalysis && Array.isArray(data.recommendations) && data.recommendations.length > 0) {
+    if (data && data.spaceAnalysis) {
       return {
         analysis: data.spaceAnalysis,
-        recommendations: data.recommendations,
+        recommendations: Array.isArray(data.recommendations) ? data.recommendations : [],
       };
     }
 
-    // Fall back to client curatorial engine if recommendations array was empty
+    // Only fall back to client curatorial engine if backend returned completely empty data
     return generateCuratorialFallback(userPreference);
   } catch (err) {
     console.warn('Backend / Gemini space analysis endpoint unreachable or errored; using curatorial fallback engine:', err);

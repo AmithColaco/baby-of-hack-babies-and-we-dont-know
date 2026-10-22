@@ -7,6 +7,7 @@ Endpoint:
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 
+from app.data.catalogue import CORE_CATALOGUE
 from app.database import get_db
 from app.models import Listing, User
 from app.schemas import NarrateRequest, NarrateResponse
@@ -22,7 +23,7 @@ async def narrate(
     db: Session = Depends(get_db),
 ):
     """Generate a short, warm narration for TTS when a visitor clicks
-    a piece in the 3D gallery.  Uses the listing's story data plus
+    a piece in the 3D gallery. Uses the listing's story data plus
     Gemini to produce a natural-sounding guide speech.
     """
     listing = (
@@ -35,6 +36,21 @@ async def narrate(
         .first()
     )
     if not listing:
+        # Check core catalogue (flagship masterpieces)
+        core_item = next((c for c in CORE_CATALOGUE if c["id"] == body.listing_id), None)
+        if core_item:
+            narration = await ai_service.generate_narration(
+                title=core_item["title"],
+                artisan_name=core_item.get("artisan", "Master Artisan"),
+                village=core_item.get("region", "India"),
+                story=core_item.get("technique", ""),
+                materials=", ".join(core_item.get("materials", [])),
+                technique=core_item.get("technique", ""),
+                price=core_item.get("price", 0),
+                language=body.language,
+            )
+            return NarrateResponse(narration=narration, listing_id=body.listing_id)
+
         raise HTTPException(status_code=404, detail="Listing not found")
 
     artisan_name = listing.artisan.name if listing.artisan else "Unknown artisan"

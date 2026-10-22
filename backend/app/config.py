@@ -1,7 +1,9 @@
 import os
 from pydantic_settings import BaseSettings
 
-_DEFAULT_DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "kalahaat.db"))
+_BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+_ROOT_DIR = os.path.abspath(os.path.join(_BACKEND_DIR, ".."))
+_DEFAULT_DB_PATH = os.path.join(_BACKEND_DIR, "kalahaat.db")
 
 
 class Settings(BaseSettings):
@@ -20,7 +22,7 @@ class Settings(BaseSettings):
 
     # Gemini AI
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-3-flash-preview"
+    GEMINI_MODEL: str = "gemini-1.5-flash"
 
     # Cloudinary (optional – falls back to local disk)
     CLOUDINARY_CLOUD_NAME: str = ""
@@ -38,7 +40,15 @@ class Settings(BaseSettings):
     MAX_IMAGE_SIZE_MB: int = 10
     MAX_IMAGES_PER_LISTING: int = 4
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
+    model_config = {
+        "env_file": (
+            os.path.join(_BACKEND_DIR, ".env"),
+            os.path.join(_ROOT_DIR, ".env"),
+            ".env",
+        ),
+        "env_file_encoding": "utf-8",
+        "extra": "ignore",
+    }
 
 
 settings = Settings()

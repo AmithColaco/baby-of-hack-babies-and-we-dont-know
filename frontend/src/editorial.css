@@ -2125,29 +2125,99 @@
   color: var(--stone);
 }
 
+/* ── Chapter 01 Exploration & Experience Actions ── */
 .scene-actions {
   display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+  margin-top: 1.25rem;
 }
 
 .scene-next-btn {
-  background-color: var(--charcoal);
-  color: #fff;
-  border: none;
-  padding: 0.9rem 1.75rem;
-  font-size: 0.88rem;
-  font-weight: 500;
-  border-radius: var(--r-sm);
+  width: 100%;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, #1C1C1A 0%, #2E2B26 100%);
+  color: #FAF8F4;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.95rem 1.4rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-radius: var(--r-sm, 8px);
   cursor: pointer;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  transition: background-color var(--dur-fast);
+  justify-content: space-between;
+  box-shadow: 0 4px 16px rgba(28, 28, 26, 0.12);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .scene-next-btn:hover {
-  background-color: var(--terracotta);
+  background: linear-gradient(135deg, #B85C38 0%, #9E4624 100%);
+  border-color: rgba(184, 92, 56, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(184, 92, 56, 0.28);
+}
+
+.scene-next-btn .arrow {
+  font-size: 1.1rem;
+  transition: transform 0.25s ease;
+}
+
+.scene-next-btn:hover .arrow {
+  transform: translateX(4px);
+}
+
+.scene-secondary-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.scene-3d-btn,
+.scene-stylist-trigger-btn {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.85rem 1rem;
+  background: #FFFFFF;
+  color: #B85C38;
+  border: 1.5px solid rgba(184, 92, 56, 0.3);
+  border-radius: var(--r-sm, 8px);
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(184, 92, 56, 0.06);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 46px;
+  white-space: nowrap;
+}
+
+.scene-3d-btn:hover,
+.scene-stylist-trigger-btn:hover {
+  background: #B85C38;
+  color: #FFFFFF;
+  border-color: #B85C38;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(184, 92, 56, 0.22);
+}
+
+.scene-3d-btn .btn-icon,
+.scene-stylist-trigger-btn .btn-icon {
+  font-size: 0.95rem;
+}
+
+@media (max-width: 480px) {
+  .scene-secondary-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 .scene-quick-cart {
@@ -6559,29 +6629,6 @@ img {
   color: #944424;
 }
 
-.scene-3d-btn {
-  padding: 0.9rem 1.6rem;
-  background: rgba(184, 92, 56, 0.08);
-  color: #B85C38;
-  border: 1px solid rgba(184, 92, 56, 0.4);
-  border-radius: var(--r-sm, 4px);
-  font-size: 0.9rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.25s ease;
-}
-
-.scene-3d-btn:hover {
-  background: #B85C38;
-  color: #FFFFFF;
-  border-color: #B85C38;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(184, 92, 56, 0.25);
-}
 
 .acquire-3d-btn {
   padding: 0.85rem 1.4rem;

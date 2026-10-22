@@ -274,13 +274,26 @@ export default function Product() {
                       <span className="arrow">→</span>
                     </button>
 
-                    <Link
-                      to={`/gallery?focus=${product.id}`}
-                      className="scene-3d-btn"
-                      title="Inspect this artifact in the Curatorial Gallery"
-                    >
-                      <span>✦ View in Curatorial Gallery</span>
-                    </Link>
+                    <div className="scene-secondary-actions">
+                      <Link
+                        to={`/gallery?focus=${product.id}`}
+                        className="scene-3d-btn"
+                        title="Inspect this artifact in the Curatorial Gallery"
+                      >
+                        <span className="btn-icon">✦</span>
+                        <span>Curatorial Gallery</span>
+                      </Link>
+
+                      <button
+                        type="button"
+                        className="scene-stylist-trigger-btn"
+                        onClick={() => window.dispatchEvent(new CustomEvent('open-space-stylist'))}
+                        title="Style this craft piece in your room with AI"
+                      >
+                        <span className="btn-icon">✦</span>
+                        <span>Style My Space</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

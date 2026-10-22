@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import Optional
 
 from app.config import settings
@@ -25,14 +26,56 @@ logger = logging.getLogger(__name__)
 _model = None
 
 
+def get_gemini_api_key() -> str:
+    """Retrieve Gemini API key from settings, environment, or direct .env file inspection.
+    Enables instant key recognition without requiring a server reboot when .env is edited.
+    """
+    # 1. Check settings
+    key = (settings.GEMINI_API_KEY or "").strip()
+    if key:
+        return key
+
+    # 2. Check os.environ
+    key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if key:
+        settings.GEMINI_API_KEY = key
+        return key
+
+    # 3. Check backend/.env and root/.env directly
+    env_paths = [
+        os.path.join(os.path.dirname(__file__), "..", "..", ".env"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "..", ".env"),
+        ".env",
+    ]
+    for p in env_paths:
+        abs_p = os.path.abspath(p)
+        if os.path.exists(abs_p):
+            try:
+                with open(abs_p, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line.startswith("GEMINI_API_KEY=") and not line.startswith("#"):
+                            val = line.split("=", 1)[1].strip().strip('"').strip("'")
+                            if val:
+                                settings.GEMINI_API_KEY = val
+                                return val
+            except Exception:
+                pass
+    return ""
+
+
 def _get_candidate_models() -> list[str]:
-    """Return unique, priority-ordered list of candidate Gemini models."""
+    """Return unique, priority-ordered list of candidate Gemini models.
+    Prioritizes real, active Google Generative AI models.
+    """
     raw = [
         settings.GEMINI_MODEL,
-        "gemini-3-flash-preview",
-        "gemini-3.8-flash",
-        "gemini-flash-latest",
-        "gemini-3.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-8b",
+        "gemini-1.5-pro",
+        "gemini-2.5-flash",
+        "gemini-2.0-flash-lite-preview-02-05",
     ]
     seen = set()
     return [m for m in raw if m and not (m in seen or seen.add(m))]
@@ -41,17 +84,18 @@ def _get_candidate_models() -> list[str]:
 def _get_model():
     """Lazily initialise the Gemini model so import never fails."""
     global _model
-    if _model is not None:
-        return _model
-
-    if not settings.GEMINI_API_KEY:
+    api_key = get_gemini_api_key()
+    if not api_key:
         logger.warning("GEMINI_API_KEY not set in configuration")
         return None
+
+    if _model is not None:
+        return _model
 
     try:
         import google.generativeai as genai
 
-        genai.configure(api_key=settings.GEMINI_API_KEY, transport="rest")
+        genai.configure(api_key=api_key, transport="rest")
         for model_name in _get_candidate_models():
             try:
                 _model = genai.GenerativeModel(model_name)
@@ -68,33 +112,33 @@ def _get_model():
 
 
 def _generate_content_with_fallback(parts, generation_config=None):
-    """Generate content using Gemini, falling back to alternative models if quota (429) or 404 occurs."""
-    import google.generativeai as genai
-    from google.api_core.exceptions import TooManyRequests, ResourceExhausted, NotFound
+    """Generate content using Gemini, falling back to candidate models if quota or errors occur."""
+    api_key = get_gemini_api_key()
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY is not configured")
 
+    import google.generativeai as genai
+
+    genai.configure(api_key=api_key, transport="rest")
     models_to_try = _get_candidate_models()
     last_err = None
 
     for model_name in models_to_try:
         try:
             m = genai.GenerativeModel(model_name)
-            logger.debug("Attempting Gemini generation with model: %s", model_name)
+            logger.info("Attempting Gemini generation with model: %s", model_name)
             return m.generate_content(parts, generation_config=generation_config)
-        except (TooManyRequests, ResourceExhausted) as exc:
-            logger.warning("Gemini model '%s' quota exceeded (429), trying fallback model: %s", model_name, exc)
-            last_err = exc
-            continue
-        except NotFound as exc:
-            logger.warning("Gemini model '%s' not found (404), trying fallback model: %s", model_name, exc)
-            last_err = exc
-            continue
         except Exception as exc:
-            # Check for 429 in string representation for general API errors
-            if "429" in str(exc) or "Quota exceeded" in str(exc):
-                logger.warning("Gemini model '%s' hit quota limit (429), trying fallback model: %s", model_name, exc)
-                last_err = exc
-                continue
-            raise
+            logger.warning("Gemini generation with '%s' failed (%s), attempting fallback...", model_name, exc)
+            last_err = exc
+            # If generation_config had response_mime_type="application/json" and failed, retry once without it
+            if generation_config is not None:
+                try:
+                    logger.info("Retrying Gemini model '%s' without explicit JSON response_mime_type", model_name)
+                    return m.generate_content(parts)
+                except Exception as retry_exc:
+                    last_err = retry_exc
+            continue
 
     raise last_err or RuntimeError("All candidate Gemini models failed")
 
@@ -138,8 +182,7 @@ async def generate_ai_draft(
     craft_context: str = "",
 ) -> AIDraftResponse:
     """Generate a listing draft from images, optional voice transcript, and craft context."""
-    model = _get_model()
-    if model is None:
+    if not get_gemini_api_key():
         return _fallback_draft()
 
     try:
@@ -163,7 +206,7 @@ async def generate_ai_draft(
         user_text += "\nGenerate the JSON listing draft."
         parts.append(user_text)
 
-        response = model.generate_content(
+        response = _generate_content_with_fallback(
             parts,
             generation_config=genai.GenerationConfig(
                 response_mime_type="application/json",
@@ -183,20 +226,7 @@ async def generate_ai_draft(
 
     except Exception:
         logger.exception("AI draft generation failed – returning fallback")
-        # One retry
-        try:
-            response = model.generate_content(
-                parts,
-                generation_config=genai.GenerationConfig(
-                    response_mime_type="application/json",
-                    temperature=0.2,
-                ),
-            )
-            data = json.loads(response.text.strip())
-            return AIDraftResponse(**data)
-        except Exception:
-            logger.exception("AI draft retry also failed")
-            return _fallback_draft()
+        return _fallback_draft()
 
 
 # ──────────────────────────── Narration ──────────────────────────
@@ -207,7 +237,7 @@ A visitor is looking at: "{title}" by {artisan_name} from {village}.
 Craft story: {story}
 Materials: {materials}
 Technique: {technique}
-Price: \u20b9{price}
+Price: ₹{price}
 
 In 2–3 warm, engaging sentences, narrate this piece to the visitor as if you were standing beside them in the gallery.
 Keep it concise for TTS. Language: {language}."""
@@ -224,11 +254,10 @@ async def generate_narration(
     language: str = "en",
 ) -> str:
     """Generate a short gallery-guide narration for TTS."""
-    model = _get_model()
-    if model is None:
+    if not get_gemini_api_key():
         return (
             f"This is '{title}' by {artisan_name} from {village}. "
-            f"{story} It is priced at \u20b9{price:.0f}."
+            f"{story} It is priced at ₹{price:.0f}."
         )
 
     try:
@@ -243,14 +272,14 @@ async def generate_narration(
             language="Kannada" if language == "kn" else "English",
         )
 
-        response = model.generate_content(prompt)
+        response = _generate_content_with_fallback(prompt)
         return response.text.strip()
 
     except Exception:
         logger.exception("Narration generation failed – returning template")
         return (
             f"This is '{title}' by {artisan_name} from {village}. "
-            f"{story} It is priced at \u20b9{price:.0f}."
+            f"{story} It is priced at ₹{price:.0f}."
         )
 
 
@@ -436,6 +465,48 @@ def _fallback_space_analysis(user_preference: str, catalogue: list[dict]) -> dic
     }
 
 
+def _rank_catalogue_with_gemini_analysis(
+    catalogue: list[dict],
+    space_analysis: dict,
+    user_preference: str,
+) -> list[dict]:
+    """Score and rank real catalogue pieces against Gemini's multimodal vision analysis."""
+    pref_lower = (user_preference or "").lower()
+    style_lower = (space_analysis.get("interiorStyle", "")).lower()
+    suggested_cats = [c.lower() for c in space_analysis.get("suggestedCategories", [])]
+    budget = space_analysis.get("maxBudget")
+
+    eligible = catalogue
+    if budget and budget > 0:
+        budget_filtered = [p for p in catalogue if p.get("price", 0) <= budget]
+        if budget_filtered:
+            eligible = budget_filtered
+
+    scored = []
+    for idx, p in enumerate(eligible):
+        score = 88 - (idx * 2)
+        p_cat = (p.get("category", "")).lower()
+        p_text = f"{p.get('title', '')} {p.get('craftTradition', '')} {p.get('category', '')} {p.get('materials', '')}".lower()
+
+        if p_cat in suggested_cats:
+            score += 6
+        if any(w in p_text for w in pref_lower.split() if len(w) > 3):
+            score += 5
+        if any(w in p_text for w in style_lower.split() if len(w) > 3):
+            score += 4
+
+        score = max(68, min(97, score))
+        reason = f"Complements the {space_analysis.get('interiorStyle', 'decor')} and lighting balance observed in your space."
+        scored.append({
+            "productId": p["id"],
+            "reason": reason,
+            "matchScore": score,
+        })
+
+    scored.sort(key=lambda x: x["matchScore"], reverse=True)
+    return scored[:3]
+
+
 async def analyze_space(
     image_bytes: bytes,
     mime_type: str,
@@ -445,8 +516,8 @@ async def analyze_space(
     """Perform multimodal interior analysis and product recommendation using Gemini Vision,
     with an intelligent curatorial fallback if Gemini API key is missing or unavailable.
     """
-    model = _get_model()
-    if model is None:
+    api_key = get_gemini_api_key()
+    if not api_key:
         logger.info(
             "GEMINI_API_KEY is not configured — activating curatorial space analysis fallback (%d products)",
             len(catalogue),
@@ -454,10 +525,9 @@ async def analyze_space(
         return _fallback_space_analysis(user_preference=user_preference, catalogue=catalogue)
 
     logger.info(
-        "analyze_space called: image_bytes=%d bytes, mime_type=%s, model=%s, catalogue_products=%d",
+        "analyze_space called: image_bytes=%d bytes, mime_type=%s, catalogue_products=%d",
         len(image_bytes),
         mime_type,
-        getattr(model, "model_name", "unknown"),
         len(catalogue),
     )
 
@@ -520,19 +590,33 @@ async def analyze_space(
                 "recommendations": [],
             }
 
-        valid_ids = {p["id"] for p in catalogue}
+        valid_ids = {p["id"]: p for p in catalogue}
         validated_recs = []
         for rec in parsed.get("recommendations", []):
-            prod_id = rec.get("productId")
-            if prod_id in valid_ids:
+            prod_id = str(rec.get("productId", "")).strip()
+            matched_prod = valid_ids.get(prod_id)
+            if not matched_prod:
+                for cid, cprod in valid_ids.items():
+                    if cid.lower() == prod_id.lower() or cid.replace("-", "") == prod_id.lower().replace("-", ""):
+                        matched_prod = cprod
+                        prod_id = cid
+                        break
+            if not matched_prod and prod_id:
+                for cid, cprod in valid_ids.items():
+                    if prod_id.lower() in cprod.get("title", "").lower() or cprod.get("title", "").lower() in prod_id.lower():
+                        matched_prod = cprod
+                        prod_id = cid
+                        break
+
+            if matched_prod:
                 validated_recs.append({
                     "productId": prod_id,
-                    "reason": rec.get("reason", "Harmonious aesthetic match for this room."),
+                    "reason": rec.get("reason", f"Aesthetic artisanal match for your {space_analysis.get('interiorStyle', 'room')}."),
                     "matchScore": int(min(98, max(60, rec.get("matchScore", 85)))),
                 })
             else:
                 logger.warning(
-                    "Gemini recommended productId '%s' which is NOT in the real catalogue — skipped.",
+                    "Gemini recommended productId '%s' which could not be matched to real catalogue — skipped.",
                     prod_id,
                 )
 
@@ -543,12 +627,17 @@ async def analyze_space(
         )
 
         if not validated_recs:
-            logger.info("No valid recommendations from Gemini, using curatorial fallback ranking.")
-            fallback_res = _fallback_space_analysis(user_preference=user_preference, catalogue=catalogue)
+            logger.info("Grounding catalogue recommendations using Gemini's visual space analysis.")
+            ranked_recs = _rank_catalogue_with_gemini_analysis(catalogue, space_analysis, user_preference)
             return {
                 "spaceAnalysis": space_analysis,
-                "recommendations": fallback_res.get("recommendations", []),
+                "recommendations": ranked_recs,
             }
+
+        return {
+            "spaceAnalysis": space_analysis,
+            "recommendations": validated_recs[:3],
+        }
 
         return {
             "spaceAnalysis": space_analysis,
