@@ -13,6 +13,7 @@ import OrderTracking from './pages/OrderTracking';
 import Onboarding from './pages/Onboarding';
 import WishlistPage from './pages/WishlistPage';
 import SettingsPage from './pages/SettingsPage';
+import { SpaceStylist } from './components/SpaceStylist';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
@@ -45,6 +46,7 @@ function AppLayout() {
       <ScrollToTop />
       <SiteHeader />
       <CartDrawer />
+      <SpaceStylist />
 
       <Routes>
         <Route path="/"                   element={<Home />} />

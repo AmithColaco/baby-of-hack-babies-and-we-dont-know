@@ -278,3 +278,45 @@ class CraftReferenceOut(BaseModel):
     notes: str
 
     model_config = {"from_attributes": True}
+
+
+# ──────────────────────────── Chatbot / Space Stylist ────────────
+
+class ChatbotSpaceAnalysis(BaseModel):
+    isSuitable: bool = True
+    unsuitableMessage: str = ""
+    dominantColors: list[str] = Field(default_factory=list)
+    interiorStyle: str = ""
+    spaceMood: str = ""
+    colorDescription: str = ""
+    spaceDescription: str = ""
+    suggestedCategories: list[str] = Field(default_factory=list)
+    suggestedPlacements: list[str] = Field(default_factory=list)
+    maxBudget: Optional[float] = None
+
+
+class ChatbotProductOut(BaseModel):
+    id: str
+    title: str
+    craftTradition: str
+    category: str
+    price: float
+    artisan: str
+    region: str
+    state: str = ""
+    dimensions: str = ""
+    image: str = ""
+    colorPalette: list[str] = Field(default_factory=list)
+    materials: list[str] = Field(default_factory=list)
+    technique: str = ""
+
+
+class ChatbotRecommendation(BaseModel):
+    product: ChatbotProductOut
+    reason: str
+    matchScore: int = Field(..., ge=0, le=100)
+
+
+class ChatbotAnalyzeResponse(BaseModel):
+    spaceAnalysis: ChatbotSpaceAnalysis
+    recommendations: list[ChatbotRecommendation]

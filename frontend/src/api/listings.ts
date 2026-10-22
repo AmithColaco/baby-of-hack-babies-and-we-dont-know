@@ -144,7 +144,7 @@ export async function uploadListingImages(id: string, files: File[]): Promise<Li
   const formData = new FormData();
   files.forEach((file) => formData.append('files', file));
   const { data } = await apiClient.post<ListingRecord>(`/listings/${id}/images`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+    headers: { 'Content-Type': undefined }, // Let browser auto-set correct multipart boundary
   });
   return data;
 }
@@ -163,7 +163,7 @@ export async function generateAIDraft(
   files.forEach((file) => formData.append('files', file));
   const { data } = await apiClient.post<AIDraftResponse>('/listings/ai-draft', formData, {
     params: { craft_type: craftType || '', transcript: transcript || '' },
-    headers: { 'Content-Type': 'multipart/form-data' },
+    headers: { 'Content-Type': undefined }, // Let browser auto-set correct multipart boundary
   });
   return data;
 }

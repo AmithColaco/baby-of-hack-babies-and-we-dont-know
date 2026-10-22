@@ -4,9 +4,12 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  // Note: Do NOT set a default Content-Type here.
+  // Axios automatically sets the correct Content-Type per request:
+  //   - 'application/json' for plain objects/JSON bodies
+  //   - 'multipart/form-data; boundary=...' for FormData bodies (e.g. image uploads)
+  // A hardcoded default here would override Axios's automatic multipart detection,
+  // stripping the required boundary parameter and breaking file upload endpoints.
 });
 
 // Attach JWT Bearer token if present

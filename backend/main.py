@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import Base, engine
-from app.routers import auth, gallery, guide, listings, orders
+from app.routers import auth, chatbot, gallery, guide, listings, orders
 
 
 @asynccontextmanager
@@ -41,6 +41,7 @@ app.include_router(listings.router, prefix="/listings", tags=["listings"])
 app.include_router(orders.router, prefix="/orders", tags=["orders"])
 app.include_router(gallery.router, prefix="/gallery", tags=["gallery"])
 app.include_router(guide.router, prefix="/guide", tags=["guide"])
+app.include_router(chatbot.router, prefix="/chatbot", tags=["chatbot"])
 
 # ── Core Route Aliases (/me, /artisan/orders, /crafts, /artisans) ──
 @app.get("/me", response_model=auth.ProfileOut, tags=["auth"], summary="Get current user profile (alias)")
