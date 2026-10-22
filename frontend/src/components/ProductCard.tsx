@@ -1,4 +1,5 @@
 import type { CraftObject } from '../types';
+import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
 
 interface ProductCardProps {
   product: CraftObject;
@@ -12,7 +13,12 @@ export default function ProductCard({ product, onSelect }: ProductCardProps) {
       onClick={() => onSelect && onSelect(product)}
     >
       <div className="product-card__media">
-        <img src={product.image} alt={product.title} className="product-card__img" />
+        <img
+          src={product.image}
+          alt={product.title}
+          className="product-card__img"
+          onError={(e) => handleImageError(e, getFallbackForCraft(product.craftTradition || product.category))}
+        />
         <span className="product-card__pill">{product.craftTradition}</span>
       </div>
       <div className="product-card__content">

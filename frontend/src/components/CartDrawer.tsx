@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
 
 export const CartDrawer = () => {
   const navigate = useNavigate();
@@ -106,6 +107,7 @@ export const CartDrawer = () => {
                     src={object.image}
                     alt={object.title}
                     className="cart-item__thumb"
+                    onError={(e) => handleImageError(e, getFallbackForCraft(object.craftTradition || object.category))}
                   />
                   <div className="cart-item__info">
                     <div className="cart-item__tradition">

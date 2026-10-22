@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { checkoutOrder } from '../api/orders';
+import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -272,7 +273,7 @@ export default function Checkout() {
             </form>
           </div>
 
-          {/* Right Column: Order Summary & Payout Breakdown */}
+          {/* Right Column: Order Summary & Impact Breakdown */}
           <div className="checkout-summary-col">
             <div className="summary-sticky-card">
               <h3 className="summary-heading">Acquisition Summary ({cart.length} Masterpiece{cart.length === 1 ? '' : 's'})</h3>
@@ -281,7 +282,12 @@ export default function Checkout() {
               <div className="summary-items-list">
                 {cart.map((item) => (
                   <div key={item.object.id} className="summary-item">
-                    <img src={item.object.image} alt={item.object.title} className="summary-item__img" />
+                    <img
+                      src={item.object.image}
+                      alt={item.object.title}
+                      className="summary-item__img"
+                      onError={(e) => handleImageError(e, getFallbackForCraft(item.object.craftTradition || item.object.category))}
+                    />
                     <div className="summary-item__details">
                       <span className="summary-item__tradition">{item.object.craftTradition}</span>
                       <h4 className="summary-item__title">{item.object.title}</h4>

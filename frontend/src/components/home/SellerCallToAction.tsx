@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 export function SellerCallToAction() {
+  const { isArtisan, isLoggedIn } = useAuth();
   return (
     <section className="seller-cta-section" aria-label="Become a Kaarigar Artisan">
       <div className="seller-cta-section__inner">
@@ -12,14 +14,14 @@ export function SellerCallToAction() {
           <p className="seller-cta-lead">
             Kaarigar was founded to liberate artisans from unfair middlemen, exploitative tourist commissions, 
             and algorithmic discounting. We provide museum-grade presentation, verified buyer escrow, 
-            and guarantee over 85% of each acquisition directly to your atelier.
+            and guarantee direct compensation to your atelier.
           </p>
 
           <div className="seller-perks-grid">
             <div className="perk-card">
               <span className="perk-icon">✦</span>
-              <h4 className="perk-title">85%+ Direct Payout</h4>
-              <p className="perk-desc">Direct bank transfers upon delivery with transparent itemized commission disclosure.</p>
+              <h4 className="perk-title">Direct Atelier Transfers</h4>
+              <p className="perk-desc">Direct bank disbursements upon delivery with transparent itemized disclosure.</p>
             </div>
 
             <div className="perk-card">
@@ -42,14 +44,18 @@ export function SellerCallToAction() {
           </div>
 
           <div className="seller-cta-actions">
-            <Link to="/login" className="seller-action-btn seller-action-btn--primary" id="seller-onboard-cta">
-              <span>Onboard Your Atelier</span>
-              <span className="arrow">→</span>
-            </Link>
+            {!isLoggedIn && (
+              <Link to="/login" className="seller-action-btn seller-action-btn--primary" id="seller-onboard-cta">
+                <span>Onboard Your Atelier</span>
+                <span className="arrow">→</span>
+              </Link>
+            )}
 
-            <Link to="/dashboard" className="seller-action-btn seller-action-btn--secondary" id="seller-portal-cta">
-              <span>Enter Seller Dashboard</span>
-            </Link>
+            {isArtisan && (
+              <Link to="/dashboard" className="seller-action-btn seller-action-btn--secondary" id="seller-portal-cta">
+                <span>Artisan Atelier Portal</span>
+              </Link>
+            )}
           </div>
         </div>
       </div>

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 export function SiteFooter() {
+  const { isArtisan } = useAuth();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
@@ -28,7 +30,7 @@ export function SiteFooter() {
             </p>
             <div className="site-footer__payout-badge">
               <span className="payout-num">100%</span>
-              <span className="payout-desc">Direct maker rate distributed into master artisan atelier accounts.</span>
+              <span className="payout-desc">Certified authentic craftsmanship distributed directly from master artisan ateliers.</span>
             </div>
           </div>
 
@@ -53,7 +55,9 @@ export function SiteFooter() {
               <li><Link to="/gallery">Digital Exhibition Gallery</Link></li>
               <li><Link to="/#artisans">Master Artisan Roster</Link></li>
               <li><Link to="/#process">Material Alchemy & Stages</Link></li>
-              <li><Link to="/dashboard">Artisan Atelier Portal</Link></li>
+              {isArtisan && (
+                <li><Link to="/dashboard">Artisan Atelier Portal</Link></li>
+              )}
               <li><Link to="/login">Onboard Your Guild</Link></li>
             </ul>
           </div>

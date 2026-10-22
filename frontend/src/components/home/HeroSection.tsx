@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 export function HeroSection() {
+  const { isArtisan } = useAuth();
+
   return (
     <section className="hero-editorial" aria-label="Kaarigar Introduction">
       <div className="hero-editorial__container">
@@ -29,15 +32,17 @@ export function HeroSection() {
                 <span className="hero-btn__arrow">→</span>
               </Link>
 
-              <Link to="/login" className="hero-btn hero-btn--ghost" id="hero-sell-craft">
-                <span>Artisan Portal</span>
-              </Link>
+              {isArtisan && (
+                <Link to="/dashboard" className="hero-btn hero-btn--ghost" id="hero-sell-craft">
+                  <span>Artisan Atelier Portal</span>
+                </Link>
+              )}
             </div>
 
             <div className="hero-editorial__metrics">
               <div className="metric-item">
                 <span className="metric-val">100%</span>
-                <span className="metric-lbl">Direct Maker Rate</span>
+                <span className="metric-lbl">Direct Artisan Support</span>
               </div>
               <div className="metric-divider" />
               <div className="metric-item">

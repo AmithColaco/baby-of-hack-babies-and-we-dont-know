@@ -1,3 +1,5 @@
+import { handleImageError } from '../utils/imageFallback';
+
 interface StoryCardProps {
   title: string;
   artisan: string;
@@ -9,7 +11,14 @@ interface StoryCardProps {
 export default function StoryCard({ title, artisan, excerpt, image, onClick }: StoryCardProps) {
   return (
     <article className="story-card" onClick={onClick}>
-      {image && <img src={image} alt={title} className="story-card__img" />}
+      {image && (
+        <img
+          src={image}
+          alt={title}
+          className="story-card__img"
+          onError={(e) => handleImageError(e, '/images/textile.jpg')}
+        />
+      )}
       <div className="story-card__body">
         <span className="story-card__artisan">{artisan}</span>
         <h4 className="story-card__title">{title}</h4>

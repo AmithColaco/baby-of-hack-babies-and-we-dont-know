@@ -1,6 +1,8 @@
 import { NavLink, Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Navbar() {
+  const { isArtisan } = useAuth();
   return (
     <nav className="navbar" role="navigation" aria-label="Main navigation">
       <div className="container navbar__inner">
@@ -14,7 +16,7 @@ export default function Navbar() {
         <ul className="navbar__nav">
           <li><NavLink to="/shop"      id="nav-shop">Shop</NavLink></li>
           <li><NavLink to="/gallery"   id="nav-gallery">Gallery</NavLink></li>
-          <li><NavLink to="/dashboard" id="nav-dashboard">Dashboard</NavLink></li>
+          {isArtisan && <li><NavLink to="/dashboard" id="nav-dashboard">Artisan Atelier Portal</NavLink></li>}
         </ul>
 
         {/* Actions */}

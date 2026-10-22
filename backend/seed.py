@@ -417,10 +417,16 @@ def seed():
             )
             db.add(story)
 
-            # Add a placeholder image reference
+            # Assign authentic craft image
+            craft_img_map = {
+                "Kasuti": "/images/kasuti.jpg",
+                "Beedu": "/images/beedu.jpg",
+                "Shell Craft": "/images/shellcraft.jpg",
+            }
+            img_url = craft_img_map.get(data["craft_type"], "/images/textile.jpg")
             image = ListingImage(
                 listing_id=listing.id,
-                url=f"https://placehold.co/600x400/e8d5b7/3d2b1f?text={data['craft_type'].replace(' ', '+')}",
+                url=img_url,
                 position=0,
             )
             db.add(image)

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { handleImageError } from '../../utils/imageFallback';
 
 interface ArtisanItem {
   id: string;
@@ -61,7 +62,7 @@ export function ArtisanHighlights() {
           <h2 className="section-title">Meet the Masters Behind the Craft</h2>
           <p className="section-subtitle">
             Every piece on Kaarigar bears the unbroken lineage of a family and guild. 
-            We bypass middlemen so that honors, recognition, and over 85% of each acquisition flow directly to the maker.
+            We bypass middlemen so that honors, recognition, and direct compensation flow directly to the artisan.
           </p>
         </div>
 
@@ -74,9 +75,10 @@ export function ArtisanHighlights() {
                   alt={artisan.name}
                   className="artisan-card__img"
                   loading="lazy"
+                  onError={(e) => handleImageError(e, '/images/artisan.jpg')}
                 />
                 <div className="artisan-card__payout-tag">
-                  <span>{artisan.directShare}% Direct Payout</span>
+                  <span>Master Artisan</span>
                 </div>
               </div>
 

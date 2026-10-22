@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useProducts, useWishlist, listingToCraftObject } from '../data/productStore';
 import { getListingById } from '../api/listings';
 import { useCart } from '../contexts/CartContext';
+import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
 import type { CraftObject } from '../types';
 
 export default function Product() {
@@ -177,6 +178,7 @@ export default function Product() {
                       alt={product.title}
                       className="product-masterwork-img"
                       style={{ width: '100%', height: '460px', objectFit: 'contain', padding: '1.5rem', display: 'block' }}
+                      onError={(e) => handleImageError(e, getFallbackForCraft(product.craftTradition || product.category))}
                     />
                     <div className="media-provenance-tag" style={{ position: 'absolute', bottom: '12px', left: '12px', background: 'rgba(28,28,26,0.75)', color: '#FDFBF7', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', letterSpacing: '0.08em' }}>
                       <span>PLATE {product.romanNumeral} · {product.accessionNo}</span>
@@ -203,11 +205,11 @@ export default function Product() {
                       <span className="price-label">Acquisition Value</span>
                       <span className="price-val">₹{clientPrice.toLocaleString('en-IN')}</span>
                       <span style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginTop: '2px' }}>
-                        ₹{product.price.toLocaleString('en-IN')} maker rate + 5% platform fee (₹{platformFee.toLocaleString('en-IN')})
+                        Includes 5% archival platform fee (₹{platformFee.toLocaleString('en-IN')})
                       </span>
                     </div>
                     <div className="price-payout-guarantee">
-                      <span className="payout-pill">✓ 100% of Maker Rate (₹{product.price.toLocaleString('en-IN')}) to Artisan</span>
+                      <span className="payout-pill">✓ Direct Artisan Compensation</span>
                       <span className="payout-note">Zero middleman deductions · Transparent 5% platform fee</span>
                     </div>
                   </div>
@@ -291,7 +293,12 @@ export default function Product() {
               <div className="scene-artisan__grid">
                 <div className="scene-artisan__media">
                   <div className="artisan-media-box">
-                    <img src="/images/artisan.jpg" alt={product.artisan} className="artisan-portrait" />
+                    <img
+                      src="/images/artisan.jpg"
+                      alt={product.artisan}
+                      className="artisan-portrait"
+                      onError={(e) => handleImageError(e, '/images/artisan.jpg')}
+                    />
                     <div className="artisan-media-box__tag">
                       <span>{product.atelier}</span>
                     </div>
@@ -468,7 +475,12 @@ export default function Product() {
             <div className="storyboard-scene scene-acquire">
               <div className="acquire-card">
                 <div className="acquire-card__left">
-                  <img src={product.image} alt={product.title} className="acquire-img" />
+                  <img
+                    src={product.image}
+                    alt={product.title}
+                    className="acquire-img"
+                    onError={(e) => handleImageError(e, getFallbackForCraft(product.craftTradition || product.category))}
+                  />
                 </div>
 
                 <div className="acquire-card__right">
@@ -479,7 +491,7 @@ export default function Product() {
                   <div className="acquire-price-display">
                     <span className="price-num">₹{totalClientPrice.toLocaleString('en-IN')}</span>
                     <span style={{ fontSize: '0.85rem', color: 'var(--muted)', display: 'block', margin: '4px 0 8px' }}>
-                      Maker rate: ₹{totalArtisanBase.toLocaleString('en-IN')} + 5% platform fee: ₹{totalFee.toLocaleString('en-IN')}
+                      Base price: ₹{totalArtisanBase.toLocaleString('en-IN')} + 5% platform fee: ₹{totalFee.toLocaleString('en-IN')}
                     </span>
                     <span className="shipping-note">Complimentary insured archival transit across India</span>
                   </div>
@@ -533,7 +545,7 @@ export default function Product() {
                   <div className="provenance-seal-card">
                     <div className="seal-icon">✦</div>
                     <div className="seal-text">
-                      <strong>KAARIGAR Provenance Covenant:</strong> 100% of the maker price (₹{totalArtisanBase.toLocaleString('en-IN')}) is transferred directly to {product.artisan}’s guild account. The 5% platform fee (₹{totalFee.toLocaleString('en-IN')}) maintains archival documentation and digital preservation.
+                      <strong>KAARIGAR Provenance Covenant:</strong> Proceeds (₹{totalArtisanBase.toLocaleString('en-IN')}) are transferred directly to {product.artisan}’s guild account. The 5% platform fee (₹{totalFee.toLocaleString('en-IN')}) maintains archival documentation and digital preservation.
                     </div>
                   </div>
                 </div>
@@ -546,7 +558,12 @@ export default function Product() {
                   <div className="related-grid">
                     {relatedProducts.map((rel) => (
                       <Link key={rel.id} to={`/shop/${rel.id}`} className="related-card">
-                        <img src={rel.image} alt={rel.title} className="related-card__img" />
+                        <img
+                          src={rel.image}
+                          alt={rel.title}
+                          className="related-card__img"
+                          onError={(e) => handleImageError(e, getFallbackForCraft(rel.craftTradition || rel.category))}
+                        />
                         <div className="related-card__content">
                           <span className="related-card__tradition">{rel.craftTradition}</span>
                           <h4 className="related-card__title">{rel.title}</h4>
@@ -566,7 +583,12 @@ export default function Product() {
           <div className="container" style={{ maxWidth: '1000px', padding: '3rem 1rem' }}>
             <div className="specs-full-grid">
               <div className="specs-full-media">
-                <img src={product.image} alt={product.title} className="specs-main-img" />
+                <img
+                  src={product.image}
+                  alt={product.title}
+                  className="specs-main-img"
+                  onError={(e) => handleImageError(e, getFallbackForCraft(product.craftTradition || product.category))}
+                />
               </div>
 
               <div className="specs-full-details">
@@ -576,7 +598,7 @@ export default function Product() {
                 <div className="specs-price-tag">
                   ₹{clientPrice.toLocaleString('en-IN')}{' '}
                   <span style={{ fontSize: '0.85rem', fontWeight: 'normal', color: 'var(--muted)' }}>
-                    (₹{product.price.toLocaleString('en-IN')} maker rate + 5% platform fee)
+                    (₹{product.price.toLocaleString('en-IN')} base price + 5% platform fee)
                   </span>
                 </div>
 
@@ -600,8 +622,8 @@ export default function Product() {
                     <span className="spec-value">{product.technique}</span>
                   </div>
                   <div className="spec-row">
-                    <span className="spec-label">Direct Artisan Payout</span>
-                    <span className="spec-value highlight-green">100% of Maker Rate (₹{product.price.toLocaleString('en-IN')})</span>
+                    <span className="spec-label">Artisan Compensation</span>
+                    <span className="spec-value highlight-green">Direct Transfer (₹{product.price.toLocaleString('en-IN')})</span>
                   </div>
                   <div className="spec-row">
                     <span className="spec-label">Platform Maintenance Fee</span>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { EDITORIAL_STORIES } from '../data/craftsData';
+import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
 import type { StoryArticle } from '../types';
 
 interface StoriesModalProps {
@@ -58,6 +59,7 @@ export const StoriesModal = ({
                 src={activeStory.coverImage}
                 alt={activeStory.title}
                 className="story-reader__img"
+                onError={(e) => handleImageError(e, getFallbackForCraft(activeStory.craftTradition))}
               />
               <div className="story-reader__caption">
                 Master Artisan in Atelier · {activeStory.region}

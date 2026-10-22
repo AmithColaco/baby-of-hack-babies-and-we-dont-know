@@ -6,6 +6,7 @@ import { useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../data/productStore';
 import { useCart } from '../contexts/CartContext';
+import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
 import type { CraftObject } from '../types';
 import {
   analyzeSpaceWithBackend,
@@ -65,6 +66,7 @@ function ProductRecommendationCard({
           alt={rec.product.title}
           className="stylist-rec-card__img"
           loading="lazy"
+          onError={(e) => handleImageError(e, getFallbackForCraft(rec.product.craftTradition || rec.product.category))}
         />
         <MatchScorePill score={rec.matchScore} />
       </div>
@@ -200,6 +202,17 @@ export function SpaceStylist() {
     if (file) validateAndSetImage(file);
   };
 
+  const handleLoadSample = async (samplePath: string, sampleName: string) => {
+    try {
+      const res = await fetch(samplePath);
+      const blob = await res.blob();
+      const file = new File([blob], sampleName, { type: 'image/jpeg' });
+      validateAndSetImage(file);
+    } catch (e) {
+      console.error('Failed to load sample space image:', e);
+    }
+  };
+
   const handleAnalyze = async () => {
     if (!imageFile) return;
     setState('analyzing');
@@ -228,7 +241,7 @@ export function SpaceStylist() {
     } catch (err: any) {
       console.error('Space analysis error:', err);
       const detail = err.response?.data?.detail;
-      const msg = detail || err.message || 'Space analysis failed. Please verify your network and Gemini API configuration.';
+      const msg = detail || err.message || 'Space analysis could not be completed. Please try again with a clear photo of your space.';
       setErrorMessage(msg);
       setState('error');
     }
@@ -303,8 +316,8 @@ export function SpaceStylist() {
                 Discover which handcrafted masterwork belongs in your space.
               </h3>
               <p className="stylist-welcome-body">
-                Upload a photograph of your room, shelf, wall, or desk — and Gemini AI will
-                analyze the colors, style, and mood to recommend the perfect Indian artisan
+                Upload a photograph of your room, shelf, wall, or desk — and our AI & curatorial
+                stylist will analyze the colors, style, and mood to recommend the perfect Indian artisan
                 craft from KAARIGAR's permanent collection.
               </p>
               <ul className="stylist-welcome-features">
@@ -337,7 +350,8 @@ export function SpaceStylist() {
             <div className="stylist-state">
               {/* Image Upload Zone */}
               {!imageFile ? (
-                <div
+                <>
+                  <div
                   className={`stylist-dropzone${isDraggingOver ? ' stylist-dropzone--active' : ''}`}
                   onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
                   onDragLeave={() => setIsDraggingOver(false)}
@@ -371,6 +385,19 @@ export function SpaceStylist() {
                     aria-hidden="true"
                   />
                 </div>
+                <div className="stylist-sample-rooms">
+                  <p className="stylist-sample-rooms__label">Or try a sample interior space:</p>
+                  <div className="stylist-sample-rooms__chips">
+                    <button
+                      type="button"
+                      className="stylist-sample-chip"
+                      onClick={() => handleLoadSample('/images/sample_living_room.jpg', 'Modern-Living-Room.jpg')}
+                    >
+                      <span>🛋️</span> Sunlit Living Room Console
+                    </button>
+                  </div>
+                </div>
+              </>
               ) : (
                 <div className="stylist-preview">
                   <div className="stylist-preview__img-wrap">
@@ -423,11 +450,11 @@ export function SpaceStylist() {
                 onClick={handleAnalyze}
                 disabled={!imageFile}
               >
-                ✦ Analyze My Space with Gemini AI
+                ✦ Analyze My Space with AI Stylist
               </button>
 
               <p className="stylist-privacy-note">
-                🔒 Your space photograph is securely analyzed by KAARIGAR's server-side AI assistant.
+                🔒 Your space photograph is securely analyzed by KAARIGAR's AI & curatorial assistant.
               </p>
             </div>
           )}
@@ -442,7 +469,7 @@ export function SpaceStylist() {
               </div>
               <h3 className="stylist-loading-title">Analyzing Your Space…</h3>
               <p className="stylist-loading-body">
-                Gemini AI is examining room lighting, color harmony, and craft placement opportunities.
+                AI & Curatorial Engine is examining room lighting, color harmony, and craft placement opportunities.
               </p>
               <div className="stylist-loading-steps">
                 <span className="stylist-loading-step stylist-loading-step--active">Examining color palette</span>
@@ -584,7 +611,7 @@ export function SpaceStylist() {
         {/* ── Footer ── */}
         <footer className="stylist-panel__footer">
           <p>
-            Powered by <span className="stylist-footer-gem">Gemini AI</span> · Live Vision Analysis
+            Powered by <span className="stylist-footer-gem">AI Vision & Curatorial Engine</span>
           </p>
           <p>Recommends from {products.length} curated masterworks</p>
         </footer>

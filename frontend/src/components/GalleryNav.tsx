@@ -208,7 +208,7 @@ export const GalleryNav = ({
                       className="user-dropdown__link"
                       onClick={() => setShowUserMenu(false)}
                     >
-                      <span>Seller Atelier</span>
+                      <span>Artisan Atelier Portal</span>
                       <span>→</span>
                     </Link>
                   )}

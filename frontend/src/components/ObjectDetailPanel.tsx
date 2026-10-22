@@ -165,7 +165,7 @@ export const ObjectDetailPanel = ({
                 ₹ {Math.round(object.price * 1.05).toLocaleString('en-IN')}
               </div>
               <span style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginTop: '2px' }}>
-                Maker rate: ₹{object.price.toLocaleString('en-IN')} + 5% platform fee: ₹{Math.round(object.price * 0.05).toLocaleString('en-IN')}
+                Base price: ₹{object.price.toLocaleString('en-IN')} + 5% platform fee: ₹{Math.round(object.price * 0.05).toLocaleString('en-IN')}
               </span>
             </div>
 
@@ -182,7 +182,7 @@ export const ObjectDetailPanel = ({
               />
             </div>
             <div className="panel__equity-text">
-              <strong>100% of Maker Rate (₹{object.price.toLocaleString('en-IN')})</strong> transfers directly to {object.artisan} & the {object.atelier}.
+              <strong>Direct compensation of ₹{object.price.toLocaleString('en-IN')}</strong> transfers directly to {object.artisan} & the {object.atelier}.
             </div>
           </div>
         </div>

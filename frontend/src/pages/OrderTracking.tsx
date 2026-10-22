@@ -49,7 +49,7 @@ export default function OrderTracking() {
         craftTradition: 'Kasuti Embroidery',
         artisan: 'Parvati Devi',
         price: 5200,
-        image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
+        image: '/images/kasuti.jpg',
       },
       quantity: 1,
     },
@@ -167,7 +167,7 @@ export default function OrderTracking() {
                 <span>₹{totalAmount.toLocaleString('en-IN')}</span>
               </div>
               <div className="equity-row highlight-row">
-                <span>Direct Artisan Guild Payout (100% of Maker Rate)</span>
+                <span>Direct Artisan Guild Disbursement</span>
                 <strong className="text-green">₹{directArtisanTotal.toLocaleString('en-IN')}</strong>
               </div>
               <div className="equity-row">

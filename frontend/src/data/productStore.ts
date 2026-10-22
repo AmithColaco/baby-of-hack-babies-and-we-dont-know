@@ -20,28 +20,48 @@ export function listingToCraftObject(listing: ListingRecord): CraftObject {
     category = 'metalcraft';
   } else if (ct.includes('painting') || ct.includes('miniature')) {
     category = 'paintings';
+  } else if (ct.includes('jewel') || ct.includes('kundan') || ct.includes('meenakari')) {
+    category = 'jewellery';
   }
 
   const materials = listing.materials
     ? listing.materials.split(',').map((m) => m.trim()).filter(Boolean)
     : ['Authentic Coastal Materials'];
 
+  // Determine authentic high-resolution craft image
   let imageUrl = '/images/textile.jpg';
-  if (listing.images && listing.images.length > 0) {
-    const rawUrl = listing.images[0].url;
-    if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
-      imageUrl = rawUrl;
-    } else if (rawUrl.startsWith('/uploads')) {
-      imageUrl = `http://localhost:8000${rawUrl}`;
+  const rawFirstUrl = listing.images && listing.images.length > 0 ? listing.images[0].url : '';
+  const isPlaceholder = !rawFirstUrl || rawFirstUrl.includes('placehold.co') || rawFirstUrl.includes('placeholder');
+
+  if (!isPlaceholder) {
+    if (rawFirstUrl.startsWith('http://') || rawFirstUrl.startsWith('https://')) {
+      imageUrl = rawFirstUrl;
+    } else if (rawFirstUrl.startsWith('/uploads')) {
+      imageUrl = `http://localhost:8000${rawFirstUrl}`;
     } else {
-      imageUrl = rawUrl;
+      imageUrl = rawFirstUrl;
     }
-  } else if (category === 'ceramics') {
-    imageUrl = '/images/bluepottery.jpg';
-  } else if (category === 'metalcraft') {
-    imageUrl = '/images/dhokra.jpg';
-  } else if (category === 'woodcraft') {
-    imageUrl = '/images/woodcraft.jpg';
+  } else {
+    // High-fidelity image mapping based on craft tradition & category
+    if (ct.includes('shell')) {
+      imageUrl = '/images/shellcraft.jpg';
+    } else if (ct.includes('beedu') || ct.includes('mat')) {
+      imageUrl = '/images/beedu.jpg';
+    } else if (ct.includes('kasuti') || ct.includes('embroidery')) {
+      imageUrl = '/images/kasuti.jpg';
+    } else if (category === 'paintings') {
+      imageUrl = '/images/pahari.jpg';
+    } else if (category === 'ceramics') {
+      imageUrl = '/images/bluepottery.jpg';
+    } else if (category === 'metalcraft') {
+      imageUrl = '/images/dhokra.jpg';
+    } else if (category === 'woodcraft') {
+      imageUrl = '/images/woodcraft.jpg';
+    } else if (category === 'jewellery') {
+      imageUrl = '/images/jewellery.jpg';
+    } else {
+      imageUrl = '/images/textile.jpg';
+    }
   }
 
   return {
@@ -105,7 +125,16 @@ export function getInitialProducts(): CraftObject[] {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return parsed.map((p: CraftObject) => {
+          if (!p.image || p.image.includes('placehold.co') || p.image.includes('placeholder')) {
+            const t = (p.craftTradition || p.title || '').toLowerCase();
+            if (t.includes('shell')) return { ...p, image: '/images/shellcraft.jpg' };
+            if (t.includes('beedu') || t.includes('mat')) return { ...p, image: '/images/beedu.jpg' };
+            if (t.includes('kasuti') || t.includes('saree')) return { ...p, image: '/images/kasuti.jpg' };
+            return { ...p, image: '/images/textile.jpg' };
+          }
+          return p;
+        });
       }
     }
   } catch (e) {

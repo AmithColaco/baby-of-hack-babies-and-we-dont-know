@@ -107,7 +107,7 @@ export default function Onboarding() {
   const subtitles: Record<Mode, string> = {
     choose: 'India\'s living heritage marketplace — directly connecting master artisans with collectors.',
     'artisan-login': 'Access your Atelier Console and manage your listed masterworks.',
-    'artisan-signup': 'Join our vetted network. 85%+ direct payouts, zero exploitative contracts.',
+    'artisan-signup': 'Join our vetted network. Direct atelier compensation, zero exploitative contracts.',
     'collector-login': 'Access your curated wishlists and acquisition history.',
     'collector-signup': 'Discover and acquire authenticated Indian masterworks directly from artisans.',
   };
@@ -135,7 +135,7 @@ export default function Onboarding() {
                   </svg>
                 </div>
                 <h2>Master Artisan</h2>
-                <p>List your craft, manage your atelier, receive direct payouts</p>
+                <p>List your craft, manage your atelier, receive direct compensation</p>
                 <div className="role-choice-actions">
                   <button type="button" className="role-action-btn role-action-btn--primary" onClick={(e) => { e.stopPropagation(); resetForm(); setMode('artisan-login'); }}>Sign In</button>
                   <button type="button" className="role-action-btn role-action-btn--secondary" onClick={(e) => { e.stopPropagation(); resetForm(); setMode('artisan-signup'); }}>Register</button>

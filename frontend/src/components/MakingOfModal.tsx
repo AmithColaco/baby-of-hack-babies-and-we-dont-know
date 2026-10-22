@@ -1,4 +1,5 @@
 import { MAKING_STEPS } from '../data/craftsData';
+import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
 
 interface MakingOfModalProps {
   onClose: () => void;
@@ -28,7 +29,12 @@ export const MakingOfModal = ({ onClose }: MakingOfModalProps) => {
             {MAKING_STEPS.map((step, idx) => (
               <article key={step.id} className="making-card">
                 <div className="making-card__image-wrap">
-                  <img src={step.image} alt={step.title} className="making-card__img" />
+                  <img
+                    src={step.image}
+                    alt={step.title}
+                    className="making-card__img"
+                    onError={(e) => handleImageError(e, getFallbackForCraft(step.craft))}
+                  />
                   <span className="making-card__duration">⏱ {step.duration}</span>
                 </div>
                 <div className="making-card__body">

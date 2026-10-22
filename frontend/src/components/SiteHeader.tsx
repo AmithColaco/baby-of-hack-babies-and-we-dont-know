@@ -85,7 +85,7 @@ export function SiteHeader() {
             <Link to="/#artisans" className="site-nav-link">Artisans</Link>
             <Link to="/#process" className="site-nav-link">Craft Journey</Link>
             {isArtisan && (
-              <NavLink to="/dashboard" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>Seller Atelier</NavLink>
+              <NavLink to="/dashboard" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>Artisan Atelier Portal</NavLink>
             )}
           </nav>
 
@@ -156,7 +156,7 @@ export function SiteHeader() {
                       <Link to="/dashboard" className="user-dropdown__link" onClick={() => setShowUserMenu(false)}>
                         <span className="user-dropdown__link-text">
                           <span className="user-dropdown__link-icon">🏛</span>
-                          <span>Seller Atelier</span>
+                          <span>Artisan Atelier Portal</span>
                         </span>
                         <span className="user-dropdown__arrow">→</span>
                       </Link>
@@ -226,7 +226,7 @@ export function SiteHeader() {
               <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home Archive</Link>
               <Link to="/gallery" onClick={() => setMobileMenuOpen(false)}>Living Gallery</Link>
               <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>My Wishlist {totalWishlist > 0 && `(${totalWishlist})`}</Link>
-              {isLoggedIn && isArtisan && <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>Artisan Dashboard</Link>}
+              {isLoggedIn && isArtisan && <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>Artisan Atelier Portal</Link>}
               {isLoggedIn && <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>Settings</Link>}
               {isLoggedIn
                 ? <button type="button" onClick={() => { logout(); navigate('/'); setMobileMenuOpen(false); }} style={{ background: 'none', border: 'none', textAlign: 'left', fontFamily: 'inherit', fontSize: 'inherit', cursor: 'pointer', color: '#C0392B', padding: 0 }}>Sign Out</button>
@@ -235,7 +235,7 @@ export function SiteHeader() {
               <Link to="/cart" onClick={() => setMobileMenuOpen(false)}>Shopping Bag ({totalItems})</Link>
             </nav>
             <div className="mobile-drawer__bottom">
-              <p>100% Direct Maker Rate Guaranteed to Indigenous Artisans.</p>
+              <p>Authentic Handcrafts Direct from Indigenous Artisans.</p>
               <span>Authenticity & Provenance Seal Included</span>
             </div>
           </div>

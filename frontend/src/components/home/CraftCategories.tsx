@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { handleImageError } from '../../utils/imageFallback';
 
 interface CategoryItem {
   id: string;
@@ -101,6 +102,7 @@ export function CraftCategories() {
                   alt={cat.title}
                   className="cat-card__img"
                   loading="lazy"
+                  onError={(e) => handleImageError(e, '/images/textile.jpg')}
                 />
                 <div className="cat-card__overlay" />
                 <span className="cat-card__num">0{idx + 1}</span>

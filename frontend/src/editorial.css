@@ -7756,6 +7756,51 @@ img {
   letter-spacing: 0.05em;
 }
 
+/* ── Sample Rooms ── */
+.stylist-sample-rooms {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+}
+
+.stylist-sample-rooms__label {
+  font-size: 0.72rem;
+  color: var(--graphite, #5A5852);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.stylist-sample-rooms__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.stylist-sample-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  background: #F4EFEB;
+  border: 1px solid #E2D7CC;
+  border-radius: 999px;
+  color: #2D2721;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stylist-sample-chip:hover {
+  background: #EBE0D5;
+  border-color: var(--terracotta, #B34B2C);
+  color: var(--terracotta, #B34B2C);
+  transform: translateY(-1px);
+}
+
 /* ── Image Preview ── */
 .stylist-preview {
   display: flex;

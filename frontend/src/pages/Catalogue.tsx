@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useProducts, useWishlist } from '../data/productStore';
 import { useCart } from '../contexts/CartContext';
+import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
 import type { CraftCategory } from '../types';
 
 export default function Catalogue() {
@@ -16,7 +17,7 @@ export default function Catalogue() {
 
   const [searchQuery, setSearchQuery] = useState(queryParam);
   const [selectedCategory, setSelectedCategory] = useState<CraftCategory>(categoryParam);
-  const [sortBy, setSortBy] = useState<'curated' | 'price-asc' | 'price-desc' | 'payout'>('curated');
+  const [sortBy, setSortBy] = useState<'curated' | 'price-asc' | 'price-desc'>('curated');
   const [onlyWishlist, setOnlyWishlist] = useState<boolean>(filterParam === 'wishlist');
   const [itemsPerPage, setItemsPerPage] = useState<number>(25);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -91,7 +92,6 @@ export default function Catalogue() {
     }).sort((a, b) => {
       if (sortBy === 'price-asc') return a.price - b.price;
       if (sortBy === 'price-desc') return b.price - a.price;
-      if (sortBy === 'payout') return (b.directArtisanSharePercent || 85) - (a.directArtisanSharePercent || 85);
       return 0; // curated order
     });
   }, [products, selectedCategory, searchQuery, onlyWishlist, wishlist, sortBy]);
@@ -125,7 +125,7 @@ export default function Catalogue() {
 
           <div className="shop-header__stats">
             <span className="stat-pill"><strong>{products.length}</strong> Works</span>
-            <span className="stat-pill"><strong>100%</strong> Direct Maker Rate</span>
+            <span className="stat-pill"><strong>Authentic</strong> Living Heritage</span>
           </div>
         </div>
       </section>
@@ -219,7 +219,6 @@ export default function Catalogue() {
                     <option value="curated">Curated</option>
                     <option value="price-asc">Price: Low to High</option>
                     <option value="price-desc">Price: High to Low</option>
-                    <option value="payout">Direct Maker Payout</option>
                   </select>
                   <svg className="sort-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <polyline points="6 9 12 15 18 9" />
@@ -324,6 +323,7 @@ export default function Catalogue() {
                             alt={prod.title}
                             className="craft-card-img"
                             loading="lazy"
+                            onError={(e) => handleImageError(e, getFallbackForCraft(prod.craftTradition || prod.category))}
                           />
                         </Link>
                         <button
@@ -337,9 +337,6 @@ export default function Catalogue() {
                         >
                           {isSaved ? '♥' : '♡'}
                         </button>
-                        <div className="craft-payout-pill">
-                          <span>100% Direct to Maker</span>
-                        </div>
                       </div>
 
                       {/* Card Content */}

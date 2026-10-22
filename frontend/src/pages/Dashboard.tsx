@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useProducts, listingToCraftObject } from '../data/productStore';
 import { useAuth } from '../contexts/AuthContext';
+import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
 import { getListings, archiveListing, type ListingRecord } from '../api/listings';
 import { getArtisanOrders, updateOrderStatus, type OrderRecord } from '../api/orders';
 
@@ -148,7 +149,7 @@ export default function Dashboard() {
           </div>
 
           <div className="metric-box highlight-box">
-            <span className="metric-box__label">Direct Payout Rate</span>
+            <span className="metric-box__label">Atelier Direct Share</span>
             <span className="metric-box__val">88%</span>
             <span className="metric-box__sub">Zero intermediary commission</span>
           </div>
@@ -239,7 +240,12 @@ export default function Dashboard() {
                   {displayPieces.map((item) => (
                     <article key={item.id} className="piece-row">
                       <div className="piece-row__media">
-                        <img src={item.image} alt={item.title} className="piece-thumb" />
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="piece-thumb"
+                          onError={(e) => handleImageError(e, getFallbackForCraft(item.craftTradition || item.category))}
+                        />
                       </div>
 
                       <div className="piece-row__info">
@@ -260,9 +266,9 @@ export default function Dashboard() {
                       </div>
 
                       <div className="piece-row__financials">
-                        <span className="piece-price">₹{item.price.toLocaleString('en-IN')} Maker Base</span>
+                        <span className="piece-price">₹{item.price.toLocaleString('en-IN')}</span>
                         <span className="piece-payout-rate">
-                          100% Direct Payout (Client rate: ₹{Math.round(item.price * 1.05).toLocaleString('en-IN')})
+                          Listed (Client price: ₹{Math.round(item.price * 1.05).toLocaleString('en-IN')})
                         </span>
                         <span className="piece-stock">Stock: {item.availability || 'Available'}</span>
                       </div>
@@ -352,7 +358,7 @@ export default function Dashboard() {
                         <th>Order ID</th>
                         <th>Pieces Ordered</th>
                         <th>Total Value</th>
-                        <th>Direct Payout (100% Maker Rate)</th>
+                        <th>Artisan Disbursement</th>
                         <th>Current State</th>
                         <th>Workflow Action</th>
                       </tr>

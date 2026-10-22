@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useWishlist, useProducts } from '../data/productStore';
 import { useCart } from '../contexts/CartContext';
+import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
 
 export default function WishlistPage() {
   const { wishlist, toggleWishlist } = useWishlist();
@@ -45,7 +46,13 @@ export default function WishlistPage() {
                   <article key={prod.id} className="shop-craft-card">
                     <div className="shop-craft-card__media">
                       <Link to={`/shop/${prod.id}`} className="media-link">
-                        <img src={prod.image} alt={prod.title} className="craft-card-img" loading="lazy" />
+                        <img
+                          src={prod.image}
+                          alt={prod.title}
+                          className="craft-card-img"
+                          loading="lazy"
+                          onError={(e) => handleImageError(e, getFallbackForCraft(prod.craftTradition || prod.category))}
+                        />
                       </Link>
                       <button
                         type="button"
@@ -55,9 +62,6 @@ export default function WishlistPage() {
                       >
                         ♥
                       </button>
-                      <div className="craft-payout-pill">
-                        <span>100% Direct to Maker</span>
-                      </div>
                     </div>
 
                     <div className="shop-craft-card__body">

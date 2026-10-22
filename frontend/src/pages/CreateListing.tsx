@@ -15,12 +15,14 @@ import {
 } from '../api/listings';
 
 const PRESET_IMAGES = [
-  { label: 'Kasuti Embroidery Saree Pallu', url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80' },
-  { label: 'Beedu Grass Mat Weaving', url: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&w=800&q=80' },
-  { label: 'Seashell Wall Hanging Lamp', url: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80' },
+  { label: 'Kasuti Embroidery Saree Pallu', url: '/images/kasuti.jpg' },
+  { label: 'Beedu Grass Mat Weaving', url: '/images/beedu.jpg' },
+  { label: 'Seashell Wall Hanging & Jewelry', url: '/images/shellcraft.jpg' },
   { label: 'Jaipur Blue Pottery Urn', url: '/images/bluepottery.jpg' },
   { label: 'Channapatna Lacquer Wood', url: '/images/woodcraft.jpg' },
   { label: 'Bastar Lost-Wax Bronze', url: '/images/dhokra.jpg' },
+  { label: 'Pahari Miniature Wasli', url: '/images/pahari.jpg' },
+  { label: 'Kundan Meenakari Ornament', url: '/images/jewellery.jpg' },
 ];
 
 export default function CreateListing() {
@@ -858,7 +860,7 @@ export default function CreateListing() {
                     <strong style={{ fontSize: '1.25rem', color: '#3d2b1f' }}>₹{Number(price).toLocaleString('en-IN')}</strong>
                   </div>
                   <span style={{ fontSize: '0.8rem', background: '#d4edda', color: '#155724', padding: '4px 8px', borderRadius: '4px' }}>
-                    88% Direct to Maker
+                    Verified Atelier Listing
                   </span>
                 </div>
               </div>

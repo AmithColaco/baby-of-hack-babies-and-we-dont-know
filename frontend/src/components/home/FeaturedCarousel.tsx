@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../../data/productStore';
 import { useCart } from '../../contexts/CartContext';
+import { handleImageError, getFallbackForCraft } from '../../utils/imageFallback';
 import type { CraftObject } from '../../types';
 
 export function FeaturedCarousel() {
@@ -109,6 +110,7 @@ export function FeaturedCarousel() {
                       alt={prod.title}
                       className="carousel-card__img"
                       loading="lazy"
+                      onError={(e) => handleImageError(e, getFallbackForCraft(prod.craftTradition || prod.category))}
                     />
                     <div className="carousel-card__badge">
                       <span>{prod.romanNumeral || `0${idx + 1}`}</span>
@@ -159,8 +161,8 @@ export function FeaturedCarousel() {
                   <span className="spec-val">{currentProduct.materials?.slice(0, 3).join(', ')}</span>
                 </div>
                 <div className="spec-item">
-                  <span className="spec-label">Direct Payout</span>
-                  <span className="spec-val highlight-green">100% Direct to Maker</span>
+                  <span className="spec-label">Lineage</span>
+                  <span className="spec-val highlight-green">Generational Masterwork</span>
                 </div>
               </div>
             </div>

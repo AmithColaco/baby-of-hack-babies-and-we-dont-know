@@ -1,5 +1,6 @@
 import type { CraftObject, CraftCategory } from '../types';
 import { useProducts } from '../data/productStore';
+import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
 
 interface TwoDArchiveViewProps {
   selectedCategory: CraftCategory;
@@ -45,6 +46,7 @@ export const TwoDArchiveView = ({
                   alt={obj.title}
                   className="archive-card__img"
                   loading="lazy"
+                  onError={(e) => handleImageError(e, getFallbackForCraft(obj.craftTradition || obj.category))}
                 />
                 <span className="archive-card__num">{obj.romanNumeral}</span>
                 <span className="archive-card__pill">{obj.craftTradition}</span>
