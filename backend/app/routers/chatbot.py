@@ -17,15 +17,18 @@ from app.database import get_db
 from app.data.catalogue import get_all_catalogue_products
 from app.schemas import (
     ChatbotAnalyzeResponse,
+    ChatbotChatRequest,
+    ChatbotChatResponse,
     ChatbotProductOut,
     ChatbotRecommendation,
     ChatbotSpaceAnalysis,
 )
-from app.services import ai_service
+from app.services import ai_service, rag_service
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
 
 MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024  # 8 MB
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
@@ -152,3 +155,34 @@ async def analyze_space_endpoint(
         spaceAnalysis=space_analysis_out,
         recommendations=recommendations_out,
     )
+
+
+@router.post(
+    "/chat",
+    response_model=ChatbotChatResponse,
+    summary="Ask the KAARIGAR Curatorial RAG Chatbot questions about crafts, artisans, or policies",
+)
+async def chat_endpoint(
+    payload: ChatbotChatRequest,
+    db: Session = Depends(get_db),
+):
+    """Query the KAARIGAR Curatorial RAG Assistant.
+
+    Retrieves verified knowledge chunks across craft traditions, master artisan lineages,
+    making stages, and platform policies, and generates a context-augmented response with
+    source citations and real product suggestions.
+    """
+    try:
+        response = await rag_service.generate_rag_response(
+            query=payload.message,
+            history=payload.history,
+            db=db,
+        )
+        return response
+    except Exception as e:
+        logger.exception("Error in chatbot RAG chat endpoint")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Chatbot failed to generate a response: {str(e)}",
+        )
+

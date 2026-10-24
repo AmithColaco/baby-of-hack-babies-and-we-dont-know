@@ -386,3 +386,74 @@ def test_validation_and_error_edge_cases():
     res = client.post("/orders", json=decline_payload, headers=buyer_headers)
     assert res.status_code == 402
 
+
+def test_chatbot_rag_endpoints():
+    """Verify RAG retrieval, citation sources, strict object filtering, and end/empty messages."""
+    # 1. Query specifically asking for Bastar Dhokra lost-wax horse object
+    payload1 = {
+        "message": "Show me the Bastar Dhokra horse piece",
+        "history": [],
+    }
+    res1 = client.post("/chatbot/chat", json=payload1)
+    assert res1.status_code == 200
+    data1 = res1.json()
+    assert "answer" in data1 and len(data1["answer"]) > 50
+    assert "sources" in data1 and len(data1["sources"]) > 0
+    # Check that at least one citation matches dhokra / lost-wax
+    source_titles = [s["title"].lower() for s in data1["sources"]]
+    assert any("dhokra" in t or "lost-wax" in t for t in source_titles)
+    # Check that ONLY the Dhokra horse object is displayed
+    assert "suggestedProducts" in data1
+    assert len(data1["suggestedProducts"]) == 1
+    assert data1["suggestedProducts"][0]["id"] == "bastar-dhokra-brass"
+    assert data1["objectQueryDetected"] is True
+    assert data1["hasReachedEnd"] is True
+    assert data1["endMessage"] is not None
+    assert "End of results" in data1["endMessage"] or "matching masterwork" in data1["endMessage"]
+
+    # 2. Query for an object that does NOT exist in the collection (e.g. antique swords)
+    payload_empty = {
+        "message": "Show me antique battle swords and shields",
+        "history": [],
+    }
+    res_empty = client.post("/chatbot/chat", json=payload_empty)
+    assert res_empty.status_code == 200
+    data_empty = res_empty.json()
+    assert len(data_empty["suggestedProducts"]) == 0
+    assert data_empty["objectQueryDetected"] is True
+    assert data_empty["noObjectsFound"] is True
+    assert data_empty["hasReachedEnd"] is True
+    assert data_empty["endMessage"] is not None
+    assert "No masterworks" in data_empty["endMessage"] or "match" in data_empty["endMessage"]
+
+    # 3. Query about platform pricing breakdown and fees (no object intent)
+    payload2 = {
+        "message": "What is your pricing breakdown and how does the 5% platform fee work?",
+        "history": [],
+    }
+    res2 = client.post("/chatbot/chat", json=payload2)
+    assert res2.status_code == 200
+    data2 = res2.json()
+    assert "answer" in data2
+    ans_lower = data2["answer"].lower()
+    assert "5%" in ans_lower or "platform" in ans_lower or "artisan" in ans_lower
+    # Sources should cite pricing formula
+    assert any("pricing" in s["title"].lower() or "formula" in s["title"].lower() for s in data2["sources"])
+    # Pure policy questions should not show random products
+    assert len(data2["suggestedProducts"]) == 0
+
+    # 4. Query with conversation history
+    payload3 = {
+        "message": "What materials were used in the piece we just spoke about?",
+        "history": [
+            {"role": "user", "content": "Tell me about Bastar Dhokra horse"},
+            {"role": "assistant", "content": "The Bastar Lost-Wax Ritual Guardian Horse is crafted from bell metal bronze."},
+        ],
+    }
+    res3 = client.post("/chatbot/chat", json=payload3)
+    assert res3.status_code == 200
+    data3 = res3.json()
+    assert len(data3["answer"]) > 20
+
+
+

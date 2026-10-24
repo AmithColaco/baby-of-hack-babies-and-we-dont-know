@@ -1,6 +1,6 @@
-// KAARIGAR — "Craft in Your Space" AI Space Stylist Component
-// A floating premium chatbot that analyzes a user's interior photograph
-// and recommends matching products from the KAARIGAR catalogue.
+// KAARIGAR — Curatorial Heritage Assistant & AI Space Stylist
+// Powered by Retrieval-Augmented Generation (RAG) over verified Indian craft archives,
+// master artisan lineages, making stages, and platform provenance policies.
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
@@ -10,9 +10,14 @@ import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
 import type { CraftObject } from '../types';
 import {
   analyzeSpaceWithBackend,
+  sendChatbotRAGMessage,
+  type ChatbotMessage,
   type ProductRecommendation,
+  type RAGSource,
   type SpaceAnalysis,
 } from '../api/geminiStylist';
+
+type StylistTab = 'chat' | 'vision';
 
 type AssistantState =
   | 'welcome'
@@ -26,6 +31,14 @@ type AssistantState =
 
 const MAX_FILE_SIZE_MB = 8;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+const QUICK_PROMPTS = [
+  'How is Bastar Dhokra cast?',
+  'Tell me about Kasuti embroidery stitches',
+  'What is the 5% platform fee & pricing formula?',
+  'Show pieces under ₹30,000',
+  'How do you guarantee authenticity & GI tags?',
+];
 
 function formatINR(n: number) {
   return '₹' + n.toLocaleString('en-IN');
@@ -41,6 +54,204 @@ function MatchScorePill({ score }: { score: number }) {
     >
       {score}% match
     </span>
+  );
+}
+
+/**
+ * Lightweight, safe Markdown renderer for curatorial assistant messages.
+ */
+function FormattedMessage({ content }: { content: string }) {
+  const lines = content.split('\n');
+
+  return (
+    <div className="rag-message-body">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+
+        if (!trimmed) {
+          return <div key={idx} className="rag-line-break" />;
+        }
+
+        // Headings
+        if (trimmed.startsWith('### ')) {
+          return (
+            <h4 key={idx} className="rag-msg-h4">
+              {trimmed.slice(4)}
+            </h4>
+          );
+        }
+        if (trimmed.startsWith('## ')) {
+          return (
+            <h3 key={idx} className="rag-msg-h3">
+              {trimmed.slice(3)}
+            </h3>
+          );
+        }
+
+        // Blockquotes
+        if (trimmed.startsWith('> ')) {
+          return (
+            <blockquote key={idx} className="rag-msg-quote">
+              {trimmed.slice(2)}
+            </blockquote>
+          );
+        }
+
+        // Bullet lists
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+          return (
+            <li key={idx} className="rag-msg-bullet">
+              <span dangerouslySetInnerHTML={{ __html: parseInlineStyles(trimmed.slice(2)) }} />
+            </li>
+          );
+        }
+
+        // Numbered lists
+        const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+        if (numMatch) {
+          return (
+            <div key={idx} className="rag-msg-num-item">
+              <span className="rag-num-badge">{numMatch[1]}</span>
+              <span dangerouslySetInnerHTML={{ __html: parseInlineStyles(numMatch[2]) }} />
+            </div>
+          );
+        }
+
+        // Standard paragraph
+        return (
+          <p
+            key={idx}
+            className="rag-msg-para"
+            dangerouslySetInnerHTML={{ __html: parseInlineStyles(trimmed) }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function parseInlineStyles(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code class="rag-inline-code">$1</code>');
+}
+
+/**
+ * Expandable verified heritage citation sources accordion.
+ */
+function RAGSourceViewer({ sources }: { sources: RAGSource[] }) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!sources || sources.length === 0) return null;
+
+  return (
+    <div className="rag-sources-accordion">
+      <button
+        type="button"
+        className="rag-sources-toggle"
+        onClick={() => setExpanded(!expanded)}
+        aria-expanded={expanded}
+      >
+        <span className="rag-sources-icon">📚</span>
+        <span>
+          <strong>{sources.length}</strong> Verified Archival Source
+          {sources.length > 1 ? 's' : ''}
+        </span>
+        <span className="rag-sources-arrow">{expanded ? '▲' : '▼'}</span>
+      </button>
+
+      {expanded && (
+        <div className="rag-sources-list">
+          {sources.map((src, idx) => (
+            <div key={src.id || idx} className="rag-source-item">
+              <div className="rag-source-header">
+                <span className="rag-source-title">{src.title}</span>
+                <span className="rag-source-category">{src.category.replace('_', ' ')}</span>
+                {src.relevanceScore > 0 && (
+                  <span className="rag-source-relevance">
+                    {Math.round(src.relevanceScore * 100)}% match
+                  </span>
+                )}
+              </div>
+              <p className="rag-source-snippet">{src.snippet}</p>
+              {src.productId && (
+                <Link
+                  to={`/shop/${src.productId}`}
+                  className="rag-source-link"
+                  title="View Masterpiece in Gallery"
+                >
+                  View Archive Piece →
+                </Link>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Interactive recommended product card embedded directly in the chat stream.
+ */
+function ChatProductCard({
+  product,
+  onAddToCart,
+}: {
+  product: CraftObject;
+  onAddToCart: (p: CraftObject) => void;
+}) {
+  const [added, setAdded] = useState(false);
+
+  const handleAdd = () => {
+    onAddToCart(product);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
+
+  return (
+    <div className="rag-product-card">
+      <div className="rag-product-card__thumb">
+        <img
+          src={product.image}
+          alt={product.title}
+          loading="lazy"
+          onError={(e) =>
+            handleImageError(
+              e,
+              getFallbackForCraft(product.craftTradition || product.category)
+            )
+          }
+        />
+      </div>
+      <div className="rag-product-card__body">
+        <span className="rag-product-card__tradition">{product.craftTradition}</span>
+        <h5 className="rag-product-card__title">{product.title}</h5>
+        <div className="rag-product-card__meta">
+          <span className="rag-product-card__artisan">by {product.artisan}</span>
+          <span className="rag-product-card__price">{formatINR(product.price)}</span>
+        </div>
+        <div className="rag-product-card__actions">
+          <Link
+            to={`/shop/${product.id}`}
+            className="rag-product-card__btn rag-product-card__btn--outline"
+          >
+            View Story
+          </Link>
+          <button
+            type="button"
+            className={`rag-product-card__btn rag-product-card__btn--primary${
+              added ? ' rag-product-card__btn--added' : ''
+            }`}
+            onClick={handleAdd}
+            disabled={added}
+          >
+            {added ? '✓ Added' : '+ Add to Bag'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -66,7 +277,12 @@ function ProductRecommendationCard({
           alt={rec.product.title}
           className="stylist-rec-card__img"
           loading="lazy"
-          onError={(e) => handleImageError(e, getFallbackForCraft(rec.product.craftTradition || rec.product.category))}
+          onError={(e) =>
+            handleImageError(
+              e,
+              getFallbackForCraft(rec.product.craftTradition || rec.product.category)
+            )
+          }
         />
         <MatchScorePill score={rec.matchScore} />
       </div>
@@ -86,7 +302,9 @@ function ProductRecommendationCard({
           </Link>
           <button
             type="button"
-            className={`stylist-rec-card__btn stylist-rec-card__btn--primary${added ? ' stylist-rec-card__btn--added' : ''}`}
+            className={`stylist-rec-card__btn stylist-rec-card__btn--primary${
+              added ? ' stylist-rec-card__btn--added' : ''
+            }`}
             onClick={handleAdd}
             disabled={added}
           >
@@ -132,6 +350,25 @@ function SpaceAnalysisBadge({ analysis }: { analysis: SpaceAnalysis }) {
 
 export function SpaceStylist() {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<StylistTab>('chat');
+
+  // ── RAG Chat State ──
+  const [chatMessages, setChatMessages] = useState<ChatbotMessage[]>([
+    {
+      id: 'msg_welcome',
+      role: 'assistant',
+      content:
+        'Namaste. I am your **KAARIGAR Senior Curatorial Concierge**, powered by our verified archives of living Indian heritage crafts, master lineages, making stages, and platform provenance.\n\n' +
+        'Ask me anything about our craft traditions, artisan techniques, pricing transparency, or ask for curated recommendations for your collection.',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    },
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Vision Space Stylist State ──
   const [state, setState] = useState<AssistantState>('welcome');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
@@ -145,15 +382,23 @@ export function SpaceStylist() {
   const { products } = useProducts();
   const { addToCart } = useCart();
 
+  // Scroll chat to bottom when messages update
+  useEffect(() => {
+    if (activeTab === 'chat' && chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages, isChatLoading, activeTab]);
+
   const handleOpen = () => {
     setIsOpen(true);
-    setState('welcome');
   };
 
   useEffect(() => {
-    const handleGlobalOpen = () => {
+    const handleGlobalOpen = (e?: any) => {
       setIsOpen(true);
-      setState('welcome');
+      if (e?.detail?.tab) {
+        setActiveTab(e.detail.tab);
+      }
     };
     window.addEventListener('open-space-stylist', handleGlobalOpen);
     return () => window.removeEventListener('open-space-stylist', handleGlobalOpen);
@@ -164,6 +409,75 @@ export function SpaceStylist() {
     if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
   };
 
+  // ── RAG Chat Handlers ──
+  const handleSendChat = async (textToSend?: string) => {
+    const query = (textToSend || chatInput).trim();
+    if (!query || isChatLoading) return;
+
+    const userMsg: ChatbotMessage = {
+      id: `msg_u_${Date.now()}`,
+      role: 'user',
+      content: query,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    const newHistory = [...chatMessages, userMsg];
+    setChatMessages(newHistory);
+    setChatInput('');
+    setIsChatLoading(true);
+
+    try {
+      const historyPayload = newHistory
+        .filter((m) => m.role !== 'system')
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      const result = await sendChatbotRAGMessage(query, historyPayload);
+
+      const assistantMsg: ChatbotMessage = {
+        id: `msg_a_${Date.now()}`,
+        role: 'assistant',
+        content: result.answer,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        sources: result.sources,
+        suggestedProducts: result.suggestedProducts,
+        confidenceScore: result.confidenceScore,
+        objectQueryDetected: result.objectQueryDetected,
+        noObjectsFound: result.noObjectsFound,
+        hasReachedEnd: result.hasReachedEnd,
+        endMessage: result.endMessage,
+      };
+
+
+      setChatMessages((prev) => [...prev, assistantMsg]);
+    } catch (err: any) {
+      console.error('Chatbot RAG error:', err);
+      const fallbackMsg: ChatbotMessage = {
+        id: `msg_err_${Date.now()}`,
+        role: 'assistant',
+        content:
+          'I encountered a temporary archival connection delay. Please explore our curated masterworks above or ask me about our lost-wax Dhokra, Kangra miniatures, or 4-part pricing breakdown.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setChatMessages((prev) => [...prev, fallbackMsg]);
+    } finally {
+      setIsChatLoading(false);
+      setTimeout(() => chatInputRef.current?.focus(), 100);
+    }
+  };
+
+  const handleClearChat = () => {
+    setChatMessages([
+      {
+        id: 'msg_welcome',
+        role: 'assistant',
+        content:
+          'Archival thread refreshed. How may I assist your curatorial exploration of Indian craft traditions and certified masterpieces today?',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
+  };
+
+  // ── Vision Space Stylist Handlers ──
   const handleReset = () => {
     if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
     setImageFile(null);
@@ -175,29 +489,31 @@ export function SpaceStylist() {
     setState('upload');
   };
 
-  const validateAndSetImage = useCallback((file: File) => {
-    if (!ACCEPTED_TYPES.includes(file.type)) {
-      setErrorMessage('Please upload a JPEG, PNG, or WebP image of your space.');
-      setState('error');
-      return;
-    }
-    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-      setErrorMessage(
-        `Image is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum allowed is ${MAX_FILE_SIZE_MB} MB.`
-      );
-      setState('error');
-      return;
-    }
-    if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
-    const url = URL.createObjectURL(file);
-    setImageFile(file);
-    setImagePreviewUrl(url);
-    // Invalidate previous analysis to prevent stale results
-    setAnalysis(null);
-    setRecommendations([]);
-    setErrorMessage('');
-    setState('ready');
-  }, [imagePreviewUrl]);
+  const validateAndSetImage = useCallback(
+    (file: File) => {
+      if (!ACCEPTED_TYPES.includes(file.type)) {
+        setErrorMessage('Please upload a JPEG, PNG, or WebP image of your space.');
+        setState('error');
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        setErrorMessage(
+          `Image is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum allowed is ${MAX_FILE_SIZE_MB} MB.`
+        );
+        setState('error');
+        return;
+      }
+      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+      const url = URL.createObjectURL(file);
+      setImageFile(file);
+      setImagePreviewUrl(url);
+      setAnalysis(null);
+      setRecommendations([]);
+      setErrorMessage('');
+      setState('ready');
+    },
+    [imagePreviewUrl]
+  );
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -233,7 +549,6 @@ export function SpaceStylist() {
       const result = await analyzeSpaceWithBackend(imageFile, userPreference);
       setAnalysis(result.analysis);
 
-      // Check if image is unsuitable (e.g. face portrait, pet, food, non-interior)
       if (result.analysis.isSuitable === false) {
         setRecommendations([]);
         setState('unsuitable');
@@ -250,7 +565,10 @@ export function SpaceStylist() {
     } catch (err: any) {
       console.error('Space analysis error:', err);
       const detail = err.response?.data?.detail;
-      const msg = detail || err.message || 'Space analysis could not be completed. Please try again with a clear photo of your space.';
+      const msg =
+        detail ||
+        err.message ||
+        'Space analysis could not be completed. Please try again with a clear photo of your space.';
       setErrorMessage(msg);
       setState('error');
     }
@@ -266,11 +584,11 @@ export function SpaceStylist() {
         type="button"
         className="stylist-float-btn"
         onClick={handleOpen}
-        aria-label="Open AI Space Stylist — Craft in Your Space"
-        title="Craft in Your Space — AI styling assistant"
+        aria-label="Open KAARIGAR AI Assistant & Space Stylist"
+        title="KAARIGAR AI Assistant — Curatorial RAG Chat & Room Stylist"
       >
         <span className="stylist-float-btn__icon" aria-hidden="true">✦</span>
-        <span className="stylist-float-btn__label">Style My Space</span>
+        <span className="stylist-float-btn__label">Curatorial Guide</span>
       </button>
     );
   }
@@ -278,351 +596,522 @@ export function SpaceStylist() {
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="stylist-backdrop"
-        onClick={handleClose}
-        aria-hidden="true"
-      />
+      <div className="stylist-backdrop" onClick={handleClose} aria-hidden="true" />
 
       {/* Main Panel */}
       <aside
         className="stylist-panel"
         role="complementary"
-        aria-label="AI Space Stylist: Craft in Your Space"
+        aria-label="KAARIGAR AI Curatorial Concierge & Space Stylist"
       >
         {/* ── Header ── */}
         <header className="stylist-panel__header">
           <div className="stylist-panel__header-left">
             <span className="stylist-panel__icon" aria-hidden="true">✦</span>
             <div>
-              <h2 className="stylist-panel__title">Craft in Your Space</h2>
-              <p className="stylist-panel__subtitle">AI-Powered Artisan Curation</p>
+              <h2 className="stylist-panel__title">KAARIGAR Curatorial Guide</h2>
+              <p className="stylist-panel__subtitle">RAG Archives & Heritage Intelligence</p>
             </div>
           </div>
           <button
             type="button"
             className="stylist-panel__close"
             onClick={handleClose}
-            aria-label="Close Space Stylist"
+            aria-label="Close Assistant"
           >
             ✕
           </button>
         </header>
 
-        {/* ── Body ── */}
-        <div className="stylist-panel__body">
+        {/* ── Dual Mode Segmented Control Tabs ── */}
+        <div className="stylist-nav-tabs">
+          <button
+            type="button"
+            className={`stylist-tab-btn${activeTab === 'chat' ? ' stylist-tab-btn--active' : ''}`}
+            onClick={() => setActiveTab('chat')}
+          >
+            <span className="stylist-tab-icon">💬</span> Curatorial Chat (RAG)
+          </button>
+          <button
+            type="button"
+            className={`stylist-tab-btn${activeTab === 'vision' ? ' stylist-tab-btn--active' : ''}`}
+            onClick={() => setActiveTab('vision')}
+          >
+            <span className="stylist-tab-icon">📷</span> Craft in Your Space
+          </button>
+        </div>
 
-          {/* ── WELCOME STATE ── */}
-          {state === 'welcome' && (
-            <div className="stylist-state stylist-state--welcome">
-              <div className="stylist-welcome-art" aria-hidden="true">
-                <div className="stylist-welcome-art__circle">
-                  <span>🏠</span>
-                </div>
-                <div className="stylist-welcome-art__orbit" />
+        {/* ── TAB 1: RAG CURATORIAL CHAT ── */}
+        {activeTab === 'chat' && (
+          <div className="rag-chat-container">
+            {/* Quick Prompt Suggestions */}
+            <div className="rag-quick-prompts-bar">
+              <span className="rag-quick-label">Suggested Inquiries:</span>
+              <div className="rag-quick-chips">
+                {QUICK_PROMPTS.map((qp, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    className="rag-chip"
+                    onClick={() => handleSendChat(qp)}
+                    disabled={isChatLoading}
+                  >
+                    {qp}
+                  </button>
+                ))}
               </div>
-              <h3 className="stylist-welcome-title">
-                Discover which handcrafted masterwork belongs in your space.
-              </h3>
-              <p className="stylist-welcome-body">
-                Upload a photograph of your room, shelf, wall, or desk — and our AI & curatorial
-                stylist will analyze the colors, style, and mood to recommend the perfect Indian artisan
-                craft from KAARIGAR's permanent collection.
-              </p>
-              <ul className="stylist-welcome-features">
-                <li>
-                  <span>🎨</span>
-                  Reads your space's color palette and interior aesthetic
-                </li>
-                <li>
-                  <span>🏺</span>
-                  Matches real products from our artisan catalogue
-                </li>
-                <li>
-                  <span>🛍️</span>
-                  Direct Add to Bag with full artisan provenance
-                </li>
-              </ul>
+            </div>
 
+            {/* Conversation Stream */}
+            <div className="rag-chat-messages" ref={chatScrollRef}>
+              {chatMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`rag-chat-bubble rag-chat-bubble--${msg.role}`}
+                >
+                  <div className="rag-bubble-header">
+                    <span className="rag-bubble-sender">
+                      {msg.role === 'assistant' ? '✦ Curatorial Concierge' : 'Patron'}
+                    </span>
+                    <span className="rag-bubble-time">{msg.timestamp}</span>
+                  </div>
+
+                  <div className="rag-bubble-content">
+                    <FormattedMessage content={msg.content} />
+                  </div>
+
+                  {/* Render Verified Sources Accordion */}
+                  {msg.sources && msg.sources.length > 0 && (
+                    <RAGSourceViewer sources={msg.sources} />
+                  )}
+
+                  {/* Render Strictly Matched Products */}
+                  {msg.suggestedProducts && msg.suggestedProducts.length > 0 && (
+                    <div className="rag-bubble-products">
+                      <div className="rag-bubble-products-header">
+                        <span className="rag-bubble-products-heading">
+                          Matching Masterwork{msg.suggestedProducts.length > 1 ? 's' : ''} ({msg.suggestedProducts.length}):
+                        </span>
+                      </div>
+                      <div className="rag-bubble-products-grid">
+                        {msg.suggestedProducts.map((p) => (
+                          <ChatProductCard
+                            key={p.id}
+                            product={p}
+                            onAddToCart={handleAddToCart}
+                          />
+                        ))}
+                      </div>
+                      {msg.hasReachedEnd && (
+                        <div className="rag-end-of-objects">
+                          <span className="rag-end-line" />
+                          <span className="rag-end-text">
+                            {msg.endMessage || `✦ End of matching masterworks in collection (${msg.suggestedProducts.length} displayed) ✦`}
+                          </span>
+                          <span className="rag-end-line" />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Render Empty State if Object Search Found No Pieces */}
+                  {msg.noObjectsFound && (
+                    <div className="rag-no-objects-card">
+                      <div className="rag-no-objects-icon" aria-hidden="true">🏺</div>
+                      <div className="rag-no-objects-content">
+                        <h6 className="rag-no-objects-title">No Matching Masterworks in Archive</h6>
+                        <p className="rag-no-objects-desc">
+                          {msg.endMessage ||
+                            'We could not find any masterworks in our archives matching this specific object search. Our collection is strictly limited to authenticated living heritage pieces.'}
+                        </p>
+                        <div className="rag-no-objects-suggestions">
+                          <span className="rag-no-objects-hint">Explore available master craftworks:</span>
+                          <div className="rag-no-objects-chips">
+                            <button
+                              type="button"
+                              className="rag-mini-chip"
+                              onClick={() => handleSendChat('Show Bastar Dhokra lost-wax metalcraft')}
+                            >
+                              Dhokra Bronze
+                            </button>
+                            <button
+                              type="button"
+                              className="rag-mini-chip"
+                              onClick={() => handleSendChat('Show Jaipur Blue Pottery')}
+                            >
+                              Blue Pottery
+                            </button>
+                            <button
+                              type="button"
+                              className="rag-mini-chip"
+                              onClick={() => handleSendChat('Show Chanderi handwoven silk')}
+                            >
+                              Chanderi Silk
+                            </button>
+                            <button
+                              type="button"
+                              className="rag-mini-chip"
+                              onClick={() => handleSendChat('Show Pahari miniature paintings')}
+                            >
+                              Kangra Wasli
+                            </button>
+                            <button
+                              type="button"
+                              className="rag-mini-chip"
+                              onClick={() => handleSendChat('Show Channapatna woodcraft')}
+                            >
+                              Wood Totems
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              ))}
+
+              {/* Thinking / Streaming Indicator */}
+              {isChatLoading && (
+                <div className="rag-chat-bubble rag-chat-bubble--assistant rag-bubble--loading">
+                  <div className="rag-bubble-header">
+                    <span className="rag-bubble-sender">✦ Curatorial Concierge</span>
+                  </div>
+                  <div className="rag-loading-indicator">
+                    <span className="rag-loading-dot" />
+                    <span className="rag-loading-dot" />
+                    <span className="rag-loading-dot" />
+                    <span className="rag-loading-text">
+                      Consulting living craft archives and lineage records...
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Chat Input Bar */}
+            <form
+              className="rag-chat-input-bar"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSendChat();
+              }}
+            >
               <button
                 type="button"
-                className="stylist-btn stylist-btn--primary"
-                onClick={() => setState('upload')}
+                className="rag-clear-btn"
+                onClick={handleClearChat}
+                title="Start new curatorial thread"
+                aria-label="Start new curatorial thread"
               >
-                Upload Your Space Photo →
+                ↺
               </button>
-            </div>
-          )}
+              <input
+                ref={chatInputRef}
+                type="text"
+                className="rag-chat-input"
+                placeholder="Ask about Bastar Dhokra, Kasuti, pricing breakdown..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                disabled={isChatLoading}
+              />
+              <button
+                type="submit"
+                className="rag-send-btn"
+                disabled={isChatLoading || !chatInput.trim()}
+                title="Send inquiry"
+                aria-label="Send inquiry"
+              >
+                ➔
+              </button>
+            </form>
+          </div>
+        )}
 
-          {/* ── UPLOAD / READY STATES ── */}
-          {(state === 'upload' || state === 'ready') && (
-            <div className="stylist-state">
-              {/* Image Upload Zone */}
-              {!imageFile ? (
-                <>
-                  <div
-                  className={`stylist-dropzone${isDraggingOver ? ' stylist-dropzone--active' : ''}`}
-                  onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+        {/* ── TAB 2: VISION SPACE STYLIST ── */}
+        {activeTab === 'vision' && (
+          <div className="stylist-panel__body">
+            {/* ── WELCOME STATE ── */}
+            {state === 'welcome' && (
+              <div className="stylist-state stylist-state--welcome">
+                <div className="stylist-welcome-hero">
+                  <span className="stylist-welcome-badge">✦ Spatial AI Curation</span>
+                  <h3 className="stylist-welcome-heading">Find Living Heritage For Your Room</h3>
+                  <p className="stylist-welcome-body">
+                    Upload a photograph of your living room, desk, shelf, or wall. Our AI vision
+                    analyzes room lighting, color palette, and architectural style to recommend
+                    authentic pieces from our master artisans.
+                  </p>
+                </div>
+
+                <div className="stylist-welcome-steps">
+                  <div className="stylist-step-card">
+                    <span className="stylist-step-num">1</span>
+                    <div>
+                      <strong>Photograph Your Space</strong>
+                      <p>Capture your wall, console table, or corner in natural light.</p>
+                    </div>
+                  </div>
+                  <div className="stylist-step-card">
+                    <span className="stylist-step-num">2</span>
+                    <div>
+                      <strong>Aesthetic Space Reading</strong>
+                      <p>Our vision model detects tones, lighting warmth, and textures.</p>
+                    </div>
+                  </div>
+                  <div className="stylist-step-card">
+                    <span className="stylist-step-num">3</span>
+                    <div>
+                      <strong>Curated Masterworks</strong>
+                      <p>Receive pieces that harmonise with your interior with match scores.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="stylist-btn stylist-btn--primary stylist-btn--full"
+                  onClick={() => setState('upload')}
+                >
+                  Begin Space Analysis →
+                </button>
+              </div>
+            )}
+
+            {/* ── UPLOAD STATE ── */}
+            {state === 'upload' && (
+              <div className="stylist-state stylist-state--upload">
+                <div
+                  className={`stylist-dropzone${isDraggingOver ? ' stylist-dropzone--drag' : ''}`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDraggingOver(true);
+                  }}
                   onDragLeave={() => setIsDraggingOver(false)}
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
-                  aria-label="Upload a photograph of your space"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click();
+                  }}
                 >
-                  <div className="stylist-dropzone__icon" aria-hidden="true">📸</div>
-                  <p className="stylist-dropzone__primary">
-                    {isDraggingOver ? 'Drop your photo here' : 'Upload your space photo'}
-                  </p>
-                  <p className="stylist-dropzone__secondary">
-                    JPEG · PNG · WebP · Max {MAX_FILE_SIZE_MB} MB
-                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={ACCEPTED_TYPES.join(',')}
+                    onChange={handleFileInput}
+                    className="stylist-file-input"
+                  />
+                  <div className="stylist-dropzone__icon">📷</div>
+                  <h4 className="stylist-dropzone__title">Drop your room photograph here</h4>
+                  <p className="stylist-dropzone__hint">or click to browse from your device</p>
+                  <span className="stylist-dropzone__specs">
+                    Supports JPEG, PNG, WebP · Max {MAX_FILE_SIZE_MB} MB
+                  </span>
+                </div>
+
+                <div className="stylist-samples">
+                  <p className="stylist-samples__label">Or try with curated architectural spaces:</p>
+                  <div className="stylist-samples__row">
+                    <button
+                      type="button"
+                      className="stylist-sample-btn"
+                      onClick={() => handleLoadSample('/images/room_sample1.jpg', 'living-room.jpg')}
+                    >
+                      Living Room
+                    </button>
+                    <button
+                      type="button"
+                      className="stylist-sample-btn"
+                      onClick={() => handleLoadSample('/images/room_sample2.jpg', 'dining-credenza.jpg')}
+                    >
+                      Dining Credenza
+                    </button>
+                    <button
+                      type="button"
+                      className="stylist-sample-btn"
+                      onClick={() => handleLoadSample('/images/room_sample3.jpg', 'study-nook.jpg')}
+                    >
+                      Study Nook
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── READY / PREVIEW STATE ── */}
+            {state === 'ready' && imagePreviewUrl && (
+              <div className="stylist-state stylist-state--ready">
+                <div className="stylist-preview-wrap">
+                  <img
+                    src={imagePreviewUrl}
+                    alt="Your uploaded space"
+                    className="stylist-preview-img"
+                  />
                   <button
                     type="button"
-                    className="stylist-btn stylist-btn--outline stylist-btn--sm"
-                    onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                    className="stylist-preview-change"
+                    onClick={() => fileInputRef.current?.click()}
                   >
-                    Browse Files
+                    Change Photo
                   </button>
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept={ACCEPTED_TYPES.join(',')}
                     onChange={handleFileInput}
-                    style={{ display: 'none' }}
-                    aria-hidden="true"
+                    className="stylist-file-input"
                   />
                 </div>
-                <div className="stylist-sample-rooms">
-                  <p className="stylist-sample-rooms__label">Or try a sample interior space:</p>
-                  <div className="stylist-sample-rooms__chips">
-                    <button
-                      type="button"
-                      className="stylist-sample-chip"
-                      onClick={() => handleLoadSample('/images/sample_living_room.jpg', 'Modern-Living-Room.jpg')}
-                    >
-                      <span>🛋️</span> Sunlit Living Room Console
-                    </button>
-                  </div>
-                </div>
-              </>
-              ) : (
-                <div className="stylist-preview">
-                  <div className="stylist-preview__img-wrap">
-                    <img
-                      src={imagePreviewUrl!}
-                      alt="Your uploaded space"
-                      className="stylist-preview__img"
-                    />
-                    <button
-                      type="button"
-                      className="stylist-preview__remove"
-                      onClick={() => {
-                        if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
-                        setImageFile(null);
-                        setImagePreviewUrl(null);
-                        setAnalysis(null);
-                        setRecommendations([]);
-                        setState('upload');
-                      }}
-                      aria-label="Remove uploaded photo"
-                      title="Remove photo"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <p className="stylist-preview__name">{imageFile.name}</p>
-                </div>
-              )}
 
-              {/* Optional Preference Input */}
-              <div className="stylist-pref-wrap">
-                <label className="stylist-label" htmlFor="stylist-pref-input">
-                  Style preference or budget <span style={{ opacity: 0.6 }}>(optional)</span>
-                </label>
-                <input
-                  id="stylist-pref-input"
-                  type="text"
-                  value={userPreference}
-                  onChange={(e) => setUserPreference(e.target.value)}
-                  placeholder='e.g. "Minimalist ceramic accent, budget ₹30,000"'
-                  className="stylist-pref-input"
-                  maxLength={200}
-                />
-              </div>
-
-              {/* Analyze Button */}
-              <button
-                type="button"
-                className="stylist-btn stylist-btn--primary stylist-btn--full"
-                onClick={handleAnalyze}
-                disabled={!imageFile}
-              >
-                ✦ Analyze My Space with AI Stylist
-              </button>
-
-              <p className="stylist-privacy-note">
-                🔒 Your space photograph is securely analyzed by KAARIGAR's AI & curatorial assistant.
-              </p>
-            </div>
-          )}
-
-          {/* ── ANALYZING STATE ── */}
-          {state === 'analyzing' && (
-            <div className="stylist-state stylist-state--loading">
-              <div className="stylist-loader" aria-hidden="true">
-                <div className="stylist-loader__ring" />
-                <div className="stylist-loader__ring stylist-loader__ring--2" />
-                <div className="stylist-loader__ring stylist-loader__ring--3" />
-              </div>
-              <h3 className="stylist-loading-title">Analyzing Your Space…</h3>
-              <p className="stylist-loading-body">
-                AI & Curatorial Engine is examining room lighting, color harmony, and craft placement opportunities.
-              </p>
-              <div className="stylist-loading-steps">
-                <span className="stylist-loading-step stylist-loading-step--active">Examining color palette</span>
-                <span className="stylist-loading-step">Reading interior style</span>
-                <span className="stylist-loading-step">Matching artisan catalogue</span>
-              </div>
-            </div>
-          )}
-
-          {/* ── UNSUITABLE IMAGE STATE (e.g. Person's Face, Pet, Food) ── */}
-          {state === 'unsuitable' && (
-            <div className="stylist-state stylist-state--empty">
-              <div className="stylist-empty-icon" aria-hidden="true">🖼️</div>
-              <h3 className="stylist-empty-title">Not an Interior Space</h3>
-              <p className="stylist-empty-body">
-                {analysis?.unsuitableMessage ||
-                  'The uploaded photograph does not appear to be an interior space, room, shelf, desk, or wall. Please upload a photo of your space so we can curate suitable handcrafted Indian decor pieces.'}
-              </p>
-              <button
-                type="button"
-                className="stylist-btn stylist-btn--primary"
-                onClick={() => {
-                  if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
-                  setImageFile(null);
-                  setImagePreviewUrl(null);
-                  setAnalysis(null);
-                  setRecommendations([]);
-                  setState('upload');
-                }}
-              >
-                Upload a Room or Shelf Photo →
-              </button>
-              <button
-                type="button"
-                className="stylist-btn stylist-btn--ghost"
-                onClick={handleReset}
-              >
-                Start Over
-              </button>
-            </div>
-          )}
-
-          {/* ── RESULTS STATE ── */}
-          {state === 'results' && analysis && (
-            <div className="stylist-state stylist-state--results">
-              {/* Space Reading */}
-              <div className="stylist-results-header">
-                <h3 className="stylist-results-title">Space Reading Complete</h3>
-                {imagePreviewUrl && (
-                  <img
-                    src={imagePreviewUrl}
-                    alt="Your space"
-                    className="stylist-results-thumb"
+                <div className="stylist-pref-wrap">
+                  <label htmlFor="stylist-pref" className="stylist-pref-label">
+                    Optional: Specify budget or placement preferences
+                  </label>
+                  <input
+                    id="stylist-pref"
+                    type="text"
+                    className="stylist-pref-input"
+                    placeholder="e.g. budget under ₹35,000, entryway console, warm tones"
+                    value={userPreference}
+                    onChange={(e) => setUserPreference(e.target.value)}
                   />
-                )}
-              </div>
-
-              <p className="stylist-results-description">{analysis.spaceDescription}</p>
-              <SpaceAnalysisBadge analysis={analysis} />
-
-              {/* Recommendations */}
-              <div className="stylist-results-section">
-                <h4 className="stylist-results-section-title">
-                  Curated Recommendations ({recommendations.length})
-                </h4>
-                <div className="stylist-rec-list">
-                  {recommendations.map((rec) => (
-                    <ProductRecommendationCard
-                      key={rec.product.id}
-                      rec={rec}
-                      onAddToCart={handleAddToCart}
-                    />
-                  ))}
                 </div>
-              </div>
 
-              <button
-                type="button"
-                className="stylist-btn stylist-btn--ghost stylist-btn--full"
-                onClick={handleReset}
-              >
-                ↺ Analyze a Different Space
-              </button>
-            </div>
-          )}
-
-          {/* ── NO MATCH STATE ── */}
-          {state === 'no-match' && (
-            <div className="stylist-state stylist-state--empty">
-              <div className="stylist-empty-icon" aria-hidden="true">🏺</div>
-              <h3 className="stylist-empty-title">No Close Matches Found</h3>
-              <p className="stylist-empty-body">
-                Our current catalogue doesn't have an exact match for your space's aesthetic or
-                budget. Try relaxing your preferences or explore the full collection.
-              </p>
-              <Link
-                to="/gallery"
-                className="stylist-btn stylist-btn--primary"
-                onClick={handleClose}
-              >
-                Browse Full Collection →
-              </Link>
-              <button
-                type="button"
-                className="stylist-btn stylist-btn--ghost"
-                onClick={handleReset}
-              >
-                Try Different Preferences
-              </button>
-            </div>
-          )}
-
-          {/* ── ERROR STATE ── */}
-          {state === 'error' && (
-            <div className="stylist-state stylist-state--error">
-              <div className="stylist-error-icon" aria-hidden="true">⚠</div>
-              <h3 className="stylist-error-title">Analysis Failed</h3>
-              <p className="stylist-error-body">{errorMessage}</p>
-              <div className="stylist-error-actions">
                 <button
                   type="button"
-                  className="stylist-btn stylist-btn--primary"
-                  onClick={() => setState(imageFile ? 'ready' : 'upload')}
+                  className="stylist-btn stylist-btn--primary stylist-btn--full"
+                  onClick={handleAnalyze}
                 >
-                  Try Again
+                  Analyze & Recommend Pieces ✦
                 </button>
+              </div>
+            )}
+
+            {/* ── ANALYZING STATE ── */}
+            {state === 'analyzing' && (
+              <div className="stylist-state stylist-state--analyzing">
+                <div className="stylist-loader">
+                  <div className="stylist-loader__spinner" />
+                  <span className="stylist-loader__sparkle">✦</span>
+                </div>
+                <h3 className="stylist-loader__title">Reading Your Interior Space</h3>
+                <p className="stylist-loader__body">
+                  Examining light temperature, architectural lines, and tonal balances across our
+                  living artisanal archives...
+                </p>
+              </div>
+            )}
+
+            {/* ── UNSUITABLE IMAGE STATE ── */}
+            {state === 'unsuitable' && (
+              <div className="stylist-state stylist-state--error">
+                <div className="stylist-error-icon" aria-hidden="true">🖼</div>
+                <h3 className="stylist-error-title">Not an Interior Space</h3>
+                <p className="stylist-error-body">
+                  {analysis?.unsuitableMessage ||
+                    'Please upload a clear photograph of an interior space (living room, wall, desk, or shelf) so we can recommend matching artisanal pieces.'}
+                </p>
+                <div className="stylist-error-actions">
+                  <button
+                    type="button"
+                    className="stylist-btn stylist-btn--primary"
+                    onClick={handleReset}
+                  >
+                    Upload an Interior Photo
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── RESULTS STATE ── */}
+            {state === 'results' && analysis && (
+              <div className="stylist-state stylist-state--results">
+                <SpaceAnalysisBadge analysis={analysis} />
+
+                <div className="stylist-recs-section">
+                  <h4 className="stylist-recs-heading">Curated Artisanal Recommendations</h4>
+                  <div className="stylist-recs-list">
+                    {recommendations.map((rec) => (
+                      <ProductRecommendationCard
+                        key={rec.product.id}
+                        rec={rec}
+                        onAddToCart={handleAddToCart}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="stylist-btn stylist-btn--ghost stylist-btn--full"
+                  onClick={handleReset}
+                >
+                  ↺ Analyze a Different Space
+                </button>
+              </div>
+            )}
+
+            {/* ── NO MATCH STATE ── */}
+            {state === 'no-match' && (
+              <div className="stylist-state stylist-state--empty">
+                <div className="stylist-empty-icon" aria-hidden="true">🏺</div>
+                <h3 className="stylist-empty-title">No Close Matches Found</h3>
+                <p className="stylist-empty-body">
+                  Our current catalogue doesn't have an exact match for your space's aesthetic or
+                  budget. Try relaxing your preferences or explore the full collection.
+                </p>
+                <Link
+                  to="/gallery"
+                  className="stylist-btn stylist-btn--primary"
+                  onClick={handleClose}
+                >
+                  Browse Full Collection →
+                </Link>
                 <button
                   type="button"
                   className="stylist-btn stylist-btn--ghost"
                   onClick={handleReset}
                 >
-                  Start Over
+                  Try Different Preferences
                 </button>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+
+            {/* ── ERROR STATE ── */}
+            {state === 'error' && (
+              <div className="stylist-state stylist-state--error">
+                <div className="stylist-error-icon" aria-hidden="true">⚠</div>
+                <h3 className="stylist-error-title">Analysis Failed</h3>
+                <p className="stylist-error-body">{errorMessage}</p>
+                <div className="stylist-error-actions">
+                  <button
+                    type="button"
+                    className="stylist-btn stylist-btn--primary"
+                    onClick={() => setState(imageFile ? 'ready' : 'upload')}
+                  >
+                    Try Again
+                  </button>
+                  <button
+                    type="button"
+                    className="stylist-btn stylist-btn--ghost"
+                    onClick={handleReset}
+                  >
+                    Start Over
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Footer ── */}
         <footer className="stylist-panel__footer">
           <p>
-            Powered by <span className="stylist-footer-gem">AI Vision & Curatorial Engine</span>
+            Powered by <span className="stylist-footer-gem">KAARIGAR RAG & Curatorial Engine</span>
           </p>
-          <p>Recommends from {products.length} curated masterworks</p>
+          <p>Direct from {products.length} living Indian masterworks</p>
         </footer>
       </aside>
     </>

@@ -320,3 +320,36 @@ class ChatbotRecommendation(BaseModel):
 class ChatbotAnalyzeResponse(BaseModel):
     spaceAnalysis: ChatbotSpaceAnalysis
     recommendations: list[ChatbotRecommendation]
+
+
+class RAGSourceOut(BaseModel):
+    id: str
+    title: str
+    category: str
+    snippet: str
+    relevanceScore: float = 0.0
+    productId: Optional[str] = None
+
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
+class ChatbotChatRequest(BaseModel):
+    message: str
+    history: list[ChatMessage] = Field(default_factory=list)
+
+
+class ChatbotChatResponse(BaseModel):
+    answer: str
+    sources: list[RAGSourceOut] = Field(default_factory=list)
+    suggestedProducts: list[ChatbotProductOut] = Field(default_factory=list)
+    confidenceScore: float = 0.95
+    usedFallback: bool = False
+    objectQueryDetected: bool = False
+    noObjectsFound: bool = False
+    hasReachedEnd: bool = False
+    endMessage: Optional[str] = None
+
+

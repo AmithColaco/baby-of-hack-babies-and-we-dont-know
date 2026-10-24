@@ -190,3 +190,177 @@ export async function analyzeSpaceWithBackend(
   }
 }
 
+// ──────────────────────────── RAG Chatbot Service ────────────────────────────
+
+export interface RAGSource {
+  id: string;
+  title: string;
+  category: string;
+  snippet: string;
+  relevanceScore: number;
+  productId?: string;
+}
+
+export interface ChatbotMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+  sources?: RAGSource[];
+  suggestedProducts?: CraftObject[];
+  confidenceScore?: number;
+  objectQueryDetected?: boolean;
+  noObjectsFound?: boolean;
+  hasReachedEnd?: boolean;
+  endMessage?: string;
+}
+
+export interface ChatbotChatResult {
+  answer: string;
+  sources: RAGSource[];
+  suggestedProducts: CraftObject[];
+  confidenceScore: number;
+  usedFallback: boolean;
+  objectQueryDetected?: boolean;
+  noObjectsFound?: boolean;
+  hasReachedEnd?: boolean;
+  endMessage?: string;
+}
+
+/**
+ * Send conversational message to the backend RAG Chatbot endpoint.
+ * Retrieves verified context across crafts, lineages, stages, and platform policies.
+ */
+export async function sendChatbotRAGMessage(
+  message: string,
+  history: Array<{ role: string; content: string }> = []
+): Promise<ChatbotChatResult> {
+  try {
+    const response = await apiClient.post<ChatbotChatResult>(
+      '/chatbot/chat',
+      {
+        message: message.trim(),
+        history: history.slice(-6).map((h) => ({
+          role: h.role === 'assistant' ? 'assistant' : 'user',
+          content: h.content,
+        })),
+      },
+      { timeout: 30000 }
+    );
+
+    if (response.data && response.data.answer) {
+      return response.data;
+    }
+    throw new Error('Empty response from RAG chatbot endpoint');
+  } catch (err) {
+    console.warn('Backend RAG endpoint unavailable or errored; using local curatorial fallback:', err);
+    // Intelligent local fallback grounded in real catalogue and platform knowledge
+    const allProducts = getInitialProducts();
+    const queryLower = message.trim().toLowerCase();
+
+    // Check budget limit
+    const budgetMatch = queryLower.match(/(?:under|below|less than|budget(?:\s*of)?)\s*(?:rs\.?|inr|₹)?\s*([0-9,]+)/);
+    const budgetLimit = budgetMatch ? parseFloat(budgetMatch[1].replace(/,/g, '')) : null;
+
+    const objectKeywords = [
+      'show', 'find', 'recommend', 'pieces', 'piece', 'items', 'item', 'objects', 'object',
+      'products', 'product', 'buy', 'catalogue', 'collection', 'under', 'below',
+      'painting', 'miniature', 'wasli', 'pottery', 'urn', 'ceramic', 'blue pottery',
+      'textile', 'silk', 'saree', 'brocade', 'chanderi',
+      'dhokra', 'horse', 'metal', 'brass', 'bronze',
+      'wood', 'woodcraft', 'toy', 'totem', 'channapatna',
+      'jewel', 'amulet', 'kundan', 'meenakari', 'polki',
+      'sword', 'carpet', 'rug', 'furniture', 'shoe'
+    ];
+
+    const isPurePolicy =
+      (queryLower.includes('fee') || queryLower.includes('platform') || queryLower.includes('5%') || queryLower.includes('escrow') || queryLower.includes('return') || queryLower.includes('shipping')) &&
+      !objectKeywords.some((k) => ['buy', 'show', 'piece', 'item', 'product'].includes(k) && queryLower.includes(k));
+
+    const objectQueryDetected = !isPurePolicy && objectKeywords.some((k) => queryLower.includes(k));
+
+    let matchedProducts: CraftObject[] = [];
+    if (objectQueryDetected) {
+      matchedProducts = allProducts.filter((p) => {
+        if (budgetLimit !== null && p.price > budgetLimit) return false;
+
+        if (queryLower.includes('painting') || queryLower.includes('miniature') || queryLower.includes('pahari')) {
+
+          return p.category === 'paintings' || p.id === 'pahari-miniature';
+        }
+        if (queryLower.includes('pottery') || queryLower.includes('ceramic') || queryLower.includes('urn') || queryLower.includes('blue pottery')) {
+          return p.category === 'ceramics' || p.id === 'jaipur-blue-pottery';
+        }
+        if (queryLower.includes('textile') || queryLower.includes('silk') || queryLower.includes('saree') || queryLower.includes('chanderi')) {
+          return p.category === 'textiles' || p.id === 'chanderi-handwoven-silk';
+        }
+        if (queryLower.includes('dhokra') || queryLower.includes('horse') || queryLower.includes('bronze') || queryLower.includes('brass') || (queryLower.includes('metal') && p.category === 'metalcraft')) {
+          return p.category === 'metalcraft' || p.id === 'bastar-dhokra-brass';
+        }
+        if (queryLower.includes('wood') || queryLower.includes('toy') || queryLower.includes('totem') || queryLower.includes('channapatna')) {
+          return p.category === 'woodcraft' || p.id === 'channapatna-wood-sculpture';
+        }
+        if (queryLower.includes('jewel') || queryLower.includes('amulet') || queryLower.includes('kundan') || queryLower.includes('meenakari')) {
+          return p.category === 'jewellery' || p.id === 'kundan-meenakari-jewellery';
+        }
+
+        // Generic collection browse
+        if (budgetLimit !== null) return true;
+        if (queryLower.includes('all') || queryLower.includes('collection') || queryLower.includes('pieces')) return true;
+
+        return false;
+      });
+    }
+
+    const noObjectsFound = objectQueryDetected && matchedProducts.length === 0;
+    const hasReachedEnd = objectQueryDetected;
+    const endMessage = noObjectsFound
+      ? 'No masterworks in our current archive match this specific search. Our collection is strictly limited to authenticated living heritage pieces.'
+      : `✦ Displaying all ${matchedProducts.length} matching masterwork${matchedProducts.length > 1 ? 's' : ''} in collection (End of results) ✦`;
+
+    let answer = `Welcome to KAARIGAR's Curatorial Assistant. Every masterwork in our collection is created by generational artisans across India.\n\n`;
+    if (noObjectsFound) {
+      answer = `### Curatorial Archive Notice\n\nWe could not find any authenticated masterworks matching **"${message.trim()}"** in our active collection.\n\n` +
+        `Our digital gallery only inventories verified pieces directly from master artisans and Geographical Indication (GI) clusters. ` +
+        `We currently curate Bastar Lost-Wax Dhokra, Pahari Miniature Paintings, Jaipur Blue Pottery, Handwoven Chanderi Brocades, Channapatna Woodcraft, and Royal Kundan Meenakari.`;
+    } else if (matchedProducts.length > 0) {
+      answer = `### Curated Masterwork${matchedProducts.length > 1 ? 's' : ''} for "${message.trim()}"\n\n` +
+        `I have retrieved **${matchedProducts.length}** authenticated piece${matchedProducts.length > 1 ? 's' : ''} from our collection matching your criteria.`;
+    } else if (queryLower.includes('fee') || queryLower.includes('price') || queryLower.includes('cost') || queryLower.includes('breakdown')) {
+      answer = `### Transparent 4-Part Pricing Formula\n` +
+        `1. **Actual Artisan Price**: 100% of this amount goes straight to the master craftsperson.\n` +
+        `2. **Platform Infrastructure Fee**: 5% dedicated to archival preservation and digital support.\n` +
+        `3. **Statutory Tax (GST)**: 5%.\n` +
+        `4. **Total Price**: The exact arithmetic total with no hidden intermediary commissions.\n\n` +
+        `Patron funds are held in secure escrow and released only upon your verified satisfaction.`;
+    } else if (queryLower.includes('dhokra') || queryLower.includes('metal')) {
+      answer = `### Bastar Lost-Wax Dhokra (Cire Perdue)\n` +
+        `Bastar Dhokra is cast by the Ghadwa tribal community of Chhattisgarh using a 4,000-year Harappan lineage. ` +
+        `Wild forest beeswax threads are hand-extruded and coiled around an alluvial clay core. Molten bell metal at 1200°C vaporizes the wax, ` +
+        `and the clay mold is cracked open upon cooling, rendering every single casting unique.`;
+    }
+
+    return {
+      answer,
+      sources: [
+        {
+          id: 'local_archive_fallback',
+          title: matchedProducts[0]?.craftTradition || 'KAARIGAR Archival Provenance',
+          category: 'craft_tradition',
+          snippet: matchedProducts[0]?.technique || 'Verified generational Indian craft lineage.',
+          relevanceScore: 0.92,
+          productId: matchedProducts[0]?.id,
+        },
+      ],
+      suggestedProducts: matchedProducts,
+      confidenceScore: 0.85,
+      usedFallback: true,
+      objectQueryDetected,
+      noObjectsFound,
+      hasReachedEnd,
+      endMessage: objectQueryDetected ? endMessage : undefined,
+    };
+  }
+}
+
+

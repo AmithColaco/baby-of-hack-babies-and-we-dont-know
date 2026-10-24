@@ -8515,3 +8515,759 @@ img {
     opacity: 1;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   KAARIGAR RAG CURATORIAL CHATBOT STYLES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Segmented Control Tabs */
+.stylist-nav-tabs {
+  display: flex;
+  background: #181816;
+  border-bottom: 1px solid rgba(201, 139, 74, 0.25);
+  padding: 0.35rem 0.75rem;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.stylist-tab-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #A39E93;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stylist-tab-btn:hover {
+  color: #FAF8F4;
+  background: rgba(250, 248, 244, 0.05);
+}
+
+.stylist-tab-btn--active {
+  background: rgba(201, 139, 74, 0.15);
+  color: #E2A838;
+  border-color: rgba(201, 139, 74, 0.35);
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.stylist-tab-icon {
+  font-size: 0.95rem;
+}
+
+/* RAG Chat Container */
+.rag-chat-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: #FAF8F4;
+  overflow: hidden;
+}
+
+/* Quick Prompt Suggestions Bar */
+.rag-quick-prompts-bar {
+  padding: 0.75rem 1rem 0.5rem;
+  background: #F4EFE6;
+  border-bottom: 1px solid #E6DCCD;
+  flex-shrink: 0;
+}
+
+.rag-quick-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7D7565;
+  margin-bottom: 0.4rem;
+}
+
+.rag-quick-chips {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+  scrollbar-width: thin;
+}
+
+.rag-quick-chips::-webkit-scrollbar {
+  height: 3px;
+}
+.rag-quick-chips::-webkit-scrollbar-thumb {
+  background: #D4A373;
+  border-radius: 3px;
+}
+
+.rag-chip {
+  flex-shrink: 0;
+  padding: 0.3rem 0.7rem;
+  background: #FAF8F4;
+  border: 1px solid #D8CBB7;
+  border-radius: 100px;
+  font-size: 0.72rem;
+  color: #4A3E31;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+}
+
+.rag-chip:hover:not(:disabled) {
+  background: #2E1F0F;
+  color: #FAF8F4;
+  border-color: #2E1F0F;
+  transform: translateY(-1px);
+}
+
+.rag-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Conversation Stream */
+.rag-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  scroll-behavior: smooth;
+}
+
+.rag-chat-messages::-webkit-scrollbar {
+  width: 5px;
+}
+.rag-chat-messages::-webkit-scrollbar-thumb {
+  background: #C9A87C;
+  border-radius: 3px;
+}
+
+/* Chat Bubbles */
+.rag-chat-bubble {
+  max-width: 88%;
+  border-radius: 10px;
+  padding: 0.85rem 1.1rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  animation: ragFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes ragFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rag-chat-bubble--user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #2E1F0F 0%, #462A14 100%);
+  color: #FAF8F4;
+  border-bottom-right-radius: 2px;
+  box-shadow: 0 4px 12px rgba(46, 31, 15, 0.15);
+}
+
+.rag-chat-bubble--assistant {
+  align-self: flex-start;
+  background: #FFFFFF;
+  color: #24221F;
+  border: 1px solid rgba(201, 139, 74, 0.3);
+  border-bottom-left-radius: 2px;
+  box-shadow: 0 4px 14px rgba(46, 31, 15, 0.05);
+}
+
+.rag-bubble-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+  font-size: 0.72rem;
+  gap: 0.5rem;
+}
+
+.rag-chat-bubble--user .rag-bubble-sender {
+  color: #E2A838;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.rag-chat-bubble--assistant .rag-bubble-sender {
+  color: #A0522D;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.rag-bubble-time {
+  opacity: 0.65;
+  font-size: 0.68rem;
+}
+
+/* Message Formatting */
+.rag-message-body {
+  word-break: break-word;
+}
+
+.rag-line-break {
+  height: 0.5rem;
+}
+
+.rag-msg-h3 {
+  font-family: var(--font-display, 'Cormorant Garamond', serif);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #2E1F0F;
+  margin: 0.6rem 0 0.3rem;
+}
+
+.rag-msg-h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #8B4513;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.rag-msg-quote {
+  border-left: 3px solid #C98B4A;
+  padding-left: 0.75rem;
+  margin: 0.5rem 0;
+  font-style: italic;
+  color: #5C4E3D;
+  background: rgba(201, 139, 74, 0.06);
+  border-radius: 0 4px 4px 0;
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+}
+
+.rag-msg-bullet {
+  list-style-type: square;
+  margin-left: 1.1rem;
+  margin-bottom: 0.3rem;
+}
+
+.rag-msg-num-item {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.rag-num-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #E8DCCB;
+  color: #4A3E31;
+  font-size: 0.68rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.rag-msg-para {
+  margin: 0.3rem 0;
+}
+
+.rag-inline-code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.82rem;
+}
+
+/* RAG Source Citations Accordion */
+.rag-sources-accordion {
+  margin-top: 0.75rem;
+  border-top: 1px dashed #E2D5C3;
+  padding-top: 0.5rem;
+}
+
+.rag-sources-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #F4ECE1;
+  border: 1px solid #D8C7B2;
+  border-radius: 6px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.72rem;
+  color: #4A3C2B;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.rag-sources-toggle:hover {
+  background: #EFE4D6;
+  border-color: #B5602A;
+}
+
+.rag-sources-icon {
+  font-size: 0.85rem;
+}
+
+.rag-sources-arrow {
+  font-size: 0.6rem;
+  opacity: 0.7;
+}
+
+.rag-sources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+  animation: ragFadeIn 0.2s ease;
+}
+
+.rag-source-item {
+  background: #FAF7F2;
+  border-left: 3px solid #B5602A;
+  border-radius: 0 6px 6px 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.rag-source-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.25rem;
+}
+
+.rag-source-title {
+  font-weight: 600;
+  color: #24221F;
+}
+
+.rag-source-category {
+  background: #E8DFD1;
+  color: #6B5B49;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  text-transform: capitalize;
+}
+
+.rag-source-relevance {
+  background: #E5F0EA;
+  color: #2D6A4F;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.rag-source-snippet {
+  margin: 0.2rem 0;
+  color: #555149;
+  line-height: 1.4;
+}
+
+.rag-source-link {
+  display: inline-block;
+  margin-top: 0.25rem;
+  color: #A0522D;
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Chat Product Recommendations Cards */
+.rag-bubble-products {
+  margin-top: 0.85rem;
+  border-top: 1px solid #ECE3D4;
+  padding-top: 0.65rem;
+}
+
+.rag-bubble-products-heading {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7D6B57;
+  margin-bottom: 0.5rem;
+}
+
+.rag-bubble-products-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.rag-product-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #FDFBF8;
+  border: 1px solid #E4D8C7;
+  border-radius: 8px;
+  padding: 0.5rem;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.rag-product-card:hover {
+  border-color: #C98B4A;
+  box-shadow: 0 4px 12px rgba(46, 31, 15, 0.08);
+}
+
+.rag-product-card__thumb {
+  width: 68px;
+  height: 68px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #EAE3D6;
+}
+
+.rag-product-card__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rag-product-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.rag-product-card__tradition {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #A0522D;
+  font-weight: 600;
+}
+
+.rag-product-card__title {
+  font-family: var(--font-display, 'Cormorant Garamond', serif);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #22201D;
+  margin: 0.1rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rag-product-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.rag-product-card__artisan {
+  font-size: 0.72rem;
+  color: #6C665D;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rag-product-card__price {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #2E1F0F;
+  flex-shrink: 0;
+}
+
+.rag-product-card__actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.rag-product-card__btn {
+  padding: 0.28rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rag-product-card__btn--outline {
+  border: 1px solid #C4B29E;
+  background: transparent;
+  color: #4A3E31;
+}
+
+.rag-product-card__btn--outline:hover {
+  background: #EFE6D9;
+}
+
+.rag-product-card__btn--primary {
+  border: 1px solid #B5602A;
+  background: #B5602A;
+  color: #FAF8F4;
+}
+
+.rag-product-card__btn--primary:hover:not(:disabled) {
+  background: #964A1B;
+}
+
+.rag-product-card__btn--added {
+  background: #2D6A4F !important;
+  border-color: #2D6A4F !important;
+  color: #FFFFFF !important;
+}
+
+/* Typing / Loading Indicator */
+.rag-bubble--loading {
+  background: #FAF7F2;
+  border-color: #D8C7B2;
+}
+
+.rag-loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0;
+}
+
+.rag-loading-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #C98B4A;
+  animation: ragBounce 1.4s infinite ease-in-out both;
+}
+
+.rag-loading-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+.rag-loading-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes ragBounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+.rag-loading-text {
+  font-size: 0.74rem;
+  color: #7D6B57;
+  font-style: italic;
+  margin-left: 0.3rem;
+}
+
+/* Chat Input Bar */
+.rag-chat-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #FFFFFF;
+  border-top: 1px solid #E6DCCD;
+  flex-shrink: 0;
+}
+
+.rag-clear-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #F0E8DC;
+  border: 1px solid #D8C8B4;
+  color: #6C5D4B;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.rag-clear-btn:hover {
+  background: #2E1F0F;
+  color: #FAF8F4;
+}
+
+.rag-chat-input {
+  flex: 1;
+  height: 38px;
+  padding: 0 0.85rem;
+  border: 1px solid #D8CBB7;
+  border-radius: 20px;
+  background: #FAF8F4;
+  font-family: inherit;
+  font-size: 0.84rem;
+  color: #24221F;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rag-chat-input:focus {
+  border-color: #B5602A;
+  box-shadow: 0 0 0 3px rgba(181, 96, 42, 0.15);
+  background: #FFFFFF;
+}
+
+.rag-send-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #B5602A 0%, #8A411B 100%);
+  color: #FFFFFF;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(181, 96, 42, 0.25);
+}
+
+.rag-send-btn:hover:not(:disabled) {
+  transform: scale(1.06);
+  box-shadow: 0 4px 12px rgba(181, 96, 42, 0.35);
+}
+
+.rag-send-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Matching Products Header */
+.rag-bubble-products-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+/* End of Objects Result Indicator */
+.rag-end-of-objects {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.4rem;
+}
+
+.rag-end-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #D4A373, transparent);
+}
+
+.rag-end-text {
+  font-size: 0.68rem;
+  color: #8C7A68;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  font-style: italic;
+}
+
+/* No Objects Found Empty Card */
+.rag-no-objects-card {
+  margin-top: 0.75rem;
+  background: #FFFBF5;
+  border: 1px solid #E4D5C1;
+  border-left: 3px solid #B5602A;
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  gap: 0.75rem;
+  animation: ragFadeIn 0.25s ease;
+}
+
+.rag-no-objects-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.rag-no-objects-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.rag-no-objects-title {
+  font-family: var(--font-display, 'Cormorant Garamond', serif);
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #2E1F0F;
+  margin: 0 0 0.25rem;
+}
+
+.rag-no-objects-desc {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: #5C5245;
+  margin: 0 0 0.5rem;
+}
+
+.rag-no-objects-suggestions {
+  margin-top: 0.4rem;
+}
+
+.rag-no-objects-hint {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #8A6D4B;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.35rem;
+}
+
+.rag-no-objects-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.rag-mini-chip {
+  padding: 0.2rem 0.55rem;
+  background: #F4EFE6;
+  border: 1px solid #D8C7B2;
+  border-radius: 100px;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: #3D3226;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.rag-mini-chip:hover {
+  background: #2E1F0F;
+  color: #FAF8F4;
+  border-color: #2E1F0F;
+}
+
