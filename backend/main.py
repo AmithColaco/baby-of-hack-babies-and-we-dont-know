@@ -20,9 +20,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="KalaHaat API",
-    version="0.1.0",
-    description="Virtual Marketplace for Coastal Artisans — API",
+    title="KAARIGAR · The Living Craft Archive API",
+    version="1.0.0",
+    description="Virtual Marketplace & Cultural Commerce Engine for Indigenous Indian Artisans — API",
     lifespan=lifespan,
 )
 
@@ -89,7 +89,7 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 @app.get("/", tags=["health"])
 def root():
-    return {"status": "ok", "app": "KalaHaat", "docs": "/docs"}
+    return {"status": "ok", "app": "KAARIGAR", "engine": "KalaHaat API", "docs": "/docs"}
 
 
 @app.get("/health", tags=["health"])

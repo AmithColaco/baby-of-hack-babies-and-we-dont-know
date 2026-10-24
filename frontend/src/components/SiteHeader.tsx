@@ -3,11 +3,13 @@ import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../data/productStore';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export function SiteHeader() {
   const { totalItems, setIsCartOpen } = useCart();
   const { totalWishlist } = useWishlist();
   const { user, isLoggedIn, isArtisan, logout } = useAuth();
+  const { t, i18n } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -81,7 +83,8 @@ export function SiteHeader() {
 
           {/* Desktop Nav */}
           <nav className="site-header__nav" aria-label="Main Navigation">
-            <NavLink to="/gallery" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>Gallery</NavLink>
+            <NavLink to="/gallery" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>{t('nav.gallery', 'Exhibition')}</NavLink>
+            <NavLink to="/shop" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>{t('nav.shop', 'Catalogue')}</NavLink>
             <Link to="/#artisans" className="site-nav-link">Artisans</Link>
             <Link to="/#process" className="site-nav-link">Craft Journey</Link>
             {isArtisan && (
@@ -91,6 +94,31 @@ export function SiteHeader() {
 
           {/* Action Icons */}
           <div className="site-header__actions">
+            {/* Language Switcher */}
+            <button
+              type="button"
+              className="site-header__action-btn site-header__lang-btn"
+              onClick={() => {
+                const nextLang = i18n.language === 'kn' ? 'en' : 'kn';
+                i18n.changeLanguage(nextLang);
+                localStorage.setItem('kaarigar_lang', nextLang);
+              }}
+              aria-label={`Switch language to ${i18n.language === 'kn' ? 'English' : 'Kannada'}`}
+              title={i18n.language === 'kn' ? 'Switch to English' : 'ಕನ್ನಡಕ್ಕೆ ಬದಲಾಯಿಸಿ'}
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                borderRadius: '4px',
+                border: '1px solid rgba(139, 69, 19, 0.35)',
+                padding: '4px 8px',
+                color: 'inherit',
+                background: 'transparent',
+              }}
+            >
+              {i18n.language === 'kn' ? 'ಕನ್ನಡ' : 'EN'}
+            </button>
+
             {/* Search */}
             <button type="button" className="site-header__action-btn" onClick={() => setSearchOpen(true)} aria-label="Search craft archive" title="Search crafts">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -224,7 +252,8 @@ export function SiteHeader() {
             </div>
             <nav className="mobile-drawer__nav">
               <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home Archive</Link>
-              <Link to="/gallery" onClick={() => setMobileMenuOpen(false)}>Living Gallery</Link>
+              <Link to="/gallery" onClick={() => setMobileMenuOpen(false)}>Exhibition Gallery</Link>
+              <Link to="/shop" onClick={() => setMobileMenuOpen(false)}>Craft Catalogue</Link>
               <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>My Wishlist {totalWishlist > 0 && `(${totalWishlist})`}</Link>
               {isLoggedIn && isArtisan && <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>Artisan Atelier Portal</Link>}
               {isLoggedIn && <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>Settings</Link>}

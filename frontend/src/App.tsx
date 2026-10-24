@@ -1,21 +1,25 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { SiteHeader } from './components/SiteHeader';
 import { SiteFooter } from './components/SiteFooter';
 import { CartDrawer } from './components/CartDrawer';
-import Home from './pages/Home';
-import Catalogue from './pages/Catalogue';
-import Product from './pages/Product';
-import Checkout from './pages/Checkout';
-import Dashboard from './pages/Dashboard';
-import CreateListing from './pages/CreateListing';
-import OrderTracking from './pages/OrderTracking';
-import Onboarding from './pages/Onboarding';
-import WishlistPage from './pages/WishlistPage';
-import SettingsPage from './pages/SettingsPage';
+import LoadingSpinner from './components/LoadingSpinner';
 import { SpaceStylist } from './components/SpaceStylist';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+
+// Dynamic code-split lazy page imports
+const Home = lazy(() => import('./pages/Home'));
+const Catalogue = lazy(() => import('./pages/Catalogue'));
+const Gallery = lazy(() => import('./pages/Gallery'));
+const Product = lazy(() => import('./pages/Product'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const CreateListing = lazy(() => import('./pages/CreateListing'));
+const OrderTracking = lazy(() => import('./pages/OrderTracking'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
+const WishlistPage = lazy(() => import('./pages/WishlistPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
 function ScrollToTop() {
   const { pathname, search, hash } = useLocation();
@@ -48,25 +52,31 @@ function AppLayout() {
       <CartDrawer />
       <SpaceStylist />
 
-      <Routes>
-        <Route path="/"                   element={<Home />} />
-        <Route path="/gallery"            element={<Catalogue />} />
-        <Route path="/shop"               element={<Navigate to="/gallery" replace />} />
-        <Route path="/shop/:id"           element={<Product />} />
-        <Route path="/cart"               element={<Checkout />} />
-        <Route path="/wishlist"           element={<WishlistPage />} />
-        <Route path="/login"              element={<Onboarding />} />
-        <Route path="/become-a-seller"    element={<Onboarding />} />
-        <Route path="/settings"           element={<SettingsPage />} />
-        <Route path="/seller-atelier"     element={<Navigate to="/dashboard" replace />} />
-        <Route path="/seller"             element={<Navigate to="/dashboard" replace />} />
-        <Route path="/atelier"            element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard"          element={<ProtectedArtisanRoute><Dashboard /></ProtectedArtisanRoute>} />
-        <Route path="/dashboard/create"   element={<ProtectedArtisanRoute><CreateListing /></ProtectedArtisanRoute>} />
-        <Route path="/dashboard/edit/:id" element={<ProtectedArtisanRoute><CreateListing /></ProtectedArtisanRoute>} />
-        <Route path="/orders/:id"         element={<OrderTracking />} />
-        <Route path="*"                   element={<Navigate to="/" replace />} />
-      </Routes>
+      <Suspense fallback={<LoadingSpinner label="Loading Living Archive…" />}>
+        <Routes>
+          <Route path="/"                   element={<Home />} />
+          <Route path="/gallery"            element={<Gallery />} />
+          <Route path="/exhibition"         element={<Gallery />} />
+          <Route path="/archive"            element={<Gallery />} />
+          <Route path="/shop"               element={<Catalogue />} />
+          <Route path="/catalogue"          element={<Catalogue />} />
+          <Route path="/collection"         element={<Catalogue />} />
+          <Route path="/shop/:id"           element={<Product />} />
+          <Route path="/cart"               element={<Checkout />} />
+          <Route path="/wishlist"           element={<WishlistPage />} />
+          <Route path="/login"              element={<Onboarding />} />
+          <Route path="/become-a-seller"    element={<Onboarding />} />
+          <Route path="/settings"           element={<SettingsPage />} />
+          <Route path="/seller-atelier"     element={<Navigate to="/dashboard" replace />} />
+          <Route path="/seller"             element={<Navigate to="/dashboard" replace />} />
+          <Route path="/atelier"            element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard"          element={<ProtectedArtisanRoute><Dashboard /></ProtectedArtisanRoute>} />
+          <Route path="/dashboard/create"   element={<ProtectedArtisanRoute><CreateListing /></ProtectedArtisanRoute>} />
+          <Route path="/dashboard/edit/:id" element={<ProtectedArtisanRoute><CreateListing /></ProtectedArtisanRoute>} />
+          <Route path="/orders/:id"         element={<OrderTracking />} />
+          <Route path="*"                   element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
 
       <SiteFooter />
     </div>

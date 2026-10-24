@@ -171,6 +171,7 @@ CORE_CATALOGUE: list[dict[str, Any]] = [
 
 def get_all_catalogue_products(db: Optional[Session] = None) -> list[dict[str, Any]]:
     """Retrieve full catalogue: core flagship pieces plus any published DB listings."""
+    core_ids = {c["id"] for c in CORE_CATALOGUE}
     catalogue = list(CORE_CATALOGUE)
 
     if db is not None:
@@ -181,6 +182,8 @@ def get_all_catalogue_products(db: Optional[Session] = None) -> list[dict[str, A
                 .all()
             )
             for item in db_listings:
+                if str(item.id) in core_ids:
+                    continue  # already in core catalogue with rich curatorial metadata
                 img_url = "/images/textile.jpg"
                 if item.images and len(item.images) > 0:
                     raw_url = item.images[0].url

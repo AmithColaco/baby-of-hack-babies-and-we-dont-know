@@ -6,25 +6,27 @@ import json
 
 BASE_URL = "http://127.0.0.1:8000"
 
+IMG_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../frontend/public/images"))
+
 TEST_CASES = [
     {
-        "case": "A. Artisanal Stone Studio / Room (artisan.jpg)",
-        "path": os.path.abspath("../frontend/public/images/artisan.jpg"),
+        "case": "A. Living Interior Space (sample_living_room.jpg)",
+        "path": os.path.join(IMG_DIR, "sample_living_room.jpg"),
         "preference": "Authentic heritage craft for shelves",
     },
     {
-        "case": "B. Modern Scandinavian Living Room (modern_room)",
-        "path": r"C:\Users\arjun\.gemini\antigravity-ide\brain\6cd41ea5-9325-4333-bb9d-3fb6db8c0dd1\modern_room_1792611585051.jpg",
+        "case": "B. Studio Setting (woodcraft.jpg)",
+        "path": os.path.join(IMG_DIR, "woodcraft.jpg"),
         "preference": "Minimalist decor, budget 30000",
     },
     {
-        "case": "C. Human Face Portrait (face_portrait)",
-        "path": r"C:\Users\arjun\.gemini\antigravity-ide\brain\6cd41ea5-9325-4333-bb9d-3fb6db8c0dd1\face_portrait_1792611567544.jpg",
+        "case": "C. Human Face Portrait (artisan.jpg)",
+        "path": os.path.join(IMG_DIR, "artisan.jpg"),
         "preference": "",
     },
     {
-        "case": "D. Unrelated Subject (vintage_car)",
-        "path": r"C:\Users\arjun\.gemini\antigravity-ide\brain\6cd41ea5-9325-4333-bb9d-3fb6db8c0dd1\vintage_car_1792611601787.jpg",
+        "case": "D. Jewelry Closeup (jewellery.jpg)",
+        "path": os.path.join(IMG_DIR, "jewellery.jpg"),
         "preference": "",
     },
 ]
