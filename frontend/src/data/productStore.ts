@@ -36,10 +36,12 @@ export function listingToCraftObject(listing: ListingRecord): CraftObject {
   const isPlaceholder = !rawFirstUrl || rawFirstUrl.includes('placehold.co') || rawFirstUrl.includes('placeholder');
 
   if (!isPlaceholder) {
-    if (rawFirstUrl.startsWith('http://') || rawFirstUrl.startsWith('https://')) {
+    if (rawFirstUrl.startsWith('http://') || rawFirstUrl.startsWith('https://') || rawFirstUrl.startsWith('blob:') || rawFirstUrl.startsWith('data:')) {
       imageUrl = rawFirstUrl;
-    } else if (rawFirstUrl.startsWith('/uploads')) {
-      imageUrl = `${API_BASE_URL}${rawFirstUrl}`;
+    } else if (rawFirstUrl.startsWith('/uploads') || rawFirstUrl.startsWith('uploads/')) {
+      const cleanBase = (API_BASE_URL || 'http://localhost:8000').replace(/\/+$/, '');
+      const cleanPath = rawFirstUrl.startsWith('/') ? rawFirstUrl : `/${rawFirstUrl}`;
+      imageUrl = `${cleanBase}${cleanPath}`;
     } else {
       imageUrl = rawFirstUrl;
     }

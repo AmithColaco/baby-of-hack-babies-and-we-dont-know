@@ -7,5 +7,8 @@
     "**/__pycache__",
     "frontend"
   ],
+  "extraPaths": [
+    "backend"
+  ],
   "reportPrivateImportUsage": "none"
 }

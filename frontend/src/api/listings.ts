@@ -151,9 +151,7 @@ export async function archiveListing(id: string): Promise<ListingRecord> {
 export async function uploadListingImages(id: string, files: File[]): Promise<ListingRecord> {
   const formData = new FormData();
   files.forEach((file) => formData.append('files', file));
-  const { data } = await apiClient.post<ListingRecord>(`/listings/${id}/images`, formData, {
-    headers: { 'Content-Type': undefined }, // Let browser auto-set correct multipart boundary
-  });
+  const { data } = await apiClient.post<ListingRecord>(`/listings/${id}/images`, formData);
   return data;
 }
 

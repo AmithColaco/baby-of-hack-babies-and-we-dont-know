@@ -53,6 +53,7 @@ class Settings(BaseSettings):
     # Upload limits
     MAX_IMAGE_SIZE_MB: int = 10
     MAX_IMAGES_PER_LISTING: int = 4
+    UPLOAD_DIR: str = os.path.join(_BACKEND_DIR, "uploads")
 
     model_config = {
         "env_file": (

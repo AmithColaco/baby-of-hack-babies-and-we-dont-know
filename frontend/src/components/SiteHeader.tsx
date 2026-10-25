@@ -94,7 +94,6 @@ export function SiteHeader() {
           {/* Desktop Nav */}
           <nav className="site-header__nav" aria-label="Main Navigation">
             <NavLink to="/gallery" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>{t('nav.gallery', 'Catalogue')}</NavLink>
-            <NavLink to="/archive" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>Living Archive</NavLink>
             <NavLink to="/commissions" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>{t('nav.commissions', 'Commissions')}</NavLink>
             <Link to="/#artisans" className="site-nav-link">{t('nav.artisans', 'Artisans')}</Link>
             <Link to="/#process" className="site-nav-link">{t('nav.process', 'Craft Journey')}</Link>

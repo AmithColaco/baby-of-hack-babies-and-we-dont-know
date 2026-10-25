@@ -9,6 +9,7 @@ import {
   getPriceSuggestion,
   type PriceBreakdownResponse,
 } from "../api/listings";
+import { addProductToStore, listingToCraftObject } from "../data/productStore";
 
 // Helper: compress image client-side before upload
 async function compressImage(file: File, maxPx = 1200, quality = 0.75): Promise<File> {
@@ -159,7 +160,7 @@ export default function CreateListing() {
   const [draftSavedToast, setDraftSavedToast] = useState(false);
 
   // Form fields
-  const [photoFile, setPhotoFile] = useLocalDraft<any>("cl_photo", null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>("");
   const [craftType, setCraftType] = useLocalDraft<string>("cl_craft", "");
   const [title, setTitle] = useLocalDraft<string>("cl_title", "");
@@ -289,7 +290,7 @@ export default function CreateListing() {
     setLoading(true);
     setError("");
     try {
-      const listing = await createListing({
+      let listing = await createListing({
         craft_type: craftType,
         title,
         description,
@@ -299,19 +300,29 @@ export default function CreateListing() {
         stock,
       });
 
-      if (photoFile && typeof photoFile === "object" && (photoFile as File).size) {
+      if (photoFile && photoFile instanceof File && photoFile.size > 0) {
         try {
-          await uploadListingImages(listing.id, [photoFile as File]);
-        } catch {
-          /* optional upload */
+          const withImage = await uploadListingImages(listing.id, [photoFile]);
+          if (withImage && withImage.id) {
+            listing = withImage;
+          }
+        } catch (uploadErr) {
+          console.error("Photo upload error:", uploadErr);
         }
       }
 
-      await publishListing(listing.id);
+      const published = await publishListing(listing.id);
+      const finalRecord = published?.images && published.images.length > 0 ? published : listing;
+
+      // Add directly to client store so gallery & catalogue immediately display the new item with its uploaded photo
+      try {
+        addProductToStore(listingToCraftObject(finalRecord));
+      } catch (storeErr) {
+        console.warn("Could not add to local store:", storeErr);
+      }
 
       // Clear draft keys
       [
-        "cl_photo",
         "cl_craft",
         "cl_title",
         "cl_desc",

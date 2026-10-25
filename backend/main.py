@@ -10,12 +10,14 @@ from app.database import Base, engine
 from app.routers import auth, chatbot, commissions, gallery, guide, listings, orders
 
 
+from migrate import run_migration
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Create all tables on startup (for dev / demo).
-    In production use Alembic migrations instead.
-    """
+    """Create all tables on startup (for dev / demo) and ensure schema sync."""
     Base.metadata.create_all(bind=engine)
+    run_migration()
     yield
 
 
@@ -83,7 +85,7 @@ def list_artisans_alias(db=Depends(auth.get_db)):
 
 
 # ── Static file serving for uploaded images ──
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+UPLOAD_DIR = settings.UPLOAD_DIR
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 

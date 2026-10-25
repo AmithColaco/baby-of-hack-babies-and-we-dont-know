@@ -49,7 +49,7 @@ router = APIRouter()
 
 # ──────────────────────── upload directory ───────────────────────
 
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+UPLOAD_DIR = settings.UPLOAD_DIR
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
@@ -295,7 +295,8 @@ async def upload_images(
 
     for i, file in enumerate(files):
         # Validate type
-        if file.content_type not in ("image/jpeg", "image/png", "image/webp"):
+        ct = (file.content_type or "").lower().split(";")[0].strip()
+        if ct not in ("image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"):
             raise HTTPException(status_code=400, detail=f"Unsupported image type: {file.content_type}")
 
         # Save to disk
