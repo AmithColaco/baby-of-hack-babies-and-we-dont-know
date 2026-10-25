@@ -466,3 +466,16 @@ class ChatbotChatResponse(BaseModel):
     endMessage: Optional[str] = None
 
 
+class TranslateRequest(BaseModel):
+    text: str
+    target_lang: str = "kn"
+    source_lang: str = "en"
+
+
+class TranslateResponse(BaseModel):
+    translated_text: str
+    source_lang: str
+    target_lang: str
+
+
+

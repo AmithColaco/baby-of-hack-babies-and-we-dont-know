@@ -23,7 +23,12 @@ from app.schemas import (
     ChatbotProductOut,
     ChatbotRecommendation,
     ChatbotSpaceAnalysis,
+    TranslateRequest,
+    TranslateResponse,
 )
+import urllib.parse
+import urllib.request
+import json
 from app.services import ai_service, rag_service, spatial_stylist
 from app.services.spatial_stylist import SpatialStylistOutput
 
@@ -284,4 +289,52 @@ async def chat_endpoint(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Chatbot failed to generate a response: {str(e)}",
         )
+
+
+_TRANSLATION_CACHE: dict[tuple[str, str], str] = {}
+
+
+def google_translate_text(text: str, target_lang: str, source_lang: str = "en") -> str:
+    """Translate text using Google Translate, caching results in memory."""
+    if not text or target_lang == source_lang:
+        return text
+
+    cache_key = (text.strip(), target_lang)
+    if cache_key in _TRANSLATION_CACHE:
+        return _TRANSLATION_CACHE[cache_key]
+
+    t_input = text.replace("&", "and")
+    encoded = urllib.parse.quote(t_input)
+    url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl={source_lang}&tl={target_lang}&dt=t&q={encoded}"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            translated = "".join([p[0] for p in data[0] if p and p[0]])
+            _TRANSLATION_CACHE[cache_key] = translated
+            return translated
+    except Exception as e:
+        logger.warning(f"Google translate request failed for '{text[:30]}...': {e}")
+        return text
+
+
+@router.post(
+    "/translate",
+    response_model=TranslateResponse,
+    summary="Translate text from English to Hindi or Kannada using Google Translate",
+)
+async def translate_endpoint(payload: TranslateRequest):
+    """Translate text using Google Translate service with memory caching."""
+    translated = google_translate_text(
+        text=payload.text,
+        target_lang=payload.target_lang,
+        source_lang=payload.source_lang,
+    )
+    return TranslateResponse(
+        translated_text=translated,
+        source_lang=payload.source_lang,
+        target_lang=payload.target_lang,
+    )
+
 
