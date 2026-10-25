@@ -609,11 +609,11 @@ def filter_catalogue_for_query(
     query: str,
     catalogue: list[dict[str, Any]],
     top_chunks: list[tuple[RAGChunk, float]],
-) -> tuple[list[dict[str, Any]], bool, bool, str]:
+) -> tuple[list[dict[str, Any]], bool, bool, bool, str]:
     """Strictly filter catalogue products based on the patron's specific object inquiry.
 
     Returns:
-      (matched_products, object_query_detected, no_objects_found, end_message)
+      (matched_products, object_query_detected, no_objects_found, has_reached_end, end_message)
     """
     clean_q = query.strip().lower()
 

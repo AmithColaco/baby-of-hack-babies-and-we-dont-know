@@ -15,8 +15,9 @@ import os
 # Add parent to path so we can import app modules
 sys.path.insert(0, os.path.dirname(__file__))
 
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8")
+_reconfigure = getattr(sys.stdout, "reconfigure", None)
+if callable(_reconfigure):
+    _reconfigure(encoding="utf-8")
 
 from app.config import settings
 from app.database import Base, SessionLocal, engine

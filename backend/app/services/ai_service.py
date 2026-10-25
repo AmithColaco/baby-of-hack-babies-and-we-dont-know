@@ -124,6 +124,7 @@ def _generate_content_with_fallback(parts, generation_config=None):
     last_err = None
 
     for model_name in models_to_try:
+        m = None
         try:
             m = genai.GenerativeModel(model_name)
             logger.info("Attempting Gemini generation with model: %s", model_name)
@@ -132,7 +133,7 @@ def _generate_content_with_fallback(parts, generation_config=None):
             logger.warning("Gemini generation with '%s' failed (%s), attempting fallback...", model_name, exc)
             last_err = exc
             # If generation_config had response_mime_type="application/json" and failed, retry once without it
-            if generation_config is not None:
+            if generation_config is not None and m is not None:
                 try:
                     logger.info("Retrying Gemini model '%s' without explicit JSON response_mime_type", model_name)
                     return m.generate_content(parts)

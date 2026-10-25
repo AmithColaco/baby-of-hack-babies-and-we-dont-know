@@ -217,7 +217,7 @@ Follow this guaranteed offline-ready path to evaluate the entire platform end-to
 1. **Step 1: Homepage & Impact Inclusivity (`0:00 - 0:30`)**
    - Open `http://localhost:5173/`.
    - Inspect the verified **Impact Metrics**: 148+ Master Artisans, ₹42.8 Lakhs Direct Guild Disbursal, +280% Income Uplift.
-   - Switch language to **ಕನ್ನಡ** or **हिंदी** in the header to demonstrate full artisan multilingual translation, then click the **`👁` High-Contrast Toggle**.
+   - Switch language to **ಕನ್ನಡ** or **हिंदी** in the header to demonstrate full artisan multilingual localization across the entire platform.
 2. **Step 2: Story-Backed Pricing & Scannable Provenance (`0:30 - 1:15`)**
    - Navigate to `/gallery` and select **Gopura & Peacock Ilkal Kasuti Drape** (`/shop/kasuti-dharwad-saree`).
    - Scroll to Acquisition (Scene 06): Observe the **Story-Backed Pricing Breakdown** (Material ₹950 + 28h Labor @ ₹95/hr + Heritage Premium = ₹4,200).
@@ -263,9 +263,10 @@ The backend exposes fully asynchronous endpoints documented interactively via Sw
 
 | Method | Endpoint | Request Body | Response Model | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `POST` | `/auth/otp/send` | `{"phone": "9876543210"}` | `{"message": "OTP sent", "phone": "..."}` | Dispatches a 6-digit mock OTP for passwordless login. |
-| `POST` | `/auth/otp/verify` | `{"phone": "...", "otp": "123456"}` | `Token` (JWT bearer access token) | Validates OTP and returns cryptographic JWT bearer token. |
+| `POST` | `/auth/otp/request` | `{"phone": "9876543210"}` | `{"message": "OTP sent...", "phone": "..."}` | Dispatches a 6-digit mock OTP for passwordless login. |
+| `POST` | `/auth/otp/verify` | `{"phone": "...", "otp": "123456"}` | `TokenResponse` (JWT bearer access token) | Validates OTP and returns cryptographic JWT bearer token. |
 | `GET` | `/auth/me` | *Bearer Token Header* | `UserOut` | Returns authenticated user profile, permissions, and artisan status. |
+| `PUT` | `/auth/me` | `{"name": "...", "bio": "...", ...}` | `ProfileOut` | Updates patron or artisan profile details. |
 
 ### Listings & Catalogue Endpoints
 
@@ -279,6 +280,16 @@ The backend exposes fully asynchronous endpoints documented interactively via Sw
 | `POST` | `/listings/{id}/publish` | Path: `id: int` | `ListingOut` | Publishes draft listing to public digital exhibition. |
 | `GET` | `/listings/artisan/me` | *Bearer Token Header* | `list[ListingOut]` | Retrieves all draft and published works for the logged-in artisan. |
 | `POST` | `/listings/estimate-price`| `{"craft_type": "...", "hours": 40}` | `{"suggested_price": float}` | Calculates algorithmically recommended baseline pricing. |
+
+### Bespoke Commissions Endpoints
+
+| Method | Endpoint | Query / Body Params | Response Model | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/commissions/` | `CommissionRequestCreate` JSON | `CommissionRequestOut` | Buyer submits a bespoke handcrafted commission request. |
+| `GET` | `/commissions/` | `craft_type`, `status` | `list[CommissionRequestOut]` | Lists open bespoke commissions across guilds. |
+| `GET` | `/commissions/{id}` | Path: `id: int` | `CommissionRequestOut` | Retrieves specific commission request with all artisan quotes. |
+| `POST` | `/commissions/{id}/quotes` | `CommissionQuoteCreate` JSON | `CommissionQuoteOut` | Certified artisan submits custom quote, delivery timeline & materials. |
+| `POST` | `/commissions/{id}/accept/{quote_id}` | Path: `id`, `quote_id` | `CommissionRequestOut` | Buyer accepts quote and locks initial milestone into escrow. |
 
 ### Curatorial Concierge & Vision Endpoints
 
@@ -451,6 +462,7 @@ kaarigar/
 │   │   ├── routers/
 │   │   │   ├── auth.py         # Passwordless OTP & JWT verification router
 │   │   │   ├── chatbot.py      # Curatorial chat and space stylist router
+│   │   │   ├── commissions.py  # Bespoke commission requests and quotes router
 │   │   │   ├── gallery.py      # Craft traditions and artisan directory router
 │   │   │   ├── listings.py     # Craft listing lifecycle and valuation router
 │   │   │   └── orders.py       # Escrow order processing and tracking router
@@ -483,6 +495,7 @@ kaarigar/
 │   │   │   ├── home/           # Landing page modules (Hero, Story, Masters, Perks)
 │   │   │   ├── CartDrawer.tsx  # Slide-over Curatorial Bag drawer
 │   │   │   ├── GalleryNav.tsx  # Filter controls for digital exhibition catalog
+│   │   │   ├── ProvenanceTagModal.tsx # Printable artisan hang-tag with scannable QR
 │   │   │   ├── SiteFooter.tsx  # Archival footer and platform transparency notes
 │   │   │   ├── SiteHeader.tsx  # Navigation, search modal, and user menu
 │   │   │   └── SpaceStylist.tsx# Dual-engine Curatorial Guide (Chat + Room Stylist)
@@ -496,15 +509,18 @@ kaarigar/
 │   │   │   ├── Catalogue.tsx   # Curated exhibition archive with filter grid
 │   │   │   ├── Checkout.tsx    # Authenticated 3-part acquisition checkout
 │   │   │   ├── CreateListing.tsx# Artisan self-publishing studio
+│   │   │   ├── CustomCommissions.tsx # Bespoke custom commission inquiry & quote portal
 │   │   │   ├── Dashboard.tsx   # Master artisan atelier management portal
 │   │   │   ├── Gallery.tsx     # Digital 2D archive and 3D preview view
 │   │   │   ├── Home.tsx        # High-impact editorial landing page
 │   │   │   ├── OrderTracking.tsx# Public provenance and delivery inspection view
-│   │   │   └── Product.tsx     # Deep 6-chapter sequential storyboard plate view
+│   │   │   ├── Product.tsx     # Deep 6-chapter sequential storyboard plate view
+│   │   │   └── WishlistPage.tsx# Patron acquisition wishlist and bookmarked masterworks
 │   │   ├── types/
 │   │   │   └── index.ts        # TypeScript interfaces for crafts, products, orders
 │   │   ├── utils/
-│   │   │   └── imageFallback.ts# Zero-placeholder image fallback handlers
+│   │   │   ├── imageFallback.ts# Zero-placeholder image fallback handlers
+│   │   │   └── qrCode.ts       # Dynamic high-contrast QR generation utility
 │   │   ├── App.tsx             # Root router with role-based route guards
 │   │   ├── editorial.css       # Custom museum-grade typography and styling system
 │   │   ├── index.css           # Global layout variables and reset utilities
@@ -512,8 +528,9 @@ kaarigar/
 │   ├── index.html              # HTML document root with typography preconnects
 │   ├── package.json            # Frontend dependency specifications and scripts
 │   ├── tsconfig.json           # TypeScript compilation configuration
-│   └── vite.config.ts          # Vite configuration with reverse proxy setup
+│   └── vite.config.ts          # Vite configuration with code-splitting manual chunks
 ├── .gitignore                  # Unified repository ignore rules
+├── pyrightconfig.json          # Python static type analysis configuration
 └── README.md                   # Project documentation and architectural index
 ```
 
