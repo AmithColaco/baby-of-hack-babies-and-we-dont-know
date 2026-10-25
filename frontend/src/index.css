@@ -203,6 +203,81 @@ input, textarea, select { font-family: inherit; }
 }
 
 /* ============================================================
+   4.1 ALL INDIAN LANGUAGES TYPOGRAPHY & LAYOUT PRESERVATION
+   Ensures all 22+ Indian languages supported by Google Translate
+   render with authentic typography and correct glyph metrics
+   without clipping ascenders/descenders or breaking layouts.
+   ============================================================ */
+:lang(kn), :lang(hi), :lang(ta), :lang(te), :lang(ml), :lang(bn), :lang(mr), :lang(gu),
+:lang(pa), :lang(or), :lang(as), :lang(sa), :lang(gom), :lang(mai), :lang(bho), :lang(ne),
+:lang(ks), :lang(doi), :lang(mni-Mtei), :lang(sat), :lang(brx), :lang(lus) {
+  font-family: 'Nirmala UI', 'Noto Sans Devanagari', 'Noto Sans Kannada', 'Noto Sans Tamil', 'Noto Sans Telugu', 'Noto Sans Malayalam', 'Noto Sans Bengali', 'Noto Sans Gujarati', 'Noto Sans Gurmukhi', 'Noto Sans Oriya', var(--font-ui), system-ui, sans-serif;
+  letter-spacing: 0.01em;
+  word-break: break-word;
+}
+
+/* RTL for Urdu and Sindhi */
+:lang(ur), :lang(sd) {
+  direction: rtl;
+  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', 'Arial', sans-serif;
+  letter-spacing: normal;
+  word-break: break-word;
+}
+
+:lang(kn) h1, :lang(kn) h2, :lang(kn) h3, :lang(kn) h4, :lang(kn) .t-display,
+:lang(hi) h1, :lang(hi) h2, :lang(hi) h3, :lang(hi) h4, :lang(hi) .t-display,
+:lang(ta) h1, :lang(ta) h2, :lang(ta) h3, :lang(ta) h4, :lang(ta) .t-display,
+:lang(te) h1, :lang(te) h2, :lang(te) h3, :lang(te) h4, :lang(te) .t-display,
+:lang(ml) h1, :lang(ml) h2, :lang(ml) h3, :lang(ml) h4, :lang(ml) .t-display,
+:lang(bn) h1, :lang(bn) h2, :lang(bn) h3, :lang(bn) h4, :lang(bn) .t-display,
+:lang(mr) h1, :lang(mr) h2, :lang(mr) h3, :lang(mr) h4, :lang(mr) .t-display,
+:lang(gu) h1, :lang(gu) h2, :lang(gu) h3, :lang(gu) h4, :lang(gu) .t-display,
+:lang(pa) h1, :lang(pa) h2, :lang(pa) h3, :lang(pa) h4, :lang(pa) .t-display,
+:lang(or) h1, :lang(or) h2, :lang(or) h3, :lang(or) h4, :lang(or) .t-display,
+:lang(as) h1, :lang(as) h2, :lang(as) h3, :lang(as) h4, :lang(as) .t-display,
+:lang(sa) h1, :lang(sa) h2, :lang(sa) h3, :lang(sa) h4, :lang(sa) .t-display,
+:lang(ur) h1, :lang(ur) h2, :lang(ur) h3, :lang(ur) h4, :lang(ur) .t-display {
+  font-family: 'Noto Serif Devanagari', 'Noto Serif Kannada', 'Nirmala UI', var(--font-display);
+  line-height: 1.35;
+  letter-spacing: normal;
+}
+
+:lang(kn) .t-eyebrow, :lang(kn) .t-label, :lang(kn) .section-eyebrow,
+:lang(hi) .t-eyebrow, :lang(hi) .t-label, :lang(hi) .section-eyebrow,
+:lang(ta) .t-eyebrow, :lang(ta) .t-label, :lang(ta) .section-eyebrow,
+:lang(te) .t-eyebrow, :lang(te) .t-label, :lang(te) .section-eyebrow,
+:lang(ml) .t-eyebrow, :lang(ml) .t-label, :lang(ml) .section-eyebrow,
+:lang(bn) .t-eyebrow, :lang(bn) .t-label, :lang(bn) .section-eyebrow,
+:lang(mr) .t-eyebrow, :lang(mr) .t-label, :lang(mr) .section-eyebrow,
+:lang(gu) .t-eyebrow, :lang(gu) .t-label, :lang(gu) .section-eyebrow,
+:lang(pa) .t-eyebrow, :lang(pa) .t-label, :lang(pa) .section-eyebrow,
+:lang(or) .t-eyebrow, :lang(or) .t-label, :lang(or) .section-eyebrow,
+:lang(as) .t-eyebrow, :lang(as) .t-label, :lang(as) .section-eyebrow,
+:lang(ur) .t-eyebrow, :lang(ur) .t-label, :lang(ur) .section-eyebrow {
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-weight: 600;
+}
+
+:lang(kn) button, :lang(hi) button, :lang(ta) button, :lang(te) button,
+:lang(ml) button, :lang(bn) button, :lang(mr) button, :lang(gu) button,
+:lang(pa) button, :lang(or) button, :lang(as) button, :lang(ur) button,
+:lang(kn) .btn, :lang(hi) .btn, :lang(ta) .btn, :lang(te) .btn,
+:lang(ml) .btn, :lang(bn) .btn, :lang(mr) .btn, :lang(gu) .btn,
+:lang(pa) .btn, :lang(or) .btn, :lang(as) .btn, :lang(ur) .btn,
+:lang(kn) .action-btn, :lang(hi) .action-btn, :lang(ta) .action-btn, :lang(te) .action-btn,
+:lang(kn) .badge, :lang(hi) .badge, :lang(ta) .badge, :lang(te) .badge,
+:lang(kn) .pill, :lang(hi) .pill, :lang(ta) .pill, :lang(te) .pill {
+  line-height: 1.35;
+  min-height: max-content;
+}
+
+:lang(kn) .nav-link, :lang(hi) .nav-link, :lang(ta) .nav-link, :lang(te) .nav-link,
+:lang(ml) .nav-link, :lang(bn) .nav-link, :lang(mr) .nav-link, :lang(gu) .nav-link {
+  line-height: 1.35;
+}
+
+/* ============================================================
    5. SITE NAVIGATION
    ============================================================ */
 .site-nav {

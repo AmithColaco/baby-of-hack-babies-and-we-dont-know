@@ -73,7 +73,18 @@ export default function Onboarding() {
   };
 
   const handleOtpChange = (idx: number, val: string) => {
-    const digit = val.replace(/\D/g, '').slice(-1);
+    const cleaned = val.replace(/\D/g, '');
+    if (cleaned.length > 1) {
+      const next = [...otpBoxes];
+      cleaned.slice(0, 6 - idx).split('').forEach((d, i) => {
+        if (idx + i < 6) next[idx + i] = d;
+      });
+      setOtpBoxes(next);
+      const nextFocus = Math.min(idx + cleaned.length, 5);
+      otpRefs.current[nextFocus]?.focus();
+      return;
+    }
+    const digit = cleaned.slice(-1);
     const next = [...otpBoxes];
     next[idx] = digit;
     setOtpBoxes(next);

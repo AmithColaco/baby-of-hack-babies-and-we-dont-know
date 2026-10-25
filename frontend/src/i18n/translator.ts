@@ -4,7 +4,69 @@
 // while strictly preserving numbers (e.g. 148+, ₹42.8 Lakhs, +280%, ₹18,400, 92%, 123456, 25 per page)
 // and special characters (₹, $, %, +, -, *, /, =, ✦, ·, 👁, 📍, 💡, ✓, ★, —, &, |, !, ?, etc.).
 
-export type SupportedLanguage = 'en' | 'kn' | 'hi';
+export type SupportedLanguage =
+  | 'en'
+  | 'hi'
+  | 'kn'
+  | 'ta'
+  | 'te'
+  | 'ml'
+  | 'bn'
+  | 'mr'
+  | 'gu'
+  | 'pa'
+  | 'or'
+  | 'as'
+  | 'ur'
+  | 'sa'
+  | 'gom'
+  | 'mai'
+  | 'bho'
+  | 'ne'
+  | 'ks'
+  | 'sd'
+  | 'doi'
+  | 'mni-Mtei'
+  | 'sat'
+  | 'brx'
+  | 'lus'
+  | string;
+
+export interface IndianLanguageMeta {
+  code: string;
+  name: string;
+  nativeName: string;
+  region: string;
+  popular?: boolean;
+}
+
+export const ALL_INDIAN_LANGUAGES: IndianLanguageMeta[] = [
+  { code: 'en', name: 'English', nativeName: 'English', region: 'Pan-India', popular: true },
+  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', region: 'National / Central', popular: true },
+  { code: 'kn', name: 'Kannada', nativeName: 'ಕನ್ನಡ', region: 'Karnataka', popular: true },
+  { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்', region: 'Tamil Nadu & Puducherry', popular: true },
+  { code: 'te', name: 'Telugu', nativeName: 'తెలుగు', region: 'Andhra Pradesh & Telangana', popular: true },
+  { code: 'ml', name: 'Malayalam', nativeName: 'മലയാളം', region: 'Kerala & Lakshadweep', popular: true },
+  { code: 'bn', name: 'Bengali', nativeName: 'বাংলা', region: 'West Bengal & Tripura', popular: true },
+  { code: 'mr', name: 'Marathi', nativeName: 'मराठी', region: 'Maharashtra & Goa', popular: true },
+  { code: 'gu', name: 'Gujarati', nativeName: 'ગુજરાતી', region: 'Gujarat & Daman', popular: true },
+  { code: 'pa', name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ', region: 'Punjab & Delhi', popular: true },
+  { code: 'or', name: 'Odia', nativeName: 'ଓଡ଼ିଆ', region: 'Odisha' },
+  { code: 'as', name: 'Assamese', nativeName: 'অসমীয়া', region: 'Assam & North-East' },
+  { code: 'ur', name: 'Urdu', nativeName: 'اردو', region: 'J&K / Deccan / North' },
+  { code: 'sa', name: 'Sanskrit', nativeName: 'संस्कृतम्', region: 'Classical Heritage' },
+  { code: 'gom', name: 'Konkani', nativeName: 'कोंकणी', region: 'Goa & Karavali' },
+  { code: 'mai', name: 'Maithili', nativeName: 'मैथिली', region: 'Bihar / Mithila' },
+  { code: 'bho', name: 'Bhojpuri', nativeName: 'भोजपुरी', region: 'Purvanchal / Bihar' },
+  { code: 'ne', name: 'Nepali', nativeName: 'नेपाली', region: 'Sikkim & Hills' },
+  { code: 'ks', name: 'Kashmiri', nativeName: 'कॉशुर', region: 'Kashmir Valley' },
+  { code: 'sd', name: 'Sindhi', nativeName: 'सिन्धी', region: 'Sindhi Heritage' },
+  { code: 'doi', name: 'Dogri', nativeName: 'डोगरी', region: 'Jammu' },
+  { code: 'mni-Mtei', name: 'Manipuri (Meitei)', nativeName: 'মৈতৈলোন্', region: 'Manipur' },
+  { code: 'sat', name: 'Santali', nativeName: 'ᱥᱟᱱᱛᱟᱲᱤ', region: 'Jharkhand & Bengal' },
+  { code: 'brx', name: 'Bodo', nativeName: 'बड़ो', region: 'Bodoland / Assam' },
+  { code: 'lus', name: 'Mizo', nativeName: 'Mizo ṭawng', region: 'Mizoram' },
+];
 
 // In-memory cache for ultra-fast (0ms) synchronous UI lookups
 const TRANSLATION_CACHE = new Map<string, string>();
@@ -127,7 +189,7 @@ if (typeof localStorage !== 'undefined') {
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (key.startsWith('gt_kn_') || key.startsWith('gt_hi_'))) {
+      if (key && key.startsWith('gt_')) {
         const val = localStorage.getItem(key);
         if (val) {
           const cacheKey = key.replace('gt_', '');
@@ -145,9 +207,9 @@ if (typeof localStorage !== 'undefined') {
  * First checks in-memory and localStorage cache.
  * Falls back to Google Translate API, then backend proxy.
  */
-export async function fetchGoogleTranslation(text: string, targetLang: 'kn' | 'hi'): Promise<string> {
+export async function fetchGoogleTranslation(text: string, targetLang: string): Promise<string> {
   const trimmed = text.trim();
-  if (!trimmed || targetLang === ('en' as any)) return text;
+  if (!trimmed || targetLang === 'en') return text;
 
   const cacheKey = `${targetLang}_${trimmed}`;
   if (TRANSLATION_CACHE.has(cacheKey)) {
@@ -236,7 +298,7 @@ export function translateText(text: string, targetLang: SupportedLanguage): stri
   }
 
   // Schedule background translation
-  fetchGoogleTranslation(trimmed, targetLang as 'kn' | 'hi');
+  fetchGoogleTranslation(trimmed, targetLang);
 
   return text;
 }
@@ -311,7 +373,7 @@ function processTextNode(node: Node, lang: SupportedLanguage) {
   }
 
   // Otherwise, fetch Google Translation asynchronously
-  fetchGoogleTranslation(trimmed, lang as 'kn' | 'hi').then((translated) => {
+  fetchGoogleTranslation(trimmed, lang).then((translated) => {
     if (activeLanguage === lang && translated && translated !== trimmed) {
       const finalVal = original.replace(trimmed, translated);
       if (node.nodeValue !== finalVal) {
@@ -339,7 +401,7 @@ function processElementAttributes(elem: Element, lang: SupportedLanguage) {
         if (TRANSLATION_CACHE.has(cacheKey)) {
           elem.placeholder = TRANSLATION_CACHE.get(cacheKey)!;
         } else {
-          fetchGoogleTranslation(origPlaceholder, lang as 'kn' | 'hi').then((trans) => {
+          fetchGoogleTranslation(origPlaceholder, lang).then((trans) => {
             if (activeLanguage === lang) elem.placeholder = trans;
           });
         }
@@ -363,7 +425,7 @@ function processElementAttributes(elem: Element, lang: SupportedLanguage) {
         if (TRANSLATION_CACHE.has(cacheKey)) {
           elem.setAttribute('title', TRANSLATION_CACHE.get(cacheKey)!);
         } else {
-          fetchGoogleTranslation(origTitle, lang as 'kn' | 'hi').then((trans) => {
+          fetchGoogleTranslation(origTitle, lang).then((trans) => {
             if (activeLanguage === lang) elem.setAttribute('title', trans);
           });
         }

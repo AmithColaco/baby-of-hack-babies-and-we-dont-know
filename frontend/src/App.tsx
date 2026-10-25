@@ -45,6 +45,15 @@ function ProtectedArtisanRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function StylistRoute() {
+  useEffect(() => {
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('open-space-stylist'));
+    }, 100);
+  }, []);
+  return <Catalogue />;
+}
+
 function ShopRedirect() {
   const { search } = useLocation();
   return <Navigate to={`/gallery${search}`} replace />;
@@ -70,6 +79,8 @@ function AppLayout() {
           <Route path="/exhibition"         element={<Gallery />} />
           <Route path="/shop"               element={<ShopRedirect />} />
           <Route path="/shop/:id"           element={<Product />} />
+          <Route path="/stylist"            element={<StylistRoute />} />
+          <Route path="/concierge"          element={<StylistRoute />} />
           <Route path="/commissions"        element={<CustomCommissions />} />
           <Route path="/cart"               element={<Checkout />} />
           <Route path="/wishlist"           element={<WishlistPage />} />

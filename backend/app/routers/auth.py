@@ -14,6 +14,7 @@ Email OTP flow (recommended):
   When SMTP_USER is empty the server falls back to mock mode (any 6 digits work).
 """
 
+import hashlib
 import logging
 import random
 import re
@@ -283,8 +284,9 @@ def verify_otp(body: OTPVerify, db: Session = Depends(get_db)):
         desired_role_str = (body.role or "buyer").lower()
         desired_role = UserRole.artisan if desired_role_str == "artisan" else UserRole.buyer
 
+        fallback_phone = f"+919{int(hashlib.md5((body.email or '').encode()).hexdigest()[:8], 16) % 900000000 + 100000000}" if body.email else None
         user = User(
-            phone=body.phone or None,
+            phone=body.phone or fallback_phone,
             email=body.email.lower() if body.email else None,
             role=desired_role,
         )

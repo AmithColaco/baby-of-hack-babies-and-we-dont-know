@@ -625,6 +625,7 @@ export function SpaceStylist() {
     return (
       <button
         type="button"
+        id="curatorial-guide-float-btn"
         className="stylist-float-btn"
         onClick={handleOpen}
         aria-label="Open KAARIGAR AI Assistant & Space Stylist"

@@ -31,8 +31,7 @@ if (typeof document !== 'undefined') {
 
 // Re-apply DOM translation whenever languageChanged event fires
 i18n.on('languageChanged', (lng) => {
-  const lang = (lng === 'kn' || lng === 'hi') ? lng : 'en';
-  applyDomTranslation(lang);
+  applyDomTranslation(lng as SupportedLanguage);
 });
 
 export function changeLanguage(lang: SupportedLanguage) {
@@ -50,5 +49,6 @@ export function changeLanguage(lang: SupportedLanguage) {
 }
 
 export { translateText };
+export { ALL_INDIAN_LANGUAGES, type IndianLanguageMeta, type SupportedLanguage } from './translator';
 export default i18n;
 

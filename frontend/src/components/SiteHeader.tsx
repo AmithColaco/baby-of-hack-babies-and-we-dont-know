@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../data/productStore';
 import { useAuth } from '../contexts/AuthContext';
-import { changeLanguage } from '../i18n';
+import { changeLanguage, ALL_INDIAN_LANGUAGES } from '../i18n';
 
 export function SiteHeader() {
   const { t, i18n } = useTranslation();
@@ -105,35 +105,31 @@ export function SiteHeader() {
 
           {/* Action Icons */}
           <div className="site-header__actions">
-            {/* Language Switcher */}
-            <div className="site-header__lang-switcher" role="group" aria-label="Select Language">
-              <button
-                type="button"
-                className={`lang-btn ${i18n.language === 'en' ? 'active' : ''}`}
-                onClick={() => changeLanguage('en')}
-                title="Switch to English"
-                aria-pressed={i18n.language === 'en'}
-              >
-                EN
-              </button>
-              <button
-                type="button"
-                className={`lang-btn ${i18n.language === 'kn' ? 'active' : ''}`}
-                onClick={() => changeLanguage('kn')}
-                title="ಕನ್ನಡಕ್ಕೆ ಬದಲಾಯಿಸಿ"
-                aria-pressed={i18n.language === 'kn'}
-              >
-                ಕನ್ನಡ
-              </button>
-              <button
-                type="button"
-                className={`lang-btn ${i18n.language === 'hi' ? 'active' : ''}`}
-                onClick={() => changeLanguage('hi')}
-                title="हिंदी में बदलें"
-                aria-pressed={i18n.language === 'hi'}
-              >
-                हिंदी
-              </button>
+            {/* Choose your language dropdown */}
+            <div className="site-header__lang-picker">
+              <label htmlFor="header-language-select" className="site-header__lang-label">
+
+              </label>
+              <div className="site-header__lang-select-wrap">
+                <select
+                  id="header-language-select"
+                  className="site-header__lang-select"
+                  value={i18n.language}
+                  onChange={(e) => changeLanguage(e.target.value)}
+                  aria-label="Choose your language"
+                >
+                  {ALL_INDIAN_LANGUAGES.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.nativeName} ({lang.name})
+                    </option>
+                  ))}
+                </select>
+                <span className="site-header__lang-select-arrow" aria-hidden="true">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </span>
+              </div>
             </div>
 
             {/* Search */}
@@ -281,30 +277,33 @@ export function SiteHeader() {
               }
               <Link to="/cart" onClick={() => setMobileMenuOpen(false)}>{t('nav.cart')} ({totalItems})</Link>
             </nav>
-            <div className="mobile-drawer__lang-wrap" style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--border-light, #E8DFD3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--stone)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Language</span>
-              <div className="site-header__lang-switcher" role="group" aria-label="Select Language">
-                <button
-                  type="button"
-                  className={`lang-btn ${i18n.language === 'en' ? 'active' : ''}`}
-                  onClick={() => changeLanguage('en')}
+            <div className="mobile-drawer__lang-wrap" style={{ padding: '1.25rem 1.5rem', borderTop: '1px solid var(--border-light, #E8DFD3)', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+              <label htmlFor="mobile-language-select" style={{ fontSize: '0.78rem', color: 'var(--stone)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
+                Choose your language
+              </label>
+              <div className="site-header__lang-select-wrap" style={{ width: '100%' }}>
+                <select
+                  id="mobile-language-select"
+                  className="site-header__lang-select"
+                  style={{ width: '100%', padding: '0.55rem 2rem 0.55rem 0.85rem' }}
+                  value={i18n.language}
+                  onChange={(e) => {
+                    changeLanguage(e.target.value);
+                    setMobileMenuOpen(false);
+                  }}
+                  aria-label="Choose your language"
                 >
-                  EN
-                </button>
-                <button
-                  type="button"
-                  className={`lang-btn ${i18n.language === 'kn' ? 'active' : ''}`}
-                  onClick={() => changeLanguage('kn')}
-                >
-                  ಕನ್ನಡ
-                </button>
-                <button
-                  type="button"
-                  className={`lang-btn ${i18n.language === 'hi' ? 'active' : ''}`}
-                  onClick={() => changeLanguage('hi')}
-                >
-                  हिंदी
-                </button>
+                  {ALL_INDIAN_LANGUAGES.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.nativeName} ({lang.name})
+                    </option>
+                  ))}
+                </select>
+                <span className="site-header__lang-select-arrow" aria-hidden="true">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </span>
               </div>
             </div>
             <div className="mobile-drawer__bottom">
