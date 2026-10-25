@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { VoiceInputField, BigButton } from '../components/artisan';
 import type { CommissionRequest } from '../types';
 
 // Pre-configured demo requests for authenticated demo users
@@ -223,6 +224,64 @@ export default function CustomCommissions() {
       }
       return updated;
     });
+  };
+
+  // 3-step Artisan Quote Flow State (Rule 11)
+  const [quotingCommId, setQuotingCommId] = useState<string | null>(null);
+  const [quoteStep, setQuoteStep] = useState<1 | 2 | 3>(1);
+  const [quotePrice, setQuotePrice] = useState<number | ''>(5000);
+  const [quoteDays, setQuoteDays] = useState<number>(14);
+  const [quoteNote, setQuoteNote] = useState<string>('');
+  const [submittingQuote, setSubmittingQuote] = useState(false);
+
+  const handleSendArtisanQuote = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!quotingCommId || !quotePrice) return;
+    setSubmittingQuote(true);
+    const newQuote = {
+      id: `quote-${Date.now()}`,
+      request_id: quotingCommId,
+      artisan_id: user?.id || 'artisan-current',
+      artisan_name: user?.name || 'Master Artisan',
+      artisan_phone: user?.phone || '+91 94481 22334',
+      estimated_price: Number(quotePrice),
+      estimated_days: Number(quoteDays),
+      material_breakdown: 'Handmade materials & pure traditional craft technique',
+      quote_notes: quoteNote || 'I can make this bespoke craft piece to your specifications.',
+      status: 'PENDING' as const,
+      created_at: new Date().toISOString()
+    };
+
+    try {
+      await axios.post(`http://localhost:8000/commissions/${quotingCommId}/quote`, {
+        quoted_price: Number(quotePrice),
+        estimated_days: Number(quoteDays),
+        materials_description: 'Handmade materials & pure technique',
+        notes: quoteNote || 'I can make this bespoke craft piece to your specifications.',
+      });
+    } catch {
+      // offline/demo fallback
+    }
+
+    setCommissions(prev => {
+      const updated = prev.map(c => {
+        if (c.id === quotingCommId) {
+          return {
+            ...c,
+            status: 'QUOTED' as const,
+            quotes: [...(c.quotes || []), newQuote]
+          };
+        }
+        return c;
+      });
+      try { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
+    setSubmittingQuote(false);
+    setQuotingCommId(null);
+    setQuoteStep(1);
+    setQuoteNote('');
   };
 
   return (
@@ -491,16 +550,32 @@ export default function CustomCommissions() {
                     <div className="commissions-quotes-sec">
                       <div className="commissions-quotes-header">
                         <h3 className="commissions-quotes-title">
-                          Artisan Quotes & Material Breakdowns ({comm.quotes?.length || 0})
+                          Artisan Quotes ({comm.quotes?.length || 0})
                         </h3>
                         <span className="commissions-escrow-hint">
-                          Direct Escrow Protection Enabled
+                          Order money is held safely until the buyer receives it
                         </span>
                       </div>
 
+                      {/* Artisan 3-Step Quote Action Button */}
+                      {isArtisan && comm.status === 'OPEN' && (
+                        <div style={{ marginBottom: '1rem' }}>
+                          <BigButton
+                            variant="primary"
+                            onClick={() => {
+                              setQuotingCommId(comm.id);
+                              setQuoteStep(1);
+                              if (comm.target_budget) setQuotePrice(comm.target_budget);
+                            }}
+                          >
+                            💬 Give Price & Days (Send Quote)
+                          </BigButton>
+                        </div>
+                      )}
+
                       {(!comm.quotes || comm.quotes.length === 0) ? (
                         <div className="commissions-empty-quotes">
-                          Broadcasting to certified master artisans in this GI cluster. Quotes will appear here shortly.
+                          Broadcasting to certified master artisans. Quotes will appear here shortly.
                         </div>
                       ) : (
                         <div className="commissions-quotes-list">
@@ -523,7 +598,7 @@ export default function CustomCommissions() {
 
                                 {quote.material_breakdown && (
                                   <div className="commissions-quote-breakdown">
-                                    <strong>Itemized Breakdown:</strong> {quote.material_breakdown}
+                                    <strong>Materials & Technique:</strong> {quote.material_breakdown}
                                   </div>
                                 )}
 
@@ -551,7 +626,7 @@ export default function CustomCommissions() {
                                     onClick={() => handleAcceptQuote(comm.id, quote.id)}
                                     className="commissions-btn-accept"
                                   >
-                                    Accept & Fund Escrow
+                                    Accept & Pay Safely
                                   </button>
                                 ) : (
                                   <Link
@@ -571,6 +646,152 @@ export default function CustomCommissions() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* 3-Step Quote Modal for Artisans (Rule 11) */}
+        {quotingCommId && (
+          <div
+            className="a-modal-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quote-modal-title"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.65)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              padding: '1rem',
+            }}
+          >
+            <div
+              style={{
+                background: '#fff',
+                borderRadius: '16px',
+                maxWidth: '480px',
+                width: '100%',
+                padding: '1.5rem',
+                boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--a-accent, #B85D19)' }}>
+                  Step {quoteStep} of 3
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setQuotingCommId(null)}
+                  style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {quoteStep === 1 && (
+                <div>
+                  <h2 id="quote-modal-title" style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '0.5rem', color: '#1C1611' }}>
+                    1. What is your fair price?
+                  </h2>
+                  <p style={{ fontSize: '0.95rem', color: '#6B5645', marginBottom: '1.25rem' }}>
+                    Enter the total price (₹) you want to receive for making this piece.
+                  </p>
+                  <div className="a-form-group">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={500}
+                      step={100}
+                      value={quotePrice}
+                      onChange={(e) => setQuotePrice(e.target.value ? Number(e.target.value) : '')}
+                      className="a-form-input"
+                      style={{ fontSize: '1.5rem', fontWeight: 700, textAlign: 'center' }}
+                      placeholder="e.g. 5000"
+                      autoFocus
+                    />
+                  </div>
+                  <div style={{ marginTop: '1.5rem' }}>
+                    <BigButton
+                      variant="primary"
+                      disabled={!quotePrice || Number(quotePrice) <= 0}
+                      onClick={() => setQuoteStep(2)}
+                    >
+                      Next: How Many Days? →
+                    </BigButton>
+                  </div>
+                </div>
+              )}
+
+              {quoteStep === 2 && (
+                <div>
+                  <h2 id="quote-modal-title" style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '0.5rem', color: '#1C1611' }}>
+                    2. How many days will it take?
+                  </h2>
+                  <p style={{ fontSize: '0.95rem', color: '#6B5645', marginBottom: '1.25rem' }}>
+                    How much time do you need to craft and pack this order?
+                  </p>
+                  <div className="a-stepper" style={{ marginBottom: '1rem' }}>
+                    <button
+                      type="button"
+                      className="a-stepper__btn"
+                      onClick={() => setQuoteDays(Math.max(1, quoteDays - 1))}
+                      disabled={quoteDays <= 1}
+                    >−</button>
+                    <div>
+                      <div className="a-stepper__value">{quoteDays}</div>
+                      <div className="a-stepper__unit">Days</div>
+                    </div>
+                    <button
+                      type="button"
+                      className="a-stepper__btn"
+                      onClick={() => setQuoteDays(quoteDays + 1)}
+                    >+</button>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem' }}>
+                    <BigButton variant="secondary" onClick={() => setQuoteStep(1)}>
+                      ← Back
+                    </BigButton>
+                    <BigButton variant="primary" onClick={() => setQuoteStep(3)}>
+                      Next: Note to Buyer →
+                    </BigButton>
+                  </div>
+                </div>
+              )}
+
+              {quoteStep === 3 && (
+                <div>
+                  <h2 id="quote-modal-title" style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '0.5rem', color: '#1C1611' }}>
+                    3. Short Note to Buyer
+                  </h2>
+                  <p style={{ fontSize: '0.95rem', color: '#6B5645', marginBottom: '1.25rem' }}>
+                    Speak or type a short note about materials, motifs, or special care.
+                  </p>
+                  <VoiceInputField
+                    id="quote-note"
+                    label="Your message (voice or type)"
+                    value={quoteNote}
+                    onChange={setQuoteNote}
+                    placeholder="e.g. I will use handloom pure silk and traditional chariot motifs. Knotless finish guaranteed."
+                    rows={4}
+                  />
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem' }}>
+                    <BigButton variant="secondary" onClick={() => setQuoteStep(2)}>
+                      ← Back
+                    </BigButton>
+                    <BigButton
+                      variant="success"
+                      disabled={submittingQuote}
+                      onClick={() => handleSendArtisanQuote()}
+                    >
+                      {submittingQuote ? 'Sending…' : '✓ Send Quote to Buyer'}
+                    </BigButton>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

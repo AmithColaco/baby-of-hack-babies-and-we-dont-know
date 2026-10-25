@@ -195,27 +195,69 @@ export const ProvenanceTagModal: React.FC<ProvenanceTagModalProps> = ({ craft, i
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="prov-modal-actions">
+        {/* Hang-tag Explanation & Action Buttons (Rule 12) */}
+        <div style={{ marginTop: '1.25rem', padding: '1rem', background: '#F8F5F0', borderRadius: '12px', border: '1px solid #E5DCD0' }}>
+          <p style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#5A4636', lineHeight: 1.5 }}>
+            🏷️ <strong>{t('provenance.hangtag_help_title', 'Hang-tag for your craft piece:')}</strong>{' '}
+            {t('provenance.hangtag_help_desc', 'Print this tag and attach it to your finished product. When the buyer receives the parcel, they scan the QR code with their phone to hear your voice and verify it was genuinely handmade by you.')}
+          </p>
+
           <button
-            onClick={handleCopyLink}
-            className="prov-btn-secondary"
+            onClick={handlePrint}
+            style={{
+              width: '100%',
+              minHeight: '56px',
+              borderRadius: '12px',
+              border: 'none',
+              background: 'var(--a-accent, #B85D19)',
+              color: '#fff',
+              fontSize: '1.2rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.6rem',
+              boxShadow: '0 4px 12px rgba(184, 93, 25, 0.25)',
+              marginBottom: '0.75rem',
+            }}
           >
-            {copiedLink ? `✓ ${t('provenance.copy_link')}` : `⎘ ${t('provenance.copy_link')}`}
+            <span>🖨️</span>
+            <span>{t('provenance.print_tag', 'Print Physical Tag')}</span>
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'space-between' }}>
             <button
-              onClick={handlePrint}
-              className="prov-btn-primary"
+              onClick={handleCopyLink}
+              style={{
+                flex: 1,
+                minHeight: '44px',
+                borderRadius: '8px',
+                border: '1px solid #D6C8B8',
+                background: '#fff',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                color: '#3B2A1E',
+              }}
             >
-              <span>🖨 {t('provenance.print_tag')}</span>
+              {copiedLink ? `✓ ${t('provenance.copy_link', 'Copied Link')}` : `⎘ ${t('provenance.copy_link', 'Copy Story Link')}`}
             </button>
             <button
               onClick={onClose}
-              className="prov-btn-secondary"
+              style={{
+                flex: 1,
+                minHeight: '44px',
+                borderRadius: '8px',
+                border: '1px solid #D6C8B8',
+                background: '#fff',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                color: '#3B2A1E',
+              }}
             >
-              {t('common.close')}
+              {t('common.close', 'Close')}
             </button>
           </div>
         </div>

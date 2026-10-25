@@ -1,879 +1,498 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
-import { useProducts, useArtisan } from '../data/productStore';
-import type { CraftCategory, CraftObject } from '../types';
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
-  createListing,
-  updateListing,
-  publishListing,
-  uploadListingImages,
-  generateAIDraft,
-  getPriceSuggestion,
-  getCrafts,
-  type PriceBreakdownResponse,
-  type CraftReferenceRecord,
-} from '../api/listings';
-import { API_BASE_URL } from '../api/client';
+  createListing, publishListing, uploadListingImages, getPriceSuggestion,
+  type PriceBreakdownResponse
+} from "../api/listings";
+import { StepWizard, BigButton, VoiceInputField, HelpButton, BottomNav, OfflineBanner } from "../components/artisan";
+import "../artisan.css";
 
-const PRESET_IMAGES = [
-  { label: 'Kasuti Embroidery Saree Pallu', url: '/images/kasuti.jpg' },
-  { label: 'Beedu Grass Mat Weaving', url: '/images/beedu.jpg' },
-  { label: 'Seashell Wall Hanging & Jewelry', url: '/images/shellcraft.jpg' },
-  { label: 'Jaipur Blue Pottery Urn', url: '/images/bluepottery.jpg' },
-  { label: 'Channapatna Lacquer Wood', url: '/images/woodcraft.jpg' },
-  { label: 'Bastar Lost-Wax Bronze', url: '/images/dhokra.jpg' },
-  { label: 'Pahari Miniature Wasli', url: '/images/pahari.jpg' },
-  { label: 'Kundan Meenakari Ornament', url: '/images/jewellery.jpg' },
+// Helper: compress image client-side before upload
+async function compressImage(file: File, maxPx = 1200, quality = 0.75): Promise<File> {
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(maxPx / img.width, maxPx / img.height, 1);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(b => {
+        if (!b) return res(file);
+        const compressedFile = new File([b], file.name.replace(/\.[^/.]+$/, "") + ".webp", { type: "image/webp" });
+        res(compressedFile);
+      }, "image/webp", quality);
+    };
+    img.onerror = () => res(file);
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+type Complexity = "low" | "medium" | "high" | "very_high";
+
+const CRAFT_OPTIONS = [
+  { key: "weaving",        emoji: "🧶", label: "Weaving" },
+  { key: "pottery",        emoji: "🏺", label: "Pottery" },
+  { key: "wood_carving",   emoji: "🪵", label: "Wood carving" },
+  { key: "dhokra",         emoji: "🔔", label: "Metal casting" },
+  { key: "embroidery",     emoji: "🪡", label: "Embroidery" },
+  { key: "painting",       emoji: "🖌️", label: "Painting" },
+  { key: "jewellery",      emoji: "💎", label: "Jewellery" },
+  { key: "other",          emoji: "🎁", label: "Other" },
 ];
 
-export default function CreateListing() {
-  const { id } = useParams<{ id?: string }>();
-  const navigate = useNavigate();
-  const { products, addProduct, updateProduct } = useProducts();
-  const { profile } = useArtisan();
+const TOTAL_STEPS = 5;
 
-  const isEditing = Boolean(id);
-  const existingProduct = isEditing ? products.find((p) => p.id === id) : undefined;
-
-  // Form Fields
-  const [title, setTitle] = useState(existingProduct?.title || '');
-  const [vernacularTitle] = useState(existingProduct?.vernacularTitle || '');
-  const [craftTradition, setCraftTradition] = useState(existingProduct?.craftTradition || 'Kasuti');
-  const [category, setCategory] = useState<CraftCategory>((existingProduct?.category as CraftCategory) || 'textiles');
-  const [price, setPrice] = useState<number>(existingProduct?.price || 3800);
-  const [directShare, setDirectShare] = useState<number>(existingProduct?.directArtisanSharePercent || 100);
-  const [region] = useState(existingProduct?.region || profile.region || 'Ankola');
-  const [state] = useState(existingProduct?.state || profile.state || 'Karnataka');
-  const [atelier] = useState(existingProduct?.atelier || profile.atelier || 'Ankola Kasuti Mahila Kendra');
-  const [artisanName] = useState(existingProduct?.artisan || profile.name || 'Parvati Devi');
-  const [dimensions, setDimensions] = useState(existingProduct?.dimensions || '120 cm × 45 cm');
-  const [hoursToMake, setHoursToMake] = useState<number>(14);
-  const [materialsCost, setMaterialsCost] = useState<number>(650);
-  const [techniqueComplexity, setTechniqueComplexity] = useState<'low' | 'medium' | 'high' | 'very_high'>('high');
-  const [stock, setStock] = useState<number>(3);
-  const [materialsStr, setMaterialsStr] = useState(
-    existingProduct?.materials?.join(', ') || 'Handwoven Ilkal silk-cotton, Mercerised pure cotton threads, Natural dye indigo'
-  );
-  const [technique, setTechnique] = useState(existingProduct?.technique || 'Gavanti (double running stitch) and Muragi (zig-zag stitch)');
-  const [imageUrl, setImageUrl] = useState(existingProduct?.image || PRESET_IMAGES[0].url);
-
-  // Story & Making stages
-  const [summary, setSummary] = useState(
-    existingProduct?.makingStory?.summary ||
-    'Counted thread geometric needlework continuing the heritage tradition of Uttara Kannada coastal temples.'
-  );
-  const [step1Title] = useState(existingProduct?.makingStory?.stages?.[0]?.title || 'Fabric Marking & Thread Warp Alignment');
-  const [step1Desc, setStep1Desc] = useState(existingProduct?.makingStory?.stages?.[0]?.description || 'No tracing or pencil marks are used; the artisan counts every individual warp and weft thread by eye.');
-  const [step2Title] = useState(existingProduct?.makingStory?.stages?.[1]?.title || 'Geometric Needle Illumination');
-  const [step2Desc, setStep2Desc] = useState(existingProduct?.makingStory?.stages?.[1]?.description || 'Stitching gopura temple tower and chariot motifs using double running and cross stitches perfectly identical on front and back.');
-  const [step3Title] = useState(existingProduct?.makingStory?.stages?.[2]?.title || 'Steam Curing & Hand Pressing');
-  const [step3Desc, setStep3Desc] = useState(existingProduct?.makingStory?.stages?.[2]?.description || 'Gently steam pressed with natural linen cloths to set the pure cotton tension without knotting.');
-
-  // AI Assistant State (F3 & F10)
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [voiceTranscript, setVoiceTranscript] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiSuccessMessage, setAiSuccessMessage] = useState('');
-
-  // Pricing Calculator State (F4)
-  const [pricingBreakdown, setPricingBreakdown] = useState<PriceBreakdownResponse | null>(null);
-  const [pricingLoading, setPricingLoading] = useState(false);
-
-  // Craft Reference List
-  const [craftsList, setCraftsList] = useState<CraftReferenceRecord[]>([]);
-
-  // Form Submission
-  const [showPreview, setShowPreview] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth >= 1100;
-    }
-    return true;
+function useLocalDraft<T>(key: string, initial: T): [T, (v: T) => void] {
+  const [val, setVal] = useState<T>(() => {
+    try {
+      const s = localStorage.getItem(key);
+      return s ? JSON.parse(s) : initial;
+    } catch { return initial; }
   });
-  const [errorMsg, setErrorMsg] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const set = (v: T) => { setVal(v); try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* quota */ } };
+  return [val, set];
+}
 
-  // Web Speech API reference
-  const recognitionRef = useRef<any>(null);
+export default function CreateListing() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
 
-  // Load craft references on mount
-  useEffect(() => {
-    async function loadCrafts() {
-      try {
-        const crafts = await getCrafts();
-        setCraftsList(crafts);
-      } catch (e) {
-        console.warn('Could not load crafts list:', e);
-      }
-    }
-    loadCrafts();
-  }, []);
+  // Wizard state
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // Web Speech API Voice Recognition (F10)
-  const toggleVoiceRecording = () => {
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  // Draft-persisted form fields
+  const [photoFile, setPhotoFile] = useLocalDraft<null>("cl_photo", null);
+  const [photoPreview, setPhotoPreview] = useState<string>("");
+  const [craftType, setCraftType] = useLocalDraft<string>("cl_craft", "");
+  const [title, setTitle] = useLocalDraft<string>("cl_title", "");
+  const [description, setDescription] = useLocalDraft<string>("cl_desc", "");
+  const [hours, setHours] = useLocalDraft<number>("cl_hours", 8);
+  const [materialCost, setMaterialCost] = useLocalDraft<number>("cl_mat_cost", 500);
+  const [complexity, setComplexity] = useLocalDraft<Complexity>("cl_complexity", "medium");
+  const [priceResult, setPriceResult] = useState<PriceBreakdownResponse | null>(null);
+  const [finalPrice, setFinalPrice] = useLocalDraft<number>("cl_price", 0);
 
-    if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in this browser. Please type your description in the box.');
-      return;
-    }
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-    if (isRecording) {
-      recognitionRef.current?.stop();
-      setIsRecording(false);
-      return;
-    }
+  const canAdvance = (): boolean => {
+    if (step === 1) return Boolean(photoPreview || photoFile);
+    if (step === 2) return Boolean(craftType);
+    if (step === 3) return title.trim().length >= 3;
+    if (step === 4) return hours >= 1;
+    if (step === 5) return finalPrice > 0;
+    return true;
+  };
 
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     try {
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'en-IN';
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onstart = () => {
-        setIsRecording(true);
-      };
-
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setVoiceTranscript((prev) => (prev ? `${prev} ${transcript}` : transcript));
-      };
-
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        setIsRecording(false);
-      };
-
-      recognition.onend = () => {
-        setIsRecording(false);
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
-    } catch (err) {
-      console.error('Failed to start speech recognition:', err);
-      setIsRecording(false);
+      const compressed = await compressImage(file);
+      const url = URL.createObjectURL(compressed);
+      setPhotoPreview(url);
+      (setPhotoFile as any)(compressed);
+    } catch {
+      const url = URL.createObjectURL(file);
+      setPhotoPreview(url);
+      (setPhotoFile as any)(file);
     }
   };
 
-  // AI Listing Assistant Trigger (F3)
-  const handleGenerateAIDraft = async () => {
-    setAiLoading(true);
-    setErrorMsg('');
-    setAiSuccessMessage('');
-
+  const handleGetPriceEstimate = async () => {
+    if (!craftType) return;
+    setLoading(true);
+    setError("");
     try {
-      // If user uploaded real files, send them; otherwise provide empty array
-      const filesToSend = selectedFiles.length > 0 ? selectedFiles : [];
-      const draft = await generateAIDraft(filesToSend, craftTradition, voiceTranscript);
-
-      if (draft.title) setTitle(draft.title);
-      if (draft.description) setSummary(draft.description);
-      if (draft.materials && draft.materials.length > 0) setMaterialsStr(draft.materials.join(', '));
-      if (draft.technique) setTechnique(draft.technique);
-      if (draft.story) setStep2Desc(draft.story);
-      if (draft.suggested_price_range?.min && draft.suggested_price_range?.max) {
-        const avg = Math.round((draft.suggested_price_range.min + draft.suggested_price_range.max) / 2);
-        if (avg > 0) setPrice(avg);
-      }
-
-      setAiSuccessMessage('✓ AI Assistant drafted product details from your inputs! You can review and refine any field below.');
-    } catch (err: any) {
-      setErrorMsg(err.response?.data?.detail || 'AI Assistant could not connect. You can manually enter your craft details.');
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  // Transparent Pricing Calculation (F4)
-  const handleCalculatePrice = async () => {
-    setPricingLoading(true);
-    try {
-      const breakdown = await getPriceSuggestion({
-        craft_type: craftTradition,
-        hours_to_make: Number(hoursToMake) || 1,
-        materials_cost: Number(materialsCost) || 0,
-        technique_complexity: techniqueComplexity,
+      const res = await getPriceSuggestion({
+        craft_type: craftType,
+        hours_to_make: hours,
+        materials_cost: materialCost,
+        technique_complexity: complexity,
       });
-      setPricingBreakdown(breakdown);
-    } catch (err: any) {
-      console.warn('Price calculation failed:', err);
+      setPriceResult(res);
+      setFinalPrice(res.suggested_price);
+    } catch {
+      setError(t("artisan.price_error", "Could not get a price estimate right now. You can still enter your own price below."));
     } finally {
-      setPricingLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleApplySuggestedPrice = () => {
-    if (pricingBreakdown) {
-      setPrice(Math.round(pricingBreakdown.suggested_price));
+  useEffect(() => {
+    if (step === 5 && !priceResult && craftType) {
+      handleGetPriceEstimate();
     }
+  }, [step, craftType]);
+
+  const handleSaveDraft = async () => {
+    setError("");
+    // silently auto-save to localStorage already done via useLocalDraft
+    // additionally create a backend draft if we have a craft type and title
+    if (!craftType || !title) return;
+    try {
+      await createListing({ craft_type: craftType, title: title || "Draft", price_inr: finalPrice || 1 });
+    } catch { /* offline ok */ }
   };
 
-  // Submit Listing (Local + Backend)
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim() || !craftTradition.trim()) {
-      setErrorMsg('Please enter both the piece title and the craft tradition');
+  const handleSubmit = async () => {
+    if (!craftType || !title || !finalPrice) {
+      setError(t("artisan.fill_required", "Please fill in all required fields."));
       return;
     }
+    setLoading(true);
+    setError("");
+    try {
+      const listing = await createListing({
+        craft_type: craftType,
+        title,
+        description,
+        price_inr: finalPrice,
+        hours_to_make: hours,
+      });
 
-    setIsSubmitting(true);
-    setErrorMsg('');
-
-    const materialsArray = materialsStr
-      .split(',')
-      .map((m) => m.trim())
-      .filter(Boolean);
-
-    let backendId: string | null = null;
-    let uploadedImageUrl = imageUrl;
-
-    if (isEditing && id) {
-      try {
-        await updateListing(id, {
-          title: title.trim(),
-          description: summary.trim(),
-          craft_type: craftTradition.trim(),
-          materials: materialsStr.trim(),
-          technique: technique.trim(),
-          dimensions: dimensions.trim(),
-          hours_to_make: Number(hoursToMake) || 8,
-          price_inr: Number(price) || 2500,
-          stock: Number(stock) || 1,
-        });
-
-        if (selectedFiles.length > 0) {
-          try {
-            const updatedRec = await uploadListingImages(id, selectedFiles);
-            if (updatedRec.images && updatedRec.images.length > 0) {
-              uploadedImageUrl = updatedRec.images[0].url;
-            }
-          } catch (imgErr) {
-            console.warn('Image upload error on update:', imgErr);
-          }
-        }
-      } catch (backendErr) {
-        console.warn('Backend update failed, using local update:', backendErr);
-      }
-    } else {
-      try {
-        // 1. Create on backend
-        const created = await createListing({
-          title: title.trim(),
-          description: summary.trim(),
-          craft_type: craftTradition.trim(),
-          materials: materialsStr.trim(),
-          technique: technique.trim(),
-          dimensions: dimensions.trim(),
-          hours_to_make: Number(hoursToMake) || 8,
-          price_inr: Number(price) || 2500,
-          stock: Number(stock) || 1,
-        });
-        backendId = created.id;
-
-        // 2. Upload images if attached
-        if (selectedFiles.length > 0) {
-          try {
-            const updatedRec = await uploadListingImages(backendId, selectedFiles);
-            if (updatedRec.images && updatedRec.images.length > 0) {
-              uploadedImageUrl = updatedRec.images[0].url;
-            }
-          } catch (imgErr) {
-            console.warn('Image upload error:', imgErr);
-          }
-        }
-
-        // 3. Publish on backend
+      if (photoFile && typeof photoFile === "object" && (photoFile as unknown as File).size) {
         try {
-          await publishListing(backendId);
-        } catch (pubErr) {
-          console.warn('Publish error:', pubErr);
-        }
-      } catch (backendErr) {
-        console.warn('Backend listing creation fallback to local store:', backendErr);
+          await uploadListingImages(listing.id, [photoFile as unknown as File]);
+        } catch { /* image upload is optional */ }
       }
+
+      await publishListing(listing.id);
+
+      // Clear drafts
+      ["cl_photo", "cl_craft", "cl_title", "cl_desc", "cl_hours", "cl_mat_cost", "cl_complexity", "cl_price"]
+        .forEach(k => { try { localStorage.removeItem(k); } catch { /* */ } });
+
+      navigate("/dashboard", { state: { published: true } });
+    } catch {
+      setError(t("artisan.publish_error", "Something went wrong. Please try again. Your draft is saved."));
+    } finally {
+      setLoading(false);
     }
-
-    const productId = isEditing && id ? id : (backendId || `craft-${Date.now().toString(36)}`);
-    const accessionNo = existingProduct?.accessionNo || `KH-2026-${Math.floor(Math.random() * 900 + 100)}`;
-    const finalImage = uploadedImageUrl
-      ? (uploadedImageUrl.startsWith('/uploads') ? `${API_BASE_URL}${uploadedImageUrl}` : uploadedImageUrl)
-      : (imageUrl || PRESET_IMAGES[0].url);
-
-    const newCraftObject: CraftObject = {
-      id: productId,
-      accessionNo,
-      romanNumeral: existingProduct?.romanNumeral || 'VII',
-      title: title.trim(),
-      vernacularTitle: vernacularTitle.trim() || undefined,
-      craftTradition: craftTradition.trim(),
-      category: category === 'all' ? 'textiles' : (category as any),
-      artisan: artisanName.trim() || profile.name,
-      artisanTitle: existingProduct?.artisanTitle || 'Master Craftsman · Registered Living Heritage Lineage',
-      atelier: atelier.trim() || profile.atelier,
-      region: region.trim(),
-      state: state.trim(),
-      period: 'Living Coastal Lineage',
-      price: Number(price) || 2500,
-      currency: 'INR',
-      availability: Number(stock) > 0 ? 'Available' : 'Reserved',
-      dimensions: dimensions.trim() || 'Standard Atelier Sizing',
-      weight: '1.2 kg',
-      materials: materialsArray.length > 0 ? materialsArray : ['Authentic Coastal Materials'],
-      technique: technique.trim() || `${craftTradition} canonical guild practice`,
-      image: finalImage,
-      makingStory: {
-        summary: summary.trim(),
-        stages: [
-          { step: '01', title: step1Title.trim(), description: step1Desc.trim() },
-          { step: '02', title: step2Title.trim(), description: step2Desc.trim() },
-          { step: '03', title: step3Title.trim(), description: step3Desc.trim() },
-        ],
-      },
-      artisanBio: profile.bio || `Preserving indigenous coastal mastercraft passed down through generations in ${region}.`,
-      artisanQuote: 'In handcraft, time is not counted in minutes, but in strokes of devotion and living tradition.',
-      directArtisanSharePercent: directShare,
-      modelType: (category as any) || 'textile',
-      colorPalette: ['#A0522D', '#D2B48C', '#2E8B57', '#DEB887'],
-    };
-
-    if (isEditing && id) {
-      updateProduct(id, newCraftObject);
-    } else {
-      addProduct(newCraftObject);
-    }
-
-    setIsSubmitting(false);
-    navigate(`/shop/${productId}`);
   };
+
+  const goBack = () => {
+    if (step === 1) { navigate("/dashboard"); return; }
+    setStep(s => s - 1);
+  };
+
+  const goNext = () => setStep(s => s + 1);
+
+  const craftLabel = CRAFT_OPTIONS.find(c => c.key === craftType)?.label || craftType;
 
   return (
-    <main className="listing-editor-page" role="main" aria-label="Craft Piece Editor">
-      <div className="listing-editor-page__inner">
-        {/* Header Breadcrumb */}
-        <div className="editor-topbar">
-          <Link to="/dashboard" className="editor-back-link">
-            ← Back to Atelier Dashboard
-          </Link>
-          <div className="editor-topbar__actions">
-            <button
-              type="button"
-              className="preview-toggle-btn"
-              onClick={() => setShowPreview(!showPreview)}
-            >
-              {showPreview ? 'Hide Live Preview' : 'View Live Customer Preview'}
-            </button>
-          </div>
-        </div>
+    <div className="artisan-screen">
+      <OfflineBanner />
+      <StepWizard step={step} totalSteps={TOTAL_STEPS} onBack={goBack} onSaveDraft={handleSaveDraft}>
 
-        <div className={`editor-main-layout ${showPreview ? 'has-preview' : 'no-preview'}`}>
-          {/* Main Form Form */}
-          <div className="editor-form-col">
-            <div className="editor-card">
-              <span className="editor-eyebrow">CRAFT LISTING FORM</span>
-              <h1 className="editor-title">
-                {isEditing ? `Edit Piece: ${title}` : 'Add a New Craft Piece'}
-              </h1>
-              <p className="editor-desc">
-                Provide specifications, craft provenance, and fair pricing breakdown.
-              </p>
-
-              {errorMsg && <div className="form-error-banner">{errorMsg}</div>}
-              {aiSuccessMessage && <div className="form-success-banner">{aiSuccessMessage}</div>}
-
-              {/* ────────────────── AI LISTING ASSISTANT (F3 & F10) ────────────────── */}
-              <div
-                style={{
-                  background: 'linear-gradient(135deg, rgba(232, 213, 183, 0.15) 0%, rgba(205, 133, 63, 0.08) 100%)',
-                  border: '1px solid rgba(205, 133, 63, 0.3)',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  marginBottom: '28px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#3d2b1f', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>✨</span>
-                    <span>AI Listing Assistant (Gemini Multimodal)</span>
-                  </h3>
-                  <span style={{ fontSize: '0.75rem', background: '#e8d5b7', padding: '3px 8px', borderRadius: '4px', color: '#3d2b1f', fontWeight: 600 }}>
-                    AI Vision & Voice
-                  </span>
-                </div>
-                <p style={{ margin: '0 0 14px 0', fontSize: '0.88rem', color: '#6b5847', lineHeight: 1.5 }}>
-                  Take photos of your piece and speak a quick description in your own words. The assistant will analyze the craft, suggest traditional techniques, and draft your listing.
-                </p>
-
-                <div className="form-grid-2" style={{ marginBottom: '14px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '6px', color: '#4a3b32' }}>
-                      Upload Piece Photos (Max 4)
-                    </label>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files.length > 0) {
-                          const files = Array.from(e.target.files).slice(0, 4);
-                          setSelectedFiles(files);
-                          setImageUrl(URL.createObjectURL(files[0]));
-                        }
-                      }}
-                      style={{ fontSize: '0.82rem', width: '100%' }}
-                    />
-                    {selectedFiles.length > 0 && (
-                      <span style={{ fontSize: '0.78rem', color: '#2E8B57', marginTop: '4px', display: 'block' }}>
-                        ✓ {selectedFiles.length} photo(s) selected & previewed
-                      </span>
-                    )}
+        {/* ---- STEP 1: PHOTO ---- */}
+        {step === 1 && (
+          <>
+            <h1 className="a-wizard__step-title">
+              {t("artisan.step1_title", "Take a photo of your work")}
+            </h1>
+            <p className="a-wizard__step-subtitle">
+              {t("artisan.step1_sub", "A good photo helps buyers find your craft. Natural light is best.")}
+            </p>
+            <div className="a-wizard__content">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handlePhotoChange}
+                style={{ display: "none" }}
+                aria-label={t("artisan.choose_photo", "Choose or take a photo")}
+                id="photo-upload"
+              />
+              {photoPreview ? (
+                <>
+                  <img src={photoPreview} alt={t("artisan.photo_preview", "Your photo")} className="a-photo-preview" />
+                  <div style={{ marginTop: "0.75rem" }}>
+                    <BigButton variant="secondary" small onClick={() => fileInputRef.current?.click()}>
+                      📷 {t("artisan.retake", "Take another photo")}
+                    </BigButton>
                   </div>
-
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4a3b32' }}>
-                        Artisan Voice Description
-                      </label>
-                      <button
-                        type="button"
-                        onClick={toggleVoiceRecording}
-                        style={{
-                          background: isRecording ? '#dc3545' : '#8B4513',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '4px',
-                          padding: '3px 8px',
-                          fontSize: '0.75rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                        }}
-                      >
-                        <span>{isRecording ? '⏹ Stop' : '🎙️ Speak (Voice)'}</span>
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="e.g. Handmade Kasuti pallu with temple tower design..."
-                      value={voiceTranscript}
-                      onChange={(e) => setVoiceTranscript(e.target.value)}
-                      className="form-input"
-                      style={{ fontSize: '0.85rem' }}
-                    />
-                  </div>
-                </div>
-
+                </>
+              ) : (
                 <button
                   type="button"
-                  onClick={handleGenerateAIDraft}
-                  disabled={aiLoading}
-                  className="dash-btn dash-btn--primary"
-                  style={{ width: '100%', justifyContent: 'center', gap: '8px', padding: '10px' }}
+                  className="a-photo-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  id="photo-btn"
+                  aria-label={t("artisan.take_photo", "Open camera or gallery")}
                 >
-                  {aiLoading ? '✨ Analyzing craft photo and generating draft...' : '✨ Generate Listing Draft with AI Assistant'}
+                  <span className="a-photo-btn__icon" aria-hidden="true">📷</span>
+                  <span>{t("artisan.take_photo", "Tap here to take a photo or choose from gallery")}</span>
                 </button>
+              )}
+            </div>
+            <div className="a-wizard__footer">
+              {error && <div className="a-form-error" role="alert"><span>⚠️</span> {error}</div>}
+              <BigButton onClick={goNext} disabled={!canAdvance()}>
+                {t("artisan.next", "Next step")} →
+              </BigButton>
+              <BigButton variant="secondary" onClick={goNext}>
+                {t("artisan.skip_photo", "Skip for now")}
+              </BigButton>
+            </div>
+          </>
+        )}
+
+        {/* ---- STEP 2: CRAFT TYPE ---- */}
+        {step === 2 && (
+          <>
+            <h1 className="a-wizard__step-title">
+              {t("artisan.step2_title", "What type of craft is this?")}
+            </h1>
+            <p className="a-wizard__step-subtitle">
+              {t("artisan.step2_sub", "Tap one box to choose.")}
+            </p>
+            <div className="a-wizard__content">
+              <div className="a-craft-cards" role="radiogroup" aria-label={t("artisan.craft_type", "Craft type")}>
+                {CRAFT_OPTIONS.map(opt => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={craftType === opt.key}
+                    className={`a-craft-card${craftType === opt.key ? " a-craft-card--selected" : ""}`}
+                    onClick={() => setCraftType(opt.key)}
+                  >
+                    <span className="a-craft-card__emoji" aria-hidden="true">{opt.emoji}</span>
+                    <span>{t(`artisan.craft_${opt.key}`, opt.label)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="a-wizard__footer">
+              <BigButton onClick={goNext} disabled={!canAdvance()}>
+                {t("artisan.next", "Next step")} →
+              </BigButton>
+            </div>
+          </>
+        )}
+
+        {/* ---- STEP 3: NAME + DESCRIPTION ---- */}
+        {step === 3 && (
+          <>
+            <h1 className="a-wizard__step-title">
+              {t("artisan.step3_title", "Give it a name and description")}
+            </h1>
+            <p className="a-wizard__step-subtitle">
+              {t("artisan.step3_sub", "Describe your {{craft}} in your own words. You can speak or type.", { craft: craftLabel })}
+            </p>
+            <div className="a-wizard__content">
+              <div className="a-form-group">
+                <label className="a-form-label" htmlFor="cl-title">
+                  {t("artisan.product_name", "Name of your product")} *
+                </label>
+                <input
+                  id="cl-title"
+                  type="text"
+                  className="a-form-input"
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  placeholder={t("artisan.title_placeholder", "e.g. Hand-woven Ikat saree, blue and gold")}
+                  required
+                />
+              </div>
+              <VoiceInputField
+                id="cl-description"
+                label={t("artisan.tell_story", "Describe this piece — how you made it, materials used, time taken")}
+                value={description}
+                onChange={setDescription}
+                placeholder={t("artisan.story_placeholder", "Speak or type your story here…")}
+                rows={5}
+              />
+            </div>
+            <div className="a-wizard__footer">
+              {error && <div className="a-form-error" role="alert"><span>⚠️</span> {error}</div>}
+              <BigButton onClick={goNext} disabled={!canAdvance()}>
+                {t("artisan.next", "Next step")} →
+              </BigButton>
+            </div>
+          </>
+        )}
+
+        {/* ---- STEP 4: TIME + MATERIALS ---- */}
+        {step === 4 && (
+          <>
+            <h1 className="a-wizard__step-title">
+              {t("artisan.step4_title", "How long did it take?")}
+            </h1>
+            <p className="a-wizard__step-subtitle">
+              {t("artisan.step4_sub", "We use this to suggest a fair price for your work.")}
+            </p>
+            <div className="a-wizard__content">
+              <div aria-label={t("artisan.hours_stepper", "Hours to make stepper")}>
+                <div className="a-stepper">
+                  <button
+                    type="button"
+                    className="a-stepper__btn"
+                    onClick={() => setHours(Math.max(1, hours - 1))}
+                    aria-label={t("artisan.decrease_hours", "Decrease hours")}
+                    disabled={hours <= 1}
+                  >−</button>
+                  <div>
+                    <div className="a-stepper__value" aria-live="polite">{hours}</div>
+                    <div className="a-stepper__unit">{t("artisan.hours", "hours")}</div>
+                  </div>
+                  <button
+                    type="button"
+                    className="a-stepper__btn"
+                    onClick={() => setHours(hours + 1)}
+                    aria-label={t("artisan.increase_hours", "Increase hours")}
+                  >+</button>
+                </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="listing-form">
-                {/* 1. Identification */}
-                <fieldset className="form-section">
-                  <legend className="section-legend">01. Piece Identity & Craft Tradition</legend>
+              <div className="a-form-group">
+                <label className="a-form-label" htmlFor="mat-cost">
+                  {t("artisan.material_cost", "Cost of materials you bought (₹)")}
+                </label>
+                <input
+                  id="mat-cost"
+                  type="number"
+                  className="a-form-input"
+                  value={materialCost}
+                  min={0}
+                  step={50}
+                  onChange={e => setMaterialCost(Number(e.target.value))}
+                  inputMode="numeric"
+                />
+                <p className="a-form-hint">{t("artisan.mat_hint", "Thread, clay, dye, paint — everything you spent money on.")}</p>
+              </div>
 
-                  <div className="form-group">
-                    <label htmlFor="craft-title">Masterpiece Title *</label>
-                    <input
-                      id="craft-title"
-                      type="text"
-                      required
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g. Kasuti Embroidered Chariot & Peacock Saree"
-                      className="form-input"
-                    />
-                  </div>
-
-                  <div className="form-grid-2">
-                    <div className="form-group">
-                      <label htmlFor="craft-tradition">Craft Tradition *</label>
-                      <select
-                        id="craft-tradition"
-                        value={craftTradition}
-                        onChange={(e) => setCraftTradition(e.target.value)}
-                        className="form-input"
-                      >
-                        <option value="Kasuti">Kasuti Embroidery</option>
-                        <option value="Beedu">Beedu (Grass Mat Weaving)</option>
-                        <option value="Shell Craft">Shell Craft</option>
-                        <option value="Bidriware">Bidriware</option>
-                        <option value="Terracotta">Coastal Terracotta</option>
-                        <option value="Woodcraft">Channapatna Woodcraft</option>
-                        {craftsList.map((c) => (
-                          <option key={c.craft_type} value={c.craft_type}>
-                            {c.craft_type}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="craft-category">Catalogue Category</label>
-                      <select
-                        id="craft-category"
-                        value={category}
-                        onChange={(e) => setCategory(e.target.value as CraftCategory)}
-                        className="form-input"
-                      >
-                        <option value="textiles">Textiles & Embroidery</option>
-                        <option value="ceramics">Ceramics & Shellcraft</option>
-                        <option value="metalcraft">Metalcraft & Brass</option>
-                        <option value="woodcraft">Woodcraft & Lacquer</option>
-                        <option value="paintings">Traditional Paintings</option>
-                      </select>
-                    </div>
-                  </div>
-                </fieldset>
-
-                {/* 2. Materials, Technique & Dimensions */}
-                <fieldset className="form-section">
-                  <legend className="section-legend">02. Curatorial Materials & Technique</legend>
-
-                  <div className="form-group">
-                    <label htmlFor="craft-materials">Authentic Materials (Comma Separated)</label>
-                    <input
-                      id="craft-materials"
-                      type="text"
-                      value={materialsStr}
-                      onChange={(e) => setMaterialsStr(e.target.value)}
-                      placeholder="e.g. Pure Ilkal silk, Mercerised cotton thread, Natural Indigo dye"
-                      className="form-input"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="craft-technique">Handmade Technique</label>
-                    <input
-                      id="craft-technique"
-                      type="text"
-                      value={technique}
-                      onChange={(e) => setTechnique(e.target.value)}
-                      placeholder="e.g. Gavanti and Muragi counted thread geometry without knots"
-                      className="form-input"
-                    />
-                  </div>
-
-                  <div className="form-grid-2">
-                    <div className="form-group">
-                      <label htmlFor="craft-dimensions">Dimensions</label>
-                      <input
-                        id="craft-dimensions"
-                        type="text"
-                        value={dimensions}
-                        onChange={(e) => setDimensions(e.target.value)}
-                        placeholder="e.g. 5.5m Saree with 80cm Pallu"
-                        className="form-input"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="craft-stock">Available Stock *</label>
-                      <input
-                        id="craft-stock"
-                        type="number"
-                        min="1"
-                        max="99"
-                        value={stock}
-                        onChange={(e) => setStock(Number(e.target.value))}
-                        className="form-input"
-                      />
-                    </div>
-                  </div>
-                </fieldset>
-
-                {/* 3. Transparent Fair Pricing Calculator (F4) */}
-                <fieldset className="form-section" style={{ background: '#faf6f0', padding: '18px', borderRadius: '8px' }}>
-                  <legend className="section-legend">03. Transparent Pricing & Fair Wage Calculator</legend>
-                  <p style={{ fontSize: '0.85rem', color: '#6b5847', marginTop: '-6px', marginBottom: '14px' }}>
-                    Deterministic fair wage formula: <code>suggested_price = (materials_cost + hours × fair_hourly_wage) × craft_premium + platform_fee</code>.
-                  </p>
-
-                  <div className="form-grid-3">
-                    <div className="form-group">
-                      <label htmlFor="hours-to-make">Hours of Labour</label>
-                      <input
-                        id="hours-to-make"
-                        type="number"
-                        min="1"
-                        step="0.5"
-                        value={hoursToMake}
-                        onChange={(e) => setHoursToMake(Number(e.target.value))}
-                        className="form-input"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="materials-cost">Materials Cost (₹)</label>
-                      <input
-                        id="materials-cost"
-                        type="number"
-                        min="0"
-                        step="50"
-                        value={materialsCost}
-                        onChange={(e) => setMaterialsCost(Number(e.target.value))}
-                        className="form-input"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="tech-complexity">Technique Complexity</label>
-                      <select
-                        id="tech-complexity"
-                        value={techniqueComplexity}
-                        onChange={(e) => setTechniqueComplexity(e.target.value as any)}
-                        className="form-input"
-                      >
-                        <option value="low">Low (-0.1)</option>
-                        <option value="medium">Medium (Base)</option>
-                        <option value="high">High (+0.15)</option>
-                        <option value="very_high">Masterwork (+0.30)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: '10px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <div className="a-form-group">
+                <label className="a-form-label">{t("artisan.complexity", "How difficult is this piece?")}</label>
+                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                  {([["low","Simple"], ["medium","Medium"], ["high","Complex"], ["very_high","Very complex"]] as const).map(([val, fallback]) => (
                     <button
+                      key={val}
                       type="button"
-                      onClick={handleCalculatePrice}
-                      disabled={pricingLoading}
-                      className="dash-btn dash-btn--secondary"
-                      style={{ fontSize: '0.85rem' }}
+                      className={`a-craft-card${complexity === val ? " a-craft-card--selected" : ""}`}
+                      role="radio"
+                      aria-checked={complexity === val}
+                      onClick={() => setComplexity(val as Complexity)}
+                      style={{ flex: "1 1 45%", minHeight: "56px", minWidth: "100px" }}
                     >
-                      {pricingLoading ? 'Calculating...' : 'Calculate Fair Price Breakdown'}
+                      {t(`artisan.complexity_${val}`, fallback)}
                     </button>
-                    {pricingBreakdown && (
-                      <button
-                        type="button"
-                        onClick={handleApplySuggestedPrice}
-                        className="dash-btn dash-btn--primary"
-                        style={{ fontSize: '0.85rem', backgroundColor: '#2E8B57' }}
-                      >
-                        Apply Suggested ₹{Math.round(pricingBreakdown.suggested_price)}
-                      </button>
-                    )}
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="a-wizard__footer">
+              <BigButton onClick={goNext}>
+                {t("artisan.next", "Next step")} →
+              </BigButton>
+            </div>
+          </>
+        )}
+
+        {/* ---- STEP 5: PRICE ---- */}
+        {step === 5 && (
+          <>
+            <h1 className="a-wizard__step-title">
+              {t("artisan.step5_title", "Set your price")}
+            </h1>
+            <p className="a-wizard__step-subtitle">
+              {t("artisan.step5_sub", "You can use our suggested fair price, or set your own.")}
+            </p>
+            <div className="a-wizard__content">
+              {!priceResult && (
+                <BigButton
+                  variant="secondary"
+                  onClick={handleGetPriceEstimate}
+                  disabled={loading}
+                  icon="✨"
+                  id="get-price-btn"
+                >
+                  {loading ? t("artisan.calculating", "Calculating…") : t("artisan.get_fair_price", "Get a fair price suggestion")}
+                </BigButton>
+              )}
+              {priceResult ? (
+                <div className="a-price-review">
+                  <div className="a-price-review__label">{t("artisan.suggested_price_tag", "We suggest:")}</div>
+                  <div className="a-price-review__amount" style={{ fontSize: "2.5rem", fontWeight: 700, color: "var(--a-green, #1e7e34)" }}>
+                    ₹{priceResult.suggested_price.toLocaleString("en-IN")}
+                  </div>
+                  <div className="a-price-review__breakdown" style={{ marginTop: "0.75rem", fontSize: "1rem" }}>
+                    <strong>{t("artisan.how_calc", "How we worked this out:")}</strong><br />
+                    • {t("artisan.materials_label", "Materials:")} ₹{priceResult.materials_cost.toLocaleString("en-IN")}<br />
+                    • {t("artisan.labour_label", "Your time ({h}h × ₹{r}/hr):", { h: priceResult.hours, r: priceResult.fair_hourly_wage })}: ₹{priceResult.labour_cost.toLocaleString("en-IN")}<br />
+                    • {t("artisan.heritage_label", "Craft heritage:")} ₹{priceResult.craft_premium_amount.toLocaleString("en-IN")}<br />
+                    • {t("artisan.range_label", "Suggested range:")} ₹{priceResult.suggested_range.min.toLocaleString("en-IN")} – ₹{priceResult.suggested_range.max.toLocaleString("en-IN")}
                   </div>
 
-                  {pricingBreakdown && (
-                    <div
-                      style={{
-                        marginTop: '14px',
-                        padding: '12px',
-                        background: '#fff',
-                        borderRadius: '6px',
-                        border: '1px solid #d4c5b3',
-                        fontSize: '0.85rem',
-                      }}
-                    >
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px', marginBottom: '8px' }}>
-                        <div><strong>Materials:</strong> ₹{pricingBreakdown.materials_cost}</div>
-                        <div><strong>Labour ({pricingBreakdown.hours}h @ ₹{pricingBreakdown.fair_hourly_wage}/h):</strong> ₹{pricingBreakdown.labour_cost}</div>
-                        <div><strong>Multiplier:</strong> {pricingBreakdown.craft_premium_multiplier}x</div>
-                        <div><strong>Suggested:</strong> <span style={{ color: '#8B4513', fontWeight: 'bold' }}>₹{pricingBreakdown.suggested_price}</span></div>
-                      </div>
-                      <div style={{ color: '#555', fontStyle: 'italic' }}>
-                        {pricingBreakdown.reasoning} (Fair range: ₹{pricingBreakdown.suggested_range.min} - ₹{pricingBreakdown.suggested_range.max})
-                      </div>
+                  {!finalPrice && (
+                    <div style={{ marginTop: "1.25rem" }}>
+                      <BigButton
+                        variant="success"
+                        onClick={() => setFinalPrice(priceResult.suggested_price)}
+                      >
+                        👍 {t("artisan.looks_good", "Looks good (₹{{price}})", { price: priceResult.suggested_price.toLocaleString("en-IN") })}
+                      </BigButton>
                     </div>
                   )}
-
-                  <div className="form-grid-2" style={{ marginTop: '14px' }}>
-                    <div className="form-group">
-                      <label htmlFor="craft-price">Artisan Selling Price (₹ INR) *</label>
-                      <input
-                        id="craft-price"
-                        type="number"
-                        required
-                        min="100"
-                        value={price}
-                        onChange={(e) => setPrice(Number(e.target.value))}
-                        className="form-input"
-                      />
-                      <span style={{ fontSize: '0.78rem', color: '#666', marginTop: '4px', display: 'block' }}>
-                        Client rate: ₹{Math.round(price * 1.05).toLocaleString('en-IN')} (includes 5% platform fee: ₹{Math.round(price * 0.05).toLocaleString('en-IN')})
-                      </span>
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="direct-share">Artisan Direct Share (%)</label>
-                      <input
-                        id="direct-share"
-                        type="number"
-                        min="70"
-                        max="100"
-                        value={directShare}
-                        onChange={(e) => setDirectShare(Number(e.target.value))}
-                        className="form-input"
-                      />
-                      <span style={{ fontSize: '0.78rem', color: '#666', marginTop: '4px', display: 'block' }}>
-                        You receive 100% of your listed selling price (₹{price.toLocaleString('en-IN')}).
-                      </span>
-                    </div>
-                  </div>
-                </fieldset>
-
-                {/* 4. Provenance & Living Story */}
-                <fieldset className="form-section">
-                  <legend className="section-legend">04. Living Provenance & Making Story</legend>
-
-                  <div className="form-group">
-                    <label htmlFor="craft-summary">Story & Cultural Origin</label>
-                    <textarea
-                      id="craft-summary"
-                      rows={3}
-                      value={summary}
-                      onChange={(e) => setSummary(e.target.value)}
-                      className="form-textarea"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="step-1-desc">Stage 1: Raw Materials Preparation</label>
-                    <input
-                      id="step-1-desc"
-                      type="text"
-                      value={step1Desc}
-                      onChange={(e) => setStep1Desc(e.target.value)}
-                      className="form-input"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="step-2-desc">Stage 2: Handcrafting & Geometry</label>
-                    <input
-                      id="step-2-desc"
-                      type="text"
-                      value={step2Desc}
-                      onChange={(e) => setStep2Desc(e.target.value)}
-                      className="form-input"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="step-3-desc">Stage 3: Inspection & Certification</label>
-                    <input
-                      id="step-3-desc"
-                      type="text"
-                      value={step3Desc}
-                      onChange={(e) => setStep3Desc(e.target.value)}
-                      className="form-input"
-                    />
-                  </div>
-                </fieldset>
-
-                {/* 5. Visual Preset or Upload */}
-                <fieldset className="form-section">
-                  <legend className="section-legend">05. Primary Display Image & Upload</legend>
-                  <div className="form-group">
-                    <label htmlFor="primary-image-file">Upload Photograph from Atelier Device</label>
-                    <input
-                      id="primary-image-file"
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files.length > 0) {
-                          const files = Array.from(e.target.files).slice(0, 4);
-                          setSelectedFiles(files);
-                          setImageUrl(URL.createObjectURL(files[0]));
-                        }
-                      }}
-                      className="form-input"
-                    />
-                    {selectedFiles.length > 0 && (
-                      <span style={{ fontSize: '0.8rem', color: '#2E8B57', marginTop: '6px', display: 'block', fontWeight: 600 }}>
-                        ✓ {selectedFiles.length} file(s) attached ({selectedFiles[0].name})
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="form-group" style={{ marginTop: '12px' }}>
-                    <label htmlFor="image-url">Or Curatorial Image URL</label>
-                    <input
-                      id="image-url"
-                      type="text"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      className="form-input"
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
-                    {PRESET_IMAGES.map((img) => (
-                      <button
-                        key={img.label}
-                        type="button"
-                        onClick={() => setImageUrl(img.url)}
-                        style={{
-                          fontSize: '0.75rem',
-                          background: imageUrl === img.url ? '#8B4513' : '#e8d5b7',
-                          color: imageUrl === img.url ? '#fff' : '#3d2b1f',
-                          border: 'none',
-                          borderRadius: '4px',
-                          padding: '4px 8px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {img.label}
-                      </button>
-                    ))}
-                  </div>
-                </fieldset>
-
-                <div className="form-actions-bar" style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
-                  <button
-                    id="publish-listing-btn"
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="dash-btn dash-btn--primary"
-                    style={{ flex: 1, justifyContent: 'center', padding: '14px', fontSize: '1rem' }}
-                  >
-                    {isSubmitting ? 'Publishing to Living Archive...' : isEditing ? 'Update Masterpiece' : 'Inscribe & Publish Masterpiece'}
-                  </button>
-                  <Link to="/dashboard" className="dash-btn dash-btn--secondary" style={{ padding: '14px 20px' }}>
-                    Cancel
-                  </Link>
                 </div>
-              </form>
-            </div>
-          </div>
+              ) : null}
 
-          {/* Customer Preview Sidebar */}
-          {showPreview && (
-            <div className="editor-preview-col">
-              <div className="editor-card" style={{ position: 'sticky', top: '84px' }}>
-                <span className="editor-eyebrow">LIVE CUSTOMER DOSSIER</span>
-                <img
-                  src={imageUrl}
-                  alt={title}
-                  style={{ width: '100%', height: '220px', objectFit: 'cover', borderRadius: '8px', margin: '12px 0' }}
+              {/* Price input - either prefilled or customized */}
+              <div className="a-form-group" style={{ marginTop: "1.25rem" }}>
+                <label className="a-form-label" htmlFor="final-price">
+                  {t("artisan.your_price", "Your selling price (₹)")} *
+                </label>
+                <input
+                  id="final-price"
+                  type="number"
+                  className="a-form-input"
+                  value={finalPrice || ""}
+                  min={1}
+                  step={50}
+                  onChange={e => setFinalPrice(Number(e.target.value))}
+                  inputMode="numeric"
+                  required
+                  aria-describedby="price-hint"
                 />
-                <h3 style={{ margin: '0 0 6px 0', fontSize: '1.1rem' }}>{title || 'Untitled Masterpiece'}</h3>
-                <span style={{ fontSize: '0.8rem', color: '#8B4513', fontWeight: 600 }}>{craftTradition} · {region}</span>
-                <p style={{ fontSize: '0.85rem', color: '#555', margin: '10px 0', lineHeight: 1.4 }}>
-                  {summary || 'Curatorial description will appear here.'}
+                <p id="price-hint" className="a-form-hint">
+                  {t("artisan.price_hint", "This is the amount buyers will pay. You keep most of it.")}
                 </p>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', borderTop: '1px solid #e0d6c8', paddingTop: '12px' }}>
-                  <div>
-                    <span style={{ fontSize: '0.75rem', color: '#888', display: 'block' }}>Fair Price</span>
-                    <strong style={{ fontSize: '1.25rem', color: '#3d2b1f' }}>₹{Number(price).toLocaleString('en-IN')}</strong>
-                  </div>
-                  <span style={{ fontSize: '0.8rem', background: '#d4edda', color: '#155724', padding: '4px 8px', borderRadius: '4px' }}>
-                    Verified Atelier Listing
-                  </span>
-                </div>
               </div>
+              {error && <div className="a-form-error" role="alert"><span>⚠️</span> {error}</div>}
             </div>
-          )}
-        </div>
-      </div>
-    </main>
+            <div className="a-wizard__footer">
+              <BigButton
+                variant="primary"
+                onClick={handleSubmit}
+                disabled={loading || !canAdvance()}
+                id="publish-btn"
+              >
+                {loading ? t("artisan.publishing", "Publishing…") : `🚀 ${t("artisan.publish", "Looks good — Publish my product")}`}
+              </BigButton>
+              <BigButton variant="secondary" onClick={handleSaveDraft} disabled={loading}>
+                {t("artisan.save_draft", "Save as draft")}
+              </BigButton>
+            </div>
+          </>
+        )}
+
+      </StepWizard>
+
+      <HelpButton
+        screenText={
+          step === 1 ? t("artisan.help_step1", "Tap the big box to take a photo of your craft with your phone camera, or choose one from your gallery.")
+          : step === 2 ? t("artisan.help_step2", "Tap the box that matches what you make.")
+          : step === 3 ? t("artisan.help_step3", "Type or speak the name and description of your craft. Use the microphone button to speak.")
+          : step === 4 ? t("artisan.help_step4", "Use the plus and minus buttons to set how many hours you spent making this piece. Also enter how much you spent on materials.")
+          : t("artisan.help_step5", "Tap Get a fair price suggestion to let us calculate a price based on your time and materials. Then you can change it if you want.")
+        }
+      />
+      <BottomNav />
+    </div>
   );
 }

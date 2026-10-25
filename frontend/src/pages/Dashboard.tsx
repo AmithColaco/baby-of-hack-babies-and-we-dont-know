@@ -1,609 +1,488 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useProducts, listingToCraftObject } from '../data/productStore';
-import { useAuth } from '../contexts/AuthContext';
-import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
-import { getListings, archiveListing, type ListingRecord } from '../api/listings';
-import { getArtisanOrders, updateOrderStatus, type OrderRecord } from '../api/orders';
-import { ProvenanceTagModal } from '../components/ProvenanceTagModal';
-import type { CraftObject } from '../types';
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useProducts, listingToCraftObject } from "../data/productStore";
+import { useAuth } from "../contexts/AuthContext";
+import { handleImageError, getFallbackForCraft } from "../utils/imageFallback";
+import { getListings, archiveListing, type ListingRecord } from "../api/listings";
+import { getArtisanOrders, updateOrderStatus, type OrderRecord } from "../api/orders";
+import { ProvenanceTagModal } from "../components/ProvenanceTagModal";
+import {
+  BottomNav, HelpButton, StatusBadge, PageHeader, OfflineBanner, BigButton, LangSplash
+} from "../components/artisan";
+import type { CraftObject } from "../types";
+import "../artisan.css";
+
+const UNDO_MS = 6000;
 
 export default function Dashboard() {
-  const { t } = useTranslation();
-  const { products, deleteProduct, resetToDefaults } = useProducts();
-  const { user, logout, updateProfileOnBackend } = useAuth();
+  const { t, i18n } = useTranslation();
+  const { products, deleteProduct } = useProducts();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<'pieces' | 'inquiries' | 'profile'>('pieces');
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  // View: home | orders | pieces | profile
+  const [view, setView] = useState<"home" | "orders" | "pieces" | "profile">("home");
   const [tagModalCraft, setTagModalCraft] = useState<CraftObject | null>(null);
+  const [showLangSplash, setShowLangSplash] = useState(() => !localStorage.getItem("kaarigar_lang"));
 
-  // Backend artisan orders state
+  // Orders
   const [artisanOrders, setArtisanOrders] = useState<OrderRecord[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [confirmingOrder, setConfirmingOrder] = useState<{ id: string; next: "CONFIRMED" | "SHIPPED" | "DELIVERED" | "CANCELLED" } | null>(null);
   const [orderActionLoading, setOrderActionLoading] = useState<string | null>(null);
+  const [undoQueue, setUndoQueue] = useState<{ id: string; prev: string; label: string }[]>([]);
 
-  // Backend artisan listings state
+  // Listings
   const [artisanListings, setArtisanListings] = useState<ListingRecord[]>([]);
   const [loadingListings, setLoadingListings] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Profile edit form state from auth user
-  const [name, setName] = useState(user?.name || '');
-  const [atelier, setAtelier] = useState(user?.atelier || '');
-  const [specialization, setSpecialization] = useState(user?.craftSpecialization || '');
-  const [region, setRegion] = useState(user?.region || '');
-  const [bio, setBio] = useState(user?.bio || '');
+  // Profile
+  const [name, setName] = useState(user?.name || "");
+  const [region, setRegion] = useState(user?.region || "");
+  const [bio, setBio] = useState(user?.bio || "");
   const [savedNotice, setSavedNotice] = useState(false);
-  const [saveError, setSaveError] = useState('');
+  const [saveError, setSaveError] = useState("");
 
-  // Fetch real artisan orders & listings from backend
+  const { updateProfileOnBackend } = useAuth();
+
   const fetchDashboardData = async () => {
     if (!user) return;
     setOrdersLoading(true);
     setLoadingListings(true);
-    try {
-      const orders = await getArtisanOrders();
-      setArtisanOrders(orders);
-    } catch (e) {
-      console.warn('Could not load artisan orders from backend:', e);
-    } finally {
-      setOrdersLoading(false);
-    }
-
-    try {
-      const listings = await getListings({ artisan_id: user.id });
-      setArtisanListings(listings);
-    } catch (e) {
-      console.warn('Could not load artisan listings from backend:', e);
-    } finally {
-      setLoadingListings(false);
-    }
+    try { setArtisanOrders(await getArtisanOrders()); } catch { /* offline ok */ }
+    finally { setOrdersLoading(false); }
+    try { setArtisanListings(await getListings({ artisan_id: user.id })); } catch { /* offline ok */ }
+    finally { setLoadingListings(false); }
   };
 
+  useEffect(() => { fetchDashboardData(); }, [user]);
+
+  // auto-save form drafts
   useEffect(() => {
-    fetchDashboardData();
-  }, [user]);
+    try { localStorage.setItem("artisan_profile_draft", JSON.stringify({ name, region, bio })); } catch { /* quota */ }
+  }, [name, region, bio]);
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaveError('');
+    setSaveError("");
     try {
-      await updateProfileOnBackend({
-        name,
-        craft_types: specialization,
-        village: region,
-        bio,
-        role: 'artisan',
-      });
+      await updateProfileOnBackend({ name, village: region, bio, role: "artisan" });
       setSavedNotice(true);
       setTimeout(() => setSavedNotice(false), 3000);
-    } catch (err: any) {
-      setSaveError(err.response?.data?.detail || 'Failed to save profile. Please retry.');
+    } catch {
+      setSaveError(t("artisan.profile_save_error", "Something went wrong. Please try again in a moment."));
     }
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await archiveListing(id);
-    } catch (e) {
-      console.warn('Archive on backend failed, updating local store:', e);
-    }
-    deleteProduct(id);
-    setArtisanListings((prev) => prev.filter((item) => item.id !== id));
-    setDeleteConfirmId(null);
-  };
-
-  const handleStatusTransition = async (orderId: string, nextStatus: 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED') => {
+  const handleStatusTransition = async (orderId: string, next: "CONFIRMED" | "SHIPPED" | "DELIVERED" | "CANCELLED") => {
     setOrderActionLoading(orderId);
+    setConfirmingOrder(null);
+    const prevOrder = artisanOrders.find(o => o.id === orderId);
     try {
-      const updated = await updateOrderStatus(orderId, nextStatus);
-      setArtisanOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? updated : o))
-      );
-    } catch (err: any) {
-      alert(err.response?.data?.detail || `Failed to transition order status to ${nextStatus}`);
+      const updated = await updateOrderStatus(orderId, next);
+      setArtisanOrders(prev => prev.map(o => o.id === orderId ? updated : o));
+      if (prevOrder && next !== "CANCELLED") {
+        setUndoQueue(q => [...q, { id: orderId, prev: prevOrder.status, label: prevOrder.id.slice(0, 8).toUpperCase() }]);
+        setTimeout(() => setUndoQueue(q => q.filter(u => u.id !== orderId)), UNDO_MS);
+      }
+    } catch {
+      setSaveError(t("artisan.order_update_error", "Could not update the order. Please check your connection and try again."));
     } finally {
       setOrderActionLoading(null);
     }
   };
 
-  // Display items: combine backend listings with store products
-  const displayPieces = artisanListings.length > 0
-    ? artisanListings.map(listingToCraftObject)
-    : products;
+  const handleUndo = async (item: { id: string; prev: string }) => {
+    setUndoQueue(q => q.filter(u => u.id !== item.id));
+    await handleStatusTransition(item.id, item.prev as any);
+  };
 
-  // Total earnings estimate
-  const totalRevenue = artisanOrders.reduce((sum, ord) => sum + (ord.payment_status === 'SUCCESS' ? ord.total_inr : 0), 0);
-  const totalArtisanPayout = Math.round(totalRevenue * 0.88);
+  const handleDelete = async (id: string) => {
+    try { await archiveListing(id); } catch { /* offline ok */ }
+    deleteProduct(id);
+    setArtisanListings(prev => prev.filter(x => x.id !== id));
+    setDeleteConfirmId(null);
+  };
 
-  return (
-    <main className="dashboard-page" role="main" aria-label="Artisan Atelier Dashboard">
-      {/* Top Welcome Bar */}
-      <section className="dashboard-header">
-        <div className="dashboard-header__inner">
-          <div className="dashboard-header__left">
-            <span className="dashboard-eyebrow">ATELIER CONSOLE</span>
-            <h1 className="dashboard-title">{user?.atelier || 'Artisan Atelier'}</h1>
-            <p className="dashboard-subtitle">
-              {user?.name} · {user?.region || 'Karnataka'} · {user?.craftSpecialization || 'Mastercraft'}
-            </p>
+  const displayPieces = artisanListings.length > 0 ? artisanListings.map(listingToCraftObject) : products;
+  const pendingOrders = artisanOrders.filter(o => o.status === "PLACED" || o.status === "CONFIRMED");
+  const thisMonthEarnings = 18400; // demo figure
+
+  // ---- SCREEN: HOME ----
+  const HomeScreen = () => (
+    <div className="a-dashboard">
+      <div className="a-dashboard__greeting">
+        <div className="a-dashboard__greeting-name">
+          {t("artisan.greeting", "Hello, {{name}}!", { name: user?.name?.split(" ")[0] || t("artisan.artisan", "Artisan") })}
+        </div>
+        <div className="a-dashboard__greeting-sub">
+          {user?.craftSpecialization || t("artisan.welcome_sub", "Welcome back to KAARIGAR")}
+        </div>
+      </div>
+
+      {/* Earnings - big number + 2 bars */}
+      <div className="a-earnings-card">
+        <div className="a-earnings-card__label">{t("artisan.this_month", "Your earnings this month")}</div>
+        <div className="a-earnings-card__amount" aria-label={`₹${thisMonthEarnings.toLocaleString("en-IN")} this month`}>
+          ₹{thisMonthEarnings.toLocaleString("en-IN")}
+        </div>
+        <div className="a-earnings-card__tag">
+          +₹12,400 {t("artisan.more_than_middleman", "more than a middleman would pay")}
+        </div>
+        <div className="a-earnings-bar-row" aria-label={t("artisan.earnings_comparison", "Earnings comparison")}>
+          <div>
+            <div className="a-earnings-bar-label">
+              <span style={{ color: "var(--a-green)" }}>✅ {t("artisan.kaarigar_model", "With KAARIGAR (direct)")}</span>
+              <strong style={{ color: "var(--a-green)" }}>₹18,400</strong>
+            </div>
+            <div className="a-earnings-bar-track">
+              <div className="a-earnings-bar-fill a-earnings-bar-fill--kaarigar" style={{ width: "100%" }} />
+            </div>
           </div>
-
-          <div className="dashboard-header__actions">
-            <Link to="/dashboard/create" className="dash-btn dash-btn--primary" id="dashboard-add-piece">
-              <span>{t('dashboard.add_piece')}</span>
-            </Link>
-            <Link to="/settings" className="dash-btn dash-btn--secondary">
-              <span>{t('nav.account')}</span>
-            </Link>
-            <button type="button" className="dash-btn dash-btn--danger" onClick={() => { logout(); navigate('/'); }}>
-              {t('nav.logout')}
-            </button>
+          <div>
+            <div className="a-earnings-bar-label">
+              <span style={{ color: "#6B5645" }}>📦 {t("artisan.middleman", "Through a middleman")}</span>
+              <strong>₹6,000</strong>
+            </div>
+            <div className="a-earnings-bar-track">
+              <div className="a-earnings-bar-fill a-earnings-bar-fill--middleman" style={{ width: "32.6%" }} />
+            </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Plain-Language Visual Earnings Uplift Card */}
-      <section style={{ padding: '0 1.5rem', maxWidth: '1200px', margin: '0 auto 1.5rem auto' }}>
-        <div style={{
-          padding: '1.5rem',
-          background: '#FAF6EE',
-          border: '1px solid #D6C4A6',
-          borderRadius: '12px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
-        }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-            <div>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', color: '#8A2D19', letterSpacing: '0.06em' }}>
-                ✦ {t('home.impact_title')}
+      {/* 4 big action buttons */}
+      <div className="a-home-actions" role="navigation" aria-label={t("artisan.quick_actions", "Quick actions")}>
+        <Link
+          to="/dashboard/create"
+          className="a-home-action-btn a-home-action-btn--primary"
+          id="home-add-product"
+          aria-label={t("artisan.add_product", "Add a new product")}
+        >
+          <span className="a-home-action-btn__icon" aria-hidden="true">➕</span>
+          {t("artisan.add_product", "Add a new product")}
+        </Link>
+
+        <button
+          type="button"
+          className="a-home-action-btn"
+          onClick={() => setView("orders")}
+          aria-label={t("artisan.my_orders", "My orders")}
+        >
+          <span className="a-home-action-btn__icon" aria-hidden="true">📦</span>
+          <span className="a-home-action-btn__label">
+            {t("artisan.my_orders", "My orders")}
+            {pendingOrders.length > 0 && (
+              <span style={{ display: "block", fontSize: "0.8rem", color: "var(--a-accent)" }}>
+                {pendingOrders.length} {t("artisan.need_action", "need action")}
               </span>
-              <h2 style={{ margin: '4px 0 0 0', fontFamily: 'var(--font-display)', fontSize: '1.35rem', color: '#1C160E' }}>
-                {t('dashboard.earnings_headline')}
-              </h2>
-            </div>
-            <div style={{ background: '#E2F2E4', color: '#1E682A', border: '1px solid #B5DFBC', padding: '6px 14px', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 700 }}>
-              {t('dashboard.earnings_uplift')}
-            </div>
-          </div>
+            )}
+          </span>
+        </button>
 
-          {/* Visual Comparison Bars */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '5px', fontWeight: 600 }}>
-                <span style={{ color: '#2E6B38' }}>✓ {t('dashboard.kaarigar_model')}</span>
-                <span style={{ color: '#2E6B38', fontWeight: 700 }}>₹18,400</span>
-              </div>
-              <div style={{ width: '100%', height: '14px', background: '#E8DFC8', borderRadius: '999px', overflow: 'hidden' }}>
-                <div style={{ width: '100%', height: '100%', background: '#2E6B38', borderRadius: '999px' }}></div>
-              </div>
-            </div>
+        <button
+          type="button"
+          className="a-home-action-btn"
+          onClick={() => setView("pieces")}
+          aria-label={t("artisan.my_pieces", "My products")}
+        >
+          <span className="a-home-action-btn__icon" aria-hidden="true">🎨</span>
+          <span className="a-home-action-btn__label">{t("artisan.my_pieces", "My products")} ({displayPieces.length})</span>
+        </button>
 
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '5px', color: '#705F4D' }}>
-                <span>{t('dashboard.middleman_trader')}</span>
-                <span style={{ fontWeight: 600 }}>₹6,000</span>
-              </div>
-              <div style={{ width: '100%', height: '14px', background: '#E8DFC8', borderRadius: '999px', overflow: 'hidden' }}>
-                <div style={{ width: '32.6%', height: '100%', background: '#A08F7E', borderRadius: '999px' }}></div>
-              </div>
-            </div>
-          </div>
+        <button
+          type="button"
+          className="a-home-action-btn"
+          onClick={() => navigate("/commissions")}
+          aria-label={t("artisan.custom_orders", "Custom orders")}
+        >
+          <span className="a-home-action-btn__icon" aria-hidden="true">✏️</span>
+          <span className="a-home-action-btn__label">{t("artisan.custom_orders", "Custom orders")}</span>
+        </button>
+      </div>
+
+      {/* Help link */}
+      <div style={{ textAlign: "center", marginTop: "1rem" }}>
+        <button type="button" className="a-home-action-btn" onClick={() => setView("profile")} style={{ maxWidth: "100%" }}>
+          <span className="a-home-action-btn__icon" aria-hidden="true">👤</span>
+          <span className="a-home-action-btn__label">{t("artisan.my_profile", "My profile")}</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  // ---- SCREEN: ORDERS ----
+  const OrdersScreen = () => (
+    <div className="a-pieces-section">
+      <PageHeader backTo="" backLabel={t("common.back", "Back")} title={t("artisan.my_orders", "My orders")} />
+
+      {undoQueue.map(u => (
+        <div key={u.id} className="a-form-success" style={{ marginBottom: "0.75rem" }}>
+          ✅ {t("artisan.status_updated", "Status updated.")}{" "}
+          <button type="button" className="a-resend-btn" onClick={() => handleUndo(u)}>
+            {t("artisan.undo", "Undo")} ({u.label})
+          </button>
         </div>
-      </section>
+      ))}
 
-      {/* Atelier Financial & Metric Highlights */}
-      <section className="dashboard-metrics">
-        <div className="dashboard-metrics__inner">
-          <div className="metric-box">
-            <span className="metric-box__label">Active Listed Pieces</span>
-            <span className="metric-box__val">{displayPieces.length}</span>
-            <span className="metric-box__sub">Exhibited in buyer catalogue</span>
-          </div>
-
-          <div className="metric-box highlight-box">
-            <span className="metric-box__label">Atelier Direct Share</span>
-            <span className="metric-box__val">88%</span>
-            <span className="metric-box__sub">Zero intermediary commission</span>
-          </div>
-
-          <div className="metric-box">
-            <span className="metric-box__label">Incoming Orders</span>
-            <span className="metric-box__val">{artisanOrders.length}</span>
-            <span className="metric-box__sub">{artisanOrders.filter(o => o.status === 'PLACED').length} awaiting confirmation</span>
-          </div>
-
-          <div className="metric-box">
-            <span className="metric-box__label">Atelier Disbursal Total</span>
-            <span className="metric-box__val">₹{totalArtisanPayout > 0 ? totalArtisanPayout.toLocaleString('en-IN') : '1,84,500'}</span>
-            <span className="metric-box__sub">Verified authentic living craft</span>
-          </div>
+      {saveError && (
+        <div className="a-form-error" role="alert">
+          <span aria-hidden="true">⚠️</span> {saveError}
+          <button type="button" style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer" }} onClick={() => setSaveError("")}>✕</button>
         </div>
-      </section>
+      )}
 
-      {/* Main Tab Navigation */}
-      <section className="dashboard-content">
-        <div className="dashboard-content__inner">
-          <div className="dashboard-tabs" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'pieces'}
-              className={`dash-tab ${activeTab === 'pieces' ? 'active' : ''}`}
-              onClick={() => setActiveTab('pieces')}
-            >
-              My Craft Pieces ({displayPieces.length})
-            </button>
+      {ordersLoading ? (
+        <div className="a-loading-row" aria-live="polite">
+          <div className="a-loading-spinner" aria-hidden="true" />
+          {t("artisan.loading_orders", "Loading your orders…")}
+        </div>
+      ) : artisanOrders.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "3rem 1rem", color: "var(--a-muted)" }}>
+          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📭</div>
+          <h2 style={{ fontSize: "1.25rem", marginBottom: "0.5rem" }}>{t("artisan.no_orders", "No orders yet")}</h2>
+          <p style={{ fontSize: "1rem" }}>{t("artisan.no_orders_hint", "When a buyer places an order, it will appear here.")}</p>
+        </div>
+      ) : (
+        <div className="a-orders-list" aria-label={t("artisan.orders_list", "Orders list")}>
+          {artisanOrders.map(ord => {
+            const isBusy = orderActionLoading === ord.id;
+            const firstItem = ord.items?.[0];
+            const buyerName = (ord as any).buyer_name || t("artisan.buyer", "Buyer");
 
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'inquiries'}
-              className={`dash-tab ${activeTab === 'inquiries' ? 'active' : ''}`}
-              onClick={() => setActiveTab('inquiries')}
-            >
-              Buyer Orders & Dispatch ({artisanOrders.length})
-            </button>
-
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'profile'}
-              className={`dash-tab ${activeTab === 'profile' ? 'active' : ''}`}
-              onClick={() => setActiveTab('profile')}
-            >
-              Atelier Lineage Profile
-            </button>
-          </div>
-
-          {/* TAB 1: MY CRAFT PIECES */}
-          {activeTab === 'pieces' && (
-            <div className="dashboard-tab-panel">
-              <div className="panel-toolbar">
-                <span className="panel-info">
-                  Live inventory synchronized across Curatorial Exhibition, Catalogue, and Storefront.
-                </span>
-                <button
-                  type="button"
-                  className="reset-inventory-btn"
-                  onClick={() => {
-                    if (window.confirm('Reset catalogue back to initial curated heritage masterworks?')) {
-                      resetToDefaults();
-                    }
-                  }}
-                >
-                  Reset Defaults
-                </button>
-              </div>
-
-              {loadingListings ? (
-                <div className="empty-panel">
-                  <p>Synchronizing your listed craft pieces with the archive...</p>
-                </div>
-              ) : displayPieces.length === 0 ? (
-                <div className="empty-panel">
-                  <h3>No craft pieces listed yet</h3>
-                  <p>Publish your first handcrafted masterpiece using our AI listing assistant and fair pricing calculator.</p>
-                  <Link to="/dashboard/create" className="dash-btn dash-btn--primary">
-                    Create Your First Piece
-                  </Link>
-                </div>
-              ) : (
-                <div className="pieces-list">
-                  {displayPieces.map((item) => (
-                    <article key={item.id} className="piece-row">
-                      <div className="piece-row__media">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="piece-thumb"
-                          onError={(e) => handleImageError(e, getFallbackForCraft(item.craftTradition || item.category))}
-                        />
-                      </div>
-
-                      <div className="piece-row__info">
-                        <div className="piece-meta">
-                          <span className="p-accession">{item.accessionNo}</span>
-                          <span className="p-tradition">{item.craftTradition}</span>
-                          <span className="p-region">{item.region}</span>
-                        </div>
-                        <h3 className="piece-title">
-                          <Link to={`/shop/${item.id}`}>{item.title}</Link>
-                        </h3>
-                        {item.vernacularTitle && (
-                          <span className="piece-vernacular">{item.vernacularTitle}</span>
-                        )}
-                        <p className="piece-materials">
-                          Materials: {item.materials?.slice(0, 3).join(', ')}
-                        </p>
-                      </div>
-
-                      <div className="piece-row__financials">
-                        <span className="piece-price">₹{item.price.toLocaleString('en-IN')}</span>
-                        <span className="piece-payout-rate">
-                          Listed (Client price: ₹{Math.round(item.price * 1.05).toLocaleString('en-IN')})
-                        </span>
-                        <span className="piece-stock">Stock: {item.availability || 'Available'}</span>
-                      </div>
-
-                      <div className="piece-row__actions">
-                        <Link
-                          to={`/shop/${item.id}`}
-                          className="action-link action-link--view"
-                          title="View public storyboard"
-                        >
-                          Story →
-                        </Link>
-
-                        <Link
-                          to={`/dashboard/edit/${item.id}`}
-                          className="action-link action-link--edit"
-                          title="Edit piece"
-                        >
-                          Edit
-                        </Link>
-
-                        <button
-                          type="button"
-                          className="action-link"
-                          style={{ background: '#FAF6EE', border: '1px solid #D6C4A6', color: '#5C4C3B' }}
-                          onClick={() => setTagModalCraft(item)}
-                          title="Generate scannable provenance QR code & print physical hang tag"
-                        >
-                          {t('dashboard.print_tag')}
-                        </button>
-
-                        {deleteConfirmId === item.id ? (
-                          <div className="delete-confirm-box">
-                            <span>Confirm?</span>
-                            <button
-                              type="button"
-                              className="confirm-del-btn"
-                              onClick={() => handleDelete(item.id)}
-                            >
-                              Yes
-                            </button>
-                            <button
-                              type="button"
-                              className="cancel-del-btn"
-                              onClick={() => setDeleteConfirmId(null)}
-                            >
-                              No
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            className="action-link action-link--del"
-                            onClick={() => setDeleteConfirmId(item.id)}
-                          >
-                            Remove
-                          </button>
-                        )}
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 2: BUYER ORDERS & STATUS TRANSITIONS */}
-          {activeTab === 'inquiries' && (
-            <div className="dashboard-tab-panel">
-              <div className="panel-toolbar">
-                <span className="panel-info">
-                  Live buyer orders from the storefront. Confirm and dispatch orders to update collector tracking.
-                </span>
-                <button
-                  type="button"
-                  className="reset-inventory-btn"
-                  onClick={fetchDashboardData}
-                >
-                  ↻ Refresh Orders
-                </button>
-              </div>
-
-              {ordersLoading ? (
-                <div className="empty-panel">
-                  <p>Loading atelier order ledger...</p>
-                </div>
-              ) : artisanOrders.length === 0 ? (
-                <div className="empty-panel">
-                  <h3>No incoming orders yet</h3>
-                  <p>When buyers acquire pieces through the storefront or digital gallery, their orders will appear here for dispatch.</p>
-                </div>
-              ) : (
-                <div className="orders-table-wrap">
-                  <table className="orders-table">
-                    <thead>
-                      <tr>
-                        <th>Order ID</th>
-                        <th>Pieces Ordered</th>
-                        <th>Total Value</th>
-                        <th>Artisan Disbursement</th>
-                        <th>Current State</th>
-                        <th>Workflow Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {artisanOrders.map((ord) => {
-                        const payout = Math.round(ord.total_inr * 0.88);
-                        const isActionBusy = orderActionLoading === ord.id;
-                        return (
-                          <tr key={ord.id}>
-                            <td>
-                              <code>{ord.id.slice(0, 10).toUpperCase()}</code>
-                              <br />
-                              <small style={{ color: '#888' }}>
-                                {new Date(ord.created_at).toLocaleDateString('en-IN')}
-                              </small>
-                            </td>
-                            <td>
-                              {ord.items && ord.items.length > 0 ? (
-                                ord.items.map((it) => (
-                                  <div key={it.id}>
-                                    <strong>{it.listing_title || `Listing #${it.listing_id.slice(0, 6)}`}</strong> × {it.qty}
-                                  </div>
-                                ))
-                              ) : (
-                                <span>Masterwork piece</span>
-                              )}
-                            </td>
-                            <td>₹{ord.total_inr.toLocaleString('en-IN')}</td>
-                            <td>
-                              <strong className="text-green">₹{payout.toLocaleString('en-IN')}</strong>
-                            </td>
-                            <td>
-                              <span className={`status-badge status-badge--${ord.status.toLowerCase()}`}>
-                                {ord.status}
-                              </span>
-                            </td>
-                            <td>
-                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                {ord.status === 'PLACED' && (
-                                  <button
-                                    type="button"
-                                    disabled={isActionBusy}
-                                    className="dash-btn dash-btn--primary"
-                                    style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                                    onClick={() => handleStatusTransition(ord.id, 'CONFIRMED')}
-                                  >
-                                    {isActionBusy ? 'Updating...' : '✓ Confirm'}
-                                  </button>
-                                )}
-                                {ord.status === 'CONFIRMED' && (
-                                  <button
-                                    type="button"
-                                    disabled={isActionBusy}
-                                    className="dash-btn dash-btn--primary"
-                                    style={{ padding: '6px 12px', fontSize: '0.8rem', backgroundColor: '#2E8B57' }}
-                                    onClick={() => handleStatusTransition(ord.id, 'SHIPPED')}
-                                  >
-                                    {isActionBusy ? 'Updating...' : '📦 Mark Shipped'}
-                                  </button>
-                                )}
-                                {ord.status === 'SHIPPED' && (
-                                  <button
-                                    type="button"
-                                    disabled={isActionBusy}
-                                    className="dash-btn dash-btn--secondary"
-                                    style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                                    onClick={() => handleStatusTransition(ord.id, 'DELIVERED')}
-                                  >
-                                    {isActionBusy ? 'Updating...' : '★ Mark Delivered'}
-                                  </button>
-                                )}
-                                {ord.status === 'DELIVERED' && (
-                                  <span style={{ color: '#2E8B57', fontSize: '0.85rem' }}>✓ Completed</span>
-                                )}
-                                {ord.status !== 'DELIVERED' && ord.status !== 'CANCELLED' && (
-                                  <button
-                                    type="button"
-                                    disabled={isActionBusy}
-                                    className="action-link action-link--del"
-                                    style={{ fontSize: '0.8rem', marginLeft: '6px' }}
-                                    onClick={() => {
-                                      if (window.confirm('Cancel this order and restore stock?')) {
-                                        handleStatusTransition(ord.id, 'CANCELLED');
-                                      }
-                                    }}
-                                  >
-                                    Cancel
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 3: ATELIER PROFILE */}
-          {activeTab === 'profile' && (
-            <div className="dashboard-tab-panel">
-              <form onSubmit={handleProfileSave} className="atelier-profile-form">
-                <div className="form-grid-2">
-                  <div className="form-group">
-                    <label htmlFor="p-name">Master Artisan Name</label>
-                    <input
-                      id="p-name"
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="form-input"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="p-atelier">Atelier / Guild Kendra</label>
-                    <input
-                      id="p-atelier"
-                      type="text"
-                      value={atelier}
-                      onChange={(e) => setAtelier(e.target.value)}
-                      className="form-input"
-                    />
+            return (
+              <article key={ord.id} className="a-order-card">
+                <div className="a-order-card__header">
+                  <div className="a-order-card__photo-placeholder" aria-hidden="true">🧵</div>
+                  <div className="a-order-card__info">
+                    <div className="a-order-card__buyer">{buyerName.split(" ")[0]}</div>
+                    <div className="a-order-card__item">
+                      {firstItem?.listing_title || t("artisan.handcraft_piece", "Handcraft piece")}
+                    </div>
+                    <StatusBadge status={ord.status} />
                   </div>
                 </div>
 
-                <div className="form-grid-2">
-                  <div className="form-group">
-                    <label htmlFor="p-specialization">Craft Specialization (e.g. Kasuti, Beedu, Seashell)</label>
-                    <input
-                      id="p-specialization"
-                      type="text"
-                      value={specialization}
-                      onChange={(e) => setSpecialization(e.target.value)}
-                      className="form-input"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="p-region">Village / Coastal District</label>
-                    <input
-                      id="p-region"
-                      type="text"
-                      value={region}
-                      onChange={(e) => setRegion(e.target.value)}
-                      className="form-input"
-                    />
-                  </div>
+                <div style={{ fontSize: "1rem", color: "var(--a-muted)", marginBottom: "0.75rem" }}>
+                  {t("artisan.order_value", "Order value:")} <strong>₹{ord.total_inr.toLocaleString("en-IN")}</strong>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="p-bio">Ancestral Lineage & Practice Biography</label>
-                  <textarea
-                    id="p-bio"
-                    rows={4}
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    className="form-textarea"
-                  />
-                </div>
-
-                {saveError && <div className="form-error-banner">{saveError}</div>}
-                {savedNotice && (
-                  <div className="form-success-banner">
-                    ✓ Atelier profile details updated and saved to backend ledger.
+                {/* ONE next-step action button */}
+                {confirmingOrder?.id === ord.id ? (
+                  <div className="a-order-card__confirm-overlay" role="alertdialog" aria-modal="true">
+                    <div className="a-order-card__confirm-q">{confirmingOrder.next === "CANCELLED"
+                      ? t("artisan.confirm_cancel", "Cancel this order?")
+                      : t("artisan.confirm_status", "Mark as {{status}}?", { status: confirmingOrder.next === "CONFIRMED" ? t("artisan.packed", "Packed") : t("artisan.shipped", "Shipped") })}
+                    </div>
+                    <div className="a-order-card__confirm-btns">
+                      <BigButton variant="success" onClick={() => handleStatusTransition(ord.id, confirmingOrder.next)} disabled={isBusy}>
+                        {isBusy ? "…" : t("artisan.yes_confirm", "Yes")}
+                      </BigButton>
+                      <BigButton variant="secondary" onClick={() => setConfirmingOrder(null)}>
+                        {t("artisan.no_cancel", "No, go back")}
+                      </BigButton>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="a-order-card__action">
+                    {ord.status === "PLACED" && (
+                      <BigButton
+                        variant="primary"
+                        icon="📦"
+                        onClick={() => setConfirmingOrder({ id: ord.id, next: "CONFIRMED" })}
+                        id={`mark-packed-${ord.id}`}
+                      >
+                        {t("artisan.mark_packed", "Mark as packed")}
+                      </BigButton>
+                    )}
+                    {ord.status === "CONFIRMED" && (
+                      <BigButton
+                        variant="success"
+                        icon="🚚"
+                        onClick={() => setConfirmingOrder({ id: ord.id, next: "SHIPPED" })}
+                        id={`mark-shipped-${ord.id}`}
+                      >
+                        {t("artisan.mark_shipped", "Mark as shipped")}
+                      </BigButton>
+                    )}
+                    {ord.status === "SHIPPED" && (
+                      <BigButton
+                        variant="secondary"
+                        icon="✅"
+                        onClick={() => setConfirmingOrder({ id: ord.id, next: "DELIVERED" })}
+                      >
+                        {t("artisan.mark_delivered", "Mark as delivered")}
+                      </BigButton>
+                    )}
+                    {ord.status === "DELIVERED" && (
+                      <div className="a-form-success" style={{ marginBottom: 0 }}>
+                        ✅ {t("artisan.order_complete", "Order complete. Payment sent to your account.")}
+                      </div>
+                    )}
+                    {ord.status !== "DELIVERED" && ord.status !== "CANCELLED" && (
+                      <button
+                        type="button"
+                        className="a-order-card__undo"
+                        onClick={() => setConfirmingOrder({ id: ord.id, next: "CANCELLED" })}
+                        aria-label={t("artisan.cancel_order", "Cancel this order")}
+                      >
+                        {t("artisan.cancel_order", "Cancel this order")}
+                      </button>
+                    )}
                   </div>
                 )}
-
-                <button type="submit" className="dash-btn dash-btn--primary">
-                  Save Atelier Profile
-                </button>
-              </form>
-            </div>
-          )}
+              </article>
+            );
+          })}
         </div>
-      </section>
+      )}
+    </div>
+  );
 
-      {/* Scannable Provenance & Printable Hang Tag Modal */}
+  // ---- SCREEN: MY PIECES ----
+  const PiecesScreen = () => (
+    <div className="a-pieces-section">
+      <PageHeader backTo="" backLabel={t("common.back", "Back")} title={t("artisan.my_pieces", "My products")} />
+      <div style={{ padding: "0 0 1rem" }}>
+        <BigButton to="/dashboard/create" variant="primary" icon="➕">
+          {t("artisan.add_product", "Add a new product")}
+        </BigButton>
+      </div>
+
+      {loadingListings ? (
+        <div className="a-loading-row" aria-live="polite">
+          <div className="a-loading-spinner" aria-hidden="true" />
+          {t("artisan.loading_pieces", "Loading your products…")}
+        </div>
+      ) : displayPieces.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "3rem 1rem", color: "var(--a-muted)" }}>
+          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🧵</div>
+          <h2 style={{ fontSize: "1.25rem", marginBottom: "0.5rem" }}>{t("artisan.no_pieces", "No products yet")}</h2>
+          <p style={{ fontSize: "1rem" }}>{t("artisan.no_pieces_hint", "Add your first product and it will appear in the gallery for buyers to see.")}</p>
+        </div>
+      ) : (
+        <div aria-label={t("artisan.pieces_list", "Products list")}>
+          {displayPieces.map(item => (
+            <article key={item.id} className="a-piece-card">
+              <img
+                src={item.image}
+                alt={item.title}
+                className="a-piece-card__photo"
+                loading="lazy"
+                onError={e => handleImageError(e, getFallbackForCraft(item.craftTradition || item.category))}
+              />
+              <div className="a-piece-card__info">
+                <div className="a-piece-card__title">{item.title}</div>
+                <div className="a-piece-card__price">₹{item.price.toLocaleString("en-IN")}</div>
+                <div className="a-piece-card__actions">
+                  <BigButton to={`/dashboard/edit/${item.id}`} variant="secondary" small>
+                    {t("artisan.edit", "Edit")}
+                  </BigButton>
+                  <BigButton variant="ghost" small onClick={() => setTagModalCraft(item)}>
+                    🏷 {t("dashboard.print_tag", "Print tag")}
+                  </BigButton>
+                  {deleteConfirmId === item.id ? (
+                    <>
+                      <BigButton variant="danger" small onClick={() => handleDelete(item.id)}>
+                        {t("artisan.yes_delete", "Yes, remove")}
+                      </BigButton>
+                      <BigButton variant="secondary" small onClick={() => setDeleteConfirmId(null)}>
+                        {t("artisan.no_cancel", "No, keep")}
+                      </BigButton>
+                    </>
+                  ) : (
+                    <BigButton variant="danger" small onClick={() => setDeleteConfirmId(item.id)} ariaLabel={`${t("artisan.remove", "Remove")} ${item.title}`}>
+                      {t("artisan.remove", "Remove")}
+                    </BigButton>
+                  )}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  // ---- SCREEN: PROFILE ----
+  const ProfileScreen = () => (
+    <div className="a-pieces-section">
+      <PageHeader backTo="" backLabel={t("common.back", "Back")} title={t("artisan.my_profile", "My profile")} />
+      <form onSubmit={handleProfileSave}>
+        <div className="a-form-group">
+          <label className="a-form-label" htmlFor="p-name">{t("artisan.your_name", "Your name")}</label>
+          <input id="p-name" type="text" className="a-form-input" value={name} onChange={e => setName(e.target.value)} />
+        </div>
+        <div className="a-form-group">
+          <label className="a-form-label" htmlFor="p-region">{t("artisan.your_village", "Your village or district")}</label>
+          <input id="p-region" type="text" className="a-form-input" value={region} onChange={e => setRegion(e.target.value)} />
+        </div>
+        <div className="a-form-group">
+          <label className="a-form-label" htmlFor="p-bio">{t("artisan.about_you", "Tell buyers about yourself and your craft")}</label>
+          <textarea id="p-bio" className="a-form-input" rows={4} value={bio} onChange={e => setBio(e.target.value)} style={{ resize: "vertical" }} />
+        </div>
+        {saveError && <div className="a-form-error" role="alert"><span>⚠️</span> {saveError}</div>}
+        {savedNotice && <div className="a-form-success">✅ {t("artisan.profile_saved", "Profile saved!")}</div>}
+        <BigButton type="submit" variant="primary">
+          {t("artisan.save_profile", "Save my profile")}
+        </BigButton>
+        <div style={{ marginTop: "1rem" }}>
+          <BigButton variant="danger" onClick={() => { logout(); navigate("/"); }}>
+            {t("nav.logout", "Sign out")}
+          </BigButton>
+        </div>
+      </form>
+    </div>
+  );
+
+  return (
+    <div className="artisan-screen" role="main" aria-label={t("artisan.dashboard_title", "Artisan dashboard")}>
+      <OfflineBanner />
+
+      {/* Accessible language bar at top of artisan screens */}
+      <div className="a-lang-bar" style={{ display: 'flex', justifyContent: 'flex-end', padding: '0.5rem 1rem', gap: '0.5rem' }}>
+        <button
+          type="button"
+          onClick={() => setShowLangSplash(true)}
+          style={{
+            background: 'var(--a-card-bg, #fff)',
+            border: '2px solid var(--a-border, #d1c7bd)',
+            borderRadius: '999px',
+            padding: '0.4rem 0.8rem',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem'
+          }}
+          aria-label={t("artisan.change_language", "Change language / ಭಾಷೆ ಬದಲಿಸಿ / भाषा बदलें")}
+        >
+          <span>🌐</span>
+          <span>{i18n.language === 'kn' ? 'ಕನ್ನಡ' : i18n.language === 'hi' ? 'हिंदी' : 'English'}</span>
+        </button>
+      </div>
+
+      {showLangSplash && <LangSplash onDone={() => setShowLangSplash(false)} />}
+
+      {view === "home" && <HomeScreen />}
+      {view === "orders" && <OrdersScreen />}
+      {view === "pieces" && <PiecesScreen />}
+      {view === "profile" && <ProfileScreen />}
+
+      <HelpButton
+        screenText={view === "home"
+          ? t("artisan.help_home", "This is your home screen. You can add a new product, check orders, and see how much you have earned this month.")
+          : view === "orders"
+          ? t("artisan.help_orders", "These are the orders from buyers. Tap the button on each card to update the status.")
+          : view === "pieces"
+          ? t("artisan.help_pieces", "These are your listed products. Tap Edit to change a product, or Add to add a new one.")
+          : t("artisan.help_profile", "Update your name and information so buyers can learn about you.")}
+      />
+      <BottomNav />
+
       {tagModalCraft && (
         <ProvenanceTagModal
           craft={tagModalCraft}
@@ -611,6 +490,6 @@ export default function Dashboard() {
           onClose={() => setTagModalCraft(null)}
         />
       )}
-    </main>
+    </div>
   );
 }
