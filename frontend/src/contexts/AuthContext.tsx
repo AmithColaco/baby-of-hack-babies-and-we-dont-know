@@ -1,4 +1,4 @@
-// KalaHaat – Auth Context: real backend JWT + mock OTP with role support
+// KAARIGAR – Auth Context: JWT + email/phone OTP with role-based routing
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import * as authApi from '../api/auth';
 import type { ProfileResponse, UpdateProfileInput } from '../api/auth';
@@ -9,7 +9,7 @@ export interface KaargarUser {
   id: string;
   name: string;
   email?: string;
-  phone: string;
+  phone?: string;
   role: 'artisan' | 'collector';
   backendRole: string;
   language?: string;
@@ -35,8 +35,8 @@ interface AuthContextType {
   isArtisan: boolean;
   isCollector: boolean;
   isLoading: boolean;
-  requestOtp: (phone: string) => Promise<{ message: string; phone: string }>;
-  loginWithOtp: (phone: string, otp: string) => Promise<KaargarUser>;
+  requestOtp: (contact: string, type?: 'phone' | 'email') => Promise<{ message: string }>;
+  loginWithOtp: (contact: string, otp: string, type?: 'phone' | 'email', role?: string) => Promise<KaargarUser>;
   logout: () => void;
   updateUser: (updates: Partial<KaargarUser>) => Promise<void>;
   updateProfileOnBackend: (updates: UpdateProfileInput) => Promise<ProfileResponse>;
@@ -52,17 +52,20 @@ function transformBackendProfile(profile: ProfileResponse): KaargarUser {
   const isArtisan = profile.user.role === 'artisan' || profile.user.role === 'facilitator';
   return {
     id: profile.user.id,
-    name: profile.user.name || (isArtisan ? 'Master Artisan' : 'Patron Collector'),
-    phone: profile.user.phone,
+    name: profile.user.name || (isArtisan ? 'Master Artisan' : 'Patron'),
+    phone: profile.user.phone ?? undefined,
+    email: profile.user.email ?? undefined,
     role: isArtisan ? 'artisan' : 'collector',
     backendRole: profile.user.role,
     language: profile.user.language,
-    atelier: profile.artisan_profile?.village ? `${profile.artisan_profile.village} Guild Atelier` : 'Coastal Artisan Atelier',
-    craftSpecialization: profile.artisan_profile?.craft_types || 'Traditional Coastal Crafts',
-    region: profile.artisan_profile?.village || 'Coastal Karnataka',
+    atelier: profile.artisan_profile?.village
+      ? `${profile.artisan_profile.village} Guild Atelier`
+      : undefined,
+    craftSpecialization: profile.artisan_profile?.craft_types || undefined,
+    region: profile.artisan_profile?.village || undefined,
     state: 'Karnataka',
     bio: profile.artisan_profile?.bio || '',
-    yearsExperience: profile.artisan_profile?.years_practising || 10,
+    yearsExperience: profile.artisan_profile?.years_practising || undefined,
     avatarUrl: profile.artisan_profile?.avatar_url || '',
     verified: profile.artisan_profile?.verified || false,
     rawProfile: profile,
@@ -81,7 +84,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Sync token to localStorage and refresh profile on mount
   useEffect(() => {
     let mounted = true;
     const initAuth = async () => {
@@ -123,17 +125,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const requestOtp = async (phone: string) => {
-    return await authApi.requestOtp(phone);
+  const requestOtp = async (contact: string, type?: 'phone' | 'email') => {
+    const resolvedType = type || (contact.includes('@') ? 'email' : 'phone');
+    return await authApi.requestOtp(contact, resolvedType);
   };
 
-  const loginWithOtp = async (phone: string, otp: string): Promise<KaargarUser> => {
-    const tokenRes = await authApi.verifyOtp(phone, otp);
+  const loginWithOtp = async (
+    contact: string,
+    otp: string,
+    type?: 'phone' | 'email',
+    role?: string
+  ): Promise<KaargarUser> => {
+    const resolvedType = type || (contact.includes('@') ? 'email' : 'phone');
+    const tokenRes = await authApi.verifyOtp(contact, otp, resolvedType, role);
     const newToken = tokenRes.access_token;
     localStorage.setItem(TOKEN_KEY, newToken);
     setToken(newToken);
 
-    // Fetch user profile from backend
     const profile = await authApi.getMe();
     const transformed = transformBackendProfile(profile);
     setUser(transformed);

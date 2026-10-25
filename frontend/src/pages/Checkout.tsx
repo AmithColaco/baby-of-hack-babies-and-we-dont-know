@@ -31,8 +31,8 @@ export default function Checkout() {
   const [checkoutError, setCheckoutError] = useState('');
 
   // Inline login state when unauthenticated
-  const [loginPhone, setLoginPhone] = useState('+91 98201 55432');
-  const [loginOtp, setLoginOtp] = useState('123456');
+  const [loginPhone, setLoginPhone] = useState('');
+  const [loginOtp, setLoginOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
@@ -64,11 +64,10 @@ export default function Checkout() {
     setAuthLoading(true);
     const fullPhone = `+91${digits.slice(-10)}`;
     try {
-      await requestOtp(fullPhone);
+      await requestOtp(fullPhone, 'phone');
       setOtpSent(true);
     } catch (err: any) {
-      setAuthError(err.response?.data?.detail || 'Failed to dispatch OTP. Proceed with demo OTP: 123456');
-      setOtpSent(true);
+      setAuthError(err.response?.data?.detail || 'Failed to dispatch verification code. Please try again.');
     } finally {
       setAuthLoading(false);
     }
@@ -81,9 +80,9 @@ export default function Checkout() {
     setAuthError('');
     setAuthLoading(true);
     try {
-      await loginWithOtp(fullPhone, loginOtp.trim() || '123456');
+      await loginWithOtp(fullPhone, loginOtp.trim(), 'phone');
     } catch (err: any) {
-      setAuthError(err.response?.data?.detail || 'Invalid verification code. Demo code is 123456');
+      setAuthError(err.response?.data?.detail || 'Invalid verification code. Please check and try again.');
     } finally {
       setAuthLoading(false);
     }
@@ -228,7 +227,7 @@ export default function Checkout() {
                         </div>
                       </div>
                       <span className="auth-hint-text" style={{ fontSize: '0.78rem', color: 'var(--stone)' }}>
-                        A one-time SMS verification code will be sent. Demo code: <strong>123456</strong>
+                        A one-time verification code will be sent to your phone.
                       </span>
                     </div>
                   ) : (
@@ -252,7 +251,7 @@ export default function Checkout() {
                             maxLength={6}
                             value={loginOtp}
                             onChange={(e) => setLoginOtp(e.target.value)}
-                            placeholder="123456"
+                            placeholder="••••••"
                             className="form-input"
                             style={{ flex: 1, letterSpacing: '0.2em', fontWeight: 600 }}
                           />

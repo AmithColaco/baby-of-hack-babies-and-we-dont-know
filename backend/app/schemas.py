@@ -11,12 +11,15 @@ from pydantic import BaseModel, Field
 # ──────────────────────────── Auth ───────────────────────────────
 
 class OTPRequest(BaseModel):
-    phone: str = Field(..., min_length=10, max_length=15, examples=["+919876543210"])
+    phone: Optional[str] = Field(None, min_length=10, max_length=15, examples=["+919876543210"])
+    email: Optional[str] = Field(None, max_length=255, examples=["artisan@example.com"])
 
 
 class OTPVerify(BaseModel):
-    phone: str = Field(..., min_length=10, max_length=15)
+    phone: Optional[str] = Field(None, min_length=10, max_length=15)
+    email: Optional[str] = Field(None, max_length=255)
     otp: str = Field(..., min_length=6, max_length=6, examples=["123456"])
+    role: Optional[str] = Field(None, description="artisan | buyer – sets role on first login")
 
 
 class TokenResponse(BaseModel):
@@ -33,7 +36,8 @@ class UserOut(BaseModel):
     id: str
     role: str
     name: str
-    phone: str
+    phone: Optional[str] = None
+    email: Optional[str] = None
     language: str
     created_at: datetime
 
@@ -146,15 +150,15 @@ class ListingOut(BaseModel):
     story: Optional[StoryOut] = None
 
     # Provenance, Voice Clip & Story-backed pricing
-    accession_id: str = ""
-    voice_clip_url: str = ""
-    is_women_shg: bool = False
-    shg_name: str = ""
-    material_cost: float = 0.0
-    skill_rate_per_hour: float = 150.0
-    heritage_premium: float = 0.0
-    machine_lookalike_price: float = 0.0
-    machine_lookalike_notes: str = ""
+    accession_id: Optional[str] = ""
+    voice_clip_url: Optional[str] = ""
+    is_women_shg: Optional[bool] = False
+    shg_name: Optional[str] = ""
+    material_cost: Optional[float] = 0.0
+    skill_rate_per_hour: Optional[float] = 150.0
+    heritage_premium: Optional[float] = 0.0
+    machine_lookalike_price: Optional[float] = 0.0
+    machine_lookalike_notes: Optional[str] = ""
 
     # denormalized artisan info for storefront
     artisan_name: str = ""

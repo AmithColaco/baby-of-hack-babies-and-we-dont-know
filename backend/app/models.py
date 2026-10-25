@@ -8,6 +8,7 @@ Core data models:
 import enum
 import uuid
 from datetime import datetime, timezone
+from typing import Optional
 
 from sqlalchemy import (
     Boolean,
@@ -72,7 +73,8 @@ class User(Base):
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
     role: Mapped[str] = mapped_column(Enum(UserRole), default=UserRole.buyer)
     name: Mapped[str] = mapped_column(String(255), default="")
-    phone: Mapped[str] = mapped_column(String(20), unique=True, index=True)
+    phone: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=True, default=None)
+    email: Mapped[Optional[str]] = mapped_column(String(255), unique=True, index=True, nullable=True, default=None)
     language: Mapped[str] = mapped_column(String(10), default="en")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 

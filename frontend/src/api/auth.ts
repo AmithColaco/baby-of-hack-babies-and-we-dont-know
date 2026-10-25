@@ -2,7 +2,8 @@ import apiClient from './client';
 
 export interface OTPResponse {
   message: string;
-  phone: string;
+  phone?: string;
+  email?: string;
 }
 
 export interface TokenResponse {
@@ -17,7 +18,8 @@ export interface UserRecord {
   id: string;
   role: 'artisan' | 'buyer' | 'facilitator' | 'admin';
   name: string;
-  phone: string;
+  phone?: string | null;
+  email?: string | null;
   language: string;
   created_at: string;
 }
@@ -48,13 +50,28 @@ export interface UpdateProfileInput {
   role?: string;
 }
 
-export async function requestOtp(phone: string): Promise<OTPResponse> {
-  const { data } = await apiClient.post<OTPResponse>('/auth/otp/request', { phone });
+/** Request an OTP. Pass either phone or email (preferably email). */
+export async function requestOtp(
+  contact: string,
+  type: 'phone' | 'email' = 'phone'
+): Promise<OTPResponse> {
+  const payload = type === 'email' ? { email: contact } : { phone: contact };
+  const { data } = await apiClient.post<OTPResponse>('/auth/otp/request', payload);
   return data;
 }
 
-export async function verifyOtp(phone: string, otp: string): Promise<TokenResponse> {
-  const { data } = await apiClient.post<TokenResponse>('/auth/otp/verify', { phone, otp });
+/** Verify OTP. Pass either phone or email, plus otp and optionally role. */
+export async function verifyOtp(
+  contact: string,
+  otp: string,
+  type: 'phone' | 'email' = 'phone',
+  role?: string
+): Promise<TokenResponse> {
+  const payload: Record<string, string> = { otp };
+  if (type === 'email') payload.email = contact;
+  else payload.phone = contact;
+  if (role) payload.role = role;
+  const { data } = await apiClient.post<TokenResponse>('/auth/otp/verify', payload);
   return data;
 }
 

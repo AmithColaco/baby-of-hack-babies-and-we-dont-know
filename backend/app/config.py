@@ -25,6 +25,15 @@ class Settings(BaseSettings):
     # Mock OTP – any 6-digit code accepted; this fixed code always works
     MOCK_OTP_CODE: str = "123456"
 
+    # Gmail SMTP – set these in .env to enable real OTP emails
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""        # your Gmail address, e.g. you@gmail.com
+    SMTP_PASSWORD: str = ""    # Gmail App Password (16-char, not your login password)
+    SMTP_FROM_NAME: str = "KAARIGAR"
+    # Set to "true" to force real email; defaults to mock when SMTP_USER is blank
+    OTP_USE_REAL_EMAIL: bool = False
+
     # Gemini AI – updated to current Google Gemini 2.0 Flash
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-2.0-flash"

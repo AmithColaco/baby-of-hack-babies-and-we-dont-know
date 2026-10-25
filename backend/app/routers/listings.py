@@ -136,11 +136,12 @@ def list_listings(
 
     # Status filtering:
     # If explicitly passed, filter by it (unless 'ALL' or empty)
-    if status_filter and status_filter.upper() != "ALL":
-        query = query.filter(Listing.status == status_filter)
-    elif not status_filter and not artisan_id:
-        # Default public catalogue browse shows PUBLISHED listings only
-        query = query.filter(Listing.status == ListingStatus.PUBLISHED)
+    if isinstance(status_filter, str) and status_filter.upper() != "ALL" and status_filter.strip():
+        query = query.filter(Listing.status == status_filter.upper())
+    elif not status_filter or not isinstance(status_filter, str):
+        if not artisan_id:
+            # Default public catalogue browse shows PUBLISHED listings only
+            query = query.filter(Listing.status == ListingStatus.PUBLISHED)
     # When artisan_id is provided without an explicit status, return all listings for that artisan
     if craft:
         query = query.filter(Listing.craft_type == craft)
