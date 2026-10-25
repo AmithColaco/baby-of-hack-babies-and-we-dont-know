@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useProducts, listingToCraftObject } from "../data/productStore";
 import { useAuth } from "../contexts/AuthContext";
 import { handleImageError, getFallbackForCraft } from "../utils/imageFallback";
@@ -191,7 +190,6 @@ function NavItem({ label, active, onClick, badge }: NavItemProps) {
 
 // ─────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const { t } = useTranslation();
   const { products, deleteProduct } = useProducts();
   const { user, logout } = useAuth();
   const navigate = useNavigate();

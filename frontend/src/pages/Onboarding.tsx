@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 
 type Mode = 'choose' | 'artisan' | 'buyer';
@@ -10,7 +9,6 @@ const RESEND_COOLDOWN = 30;
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
   const { loginWithOtp, requestOtp } = useAuth();
 
   const [mode, setMode] = useState<Mode>('choose');

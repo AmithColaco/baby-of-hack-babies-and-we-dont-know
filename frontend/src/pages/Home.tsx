@@ -47,7 +47,7 @@ export default function Home() {
                 {t('home.impact_artisans')}
               </strong>
               <span style={{ fontSize: '0.78rem', color: '#7A6B59', marginTop: '4px', display: 'block' }}>
-                6 GI clusters across Karnataka, MP, Bastar & Rajasthan
+                {t('home.impact_clusters_note', '6 GI clusters across Karnataka, MP, Bastar & Rajasthan')}
               </span>
             </div>
 
@@ -59,7 +59,7 @@ export default function Home() {
                 {t('home.impact_disbursed')}
               </strong>
               <span style={{ fontSize: '0.78rem', color: '#7A6B59', marginTop: '4px', display: 'block' }}>
-                92% paid straight to artisan accounts via UPI escrow
+                {t('home.impact_escrow_note', '92% paid straight to artisan accounts via UPI escrow')}
               </span>
             </div>
 
@@ -71,7 +71,7 @@ export default function Home() {
                 {t('home.impact_uplift')}
               </strong>
               <span style={{ fontSize: '0.78rem', color: '#7A6B59', marginTop: '4px', display: 'block' }}>
-                Compared to conventional wholesale trader procurement
+                {t('home.impact_trader_note', 'Compared to conventional wholesale trader procurement')}
               </span>
             </div>
 
