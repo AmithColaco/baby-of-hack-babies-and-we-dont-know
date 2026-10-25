@@ -200,6 +200,16 @@ export default function Catalogue() {
                 <span className="util-badge">{wishlist.length}</span>
               </button>
 
+              {/* Curatorial Archive View */}
+              <Link
+                to="/archive"
+                className="shop-util-btn"
+                title="Explore interactive Curatorial Archive Dossier"
+                style={{ textDecoration: 'none' }}
+              >
+                <span>✦ Archive Dossier</span>
+              </Link>
+
               {/* Sort Dropdown */}
               <div className="shop-sort-wrap">
                 <label htmlFor="shop-sort-select" className="sort-label">Sort:</label>

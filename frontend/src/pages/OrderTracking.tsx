@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getOrderById, type OrderRecord } from '../api/orders';
 
 export default function OrderTracking() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [backendOrder, setBackendOrder] = useState<OrderRecord | null>(null);
 
@@ -81,11 +83,43 @@ export default function OrderTracking() {
         {/* Top Success Badge */}
         <div className="order-success-header">
           <div className="success-icon-badge">✓</div>
-          <span className="order-eyebrow">ACQUISITION INSCRIBED IN LIVING ARCHIVE</span>
+          <span className="order-eyebrow">{t('tracking.title')}</span>
           <h1 className="order-title">
-            Order Status: {currentStatus} · {orderId.slice(0, 12).toUpperCase()}
+            {t('tracking.order_id')}: {orderId.slice(0, 12).toUpperCase()} ({currentStatus})
           </h1>
           <p className="order-date-line">Placed on {orderDate} · Insured White-Glove Archival Transit</p>
+        </div>
+
+        {/* Logistics & Tracking Stub */}
+        <div style={{
+          background: '#FAF6EE',
+          border: '1px solid #D6C4A6',
+          borderRadius: '8px',
+          padding: '12px 18px',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          fontSize: '0.85rem'
+        }}>
+          <div>
+            <span style={{ color: '#8C7A66', textTransform: 'uppercase', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em' }}>Carrier & Logistics</span>
+            <div style={{ fontWeight: 600, color: '#1C160E' }}>
+              {localOrder?.courier || (backendOrder as any)?.courier || 'BlueDart Express Air'}
+            </div>
+          </div>
+          <div>
+            <span style={{ color: '#8C7A66', textTransform: 'uppercase', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em' }}>Tracking Identifier</span>
+            <div style={{ fontFamily: 'monospace', fontWeight: 700, color: '#8C2D19' }}>
+              {localOrder?.trackingNumber || (backendOrder as any)?.tracking_number || 'BD-849201-IN'}
+            </div>
+          </div>
+          <div>
+            <span style={{ color: '#8C7A66', textTransform: 'uppercase', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em' }}>Transit Assurance</span>
+            <div style={{ color: '#2E6B38', fontWeight: 600 }}>100% Insured Archival Crate</div>
+          </div>
         </div>
 
         {/* Milestone Tracker Timeline */}
@@ -130,6 +164,97 @@ export default function OrderTracking() {
                 </span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Made-to-Order Process Timeline Updates (Photo Journal) */}
+        <div style={{
+          background: '#FDFBF7',
+          border: '1px solid #E5D8C4',
+          borderRadius: '10px',
+          padding: '1.5rem',
+          marginBottom: '2rem'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #EDE2CE', paddingBottom: '0.75rem' }}>
+            <div>
+              <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#8A2D19', fontWeight: 700 }}>
+                ✦ Live Made-to-Order Crafting Journal
+              </span>
+              <h3 style={{ margin: '4px 0 0 0', fontSize: '1.15rem', fontFamily: 'serif', color: '#1C160E' }}>
+                Artisan Process Milestones & Living Progress
+              </h3>
+            </div>
+            <span style={{ fontSize: '0.75rem', color: '#7A6B59', background: '#F2ECE1', padding: '3px 10px', borderRadius: '4px' }}>
+              Direct from Master Atelier
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+            {((backendOrder as any)?.timeline_updates && (backendOrder as any).timeline_updates.length > 0) ? (
+              (backendOrder as any).timeline_updates.map((update: any, idx: number) => (
+                <div key={idx} style={{ background: '#fff', border: '1px solid #E2D5C3', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  {update.photo_url && (
+                    <img src={update.photo_url} alt={update.stage_name} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                  )}
+                  <div style={{ padding: '0.85rem' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#8A2D19', textTransform: 'uppercase' }}>
+                      Milestone {idx + 1}
+                    </div>
+                    <h4 style={{ margin: '3px 0 6px 0', fontSize: '0.9rem', color: '#1C160E' }}>{update.stage_name}</h4>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#5A4C3D', lineHeight: 1.4 }}>{update.description}</p>
+                    <span style={{ display: 'block', marginTop: '6px', fontSize: '0.7rem', color: '#9C8B76' }}>
+                      {new Date(update.created_at || Date.now()).toLocaleDateString('en-IN')}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <>
+                <div style={{ background: '#fff', border: '1px solid #E2D5C3', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <img src="/images/textile.jpg" alt="Warp Thread Sizing" style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                  <div style={{ padding: '0.85rem' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#8A2D19', textTransform: 'uppercase' }}>
+                      Stage 01 · Completed
+                    </div>
+                    <h4 style={{ margin: '3px 0 6px 0', fontSize: '0.9rem', color: '#1C160E' }}>Warp Thread Counting & Sizing</h4>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#5A4C3D', lineHeight: 1.4 }}>
+                      Ilkal pure cotton-silk ground thread warp aligned by eye without chalk tracing under morning daylight.
+                    </p>
+                    <span style={{ display: 'block', marginTop: '6px', fontSize: '0.7rem', color: '#9C8B76' }}>Day 2 of Crafting</span>
+                  </div>
+                </div>
+
+                <div style={{ background: '#fff', border: '1px solid #E2D5C3', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <img src="/images/kasuti.jpg" alt="Gopura Needlework" style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                  <div style={{ padding: '0.85rem' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#2E6B38', textTransform: 'uppercase' }}>
+                      Stage 02 · In Progress (70%)
+                    </div>
+                    <h4 style={{ margin: '3px 0 6px 0', fontSize: '0.9rem', color: '#1C160E' }}>Knotless Gavanti Gopura Stitches</h4>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#5A4C3D', lineHeight: 1.4 }}>
+                      Double-running embroidery executed with single needle. Zero knots on reverse face verified by Mahila Sangha.
+                    </p>
+                    <span style={{ display: 'block', marginTop: '6px', fontSize: '0.7rem', color: '#9C8B76' }}>Updated yesterday by Parvatamma</span>
+                  </div>
+                </div>
+
+                <div style={{ background: '#fff', border: '1px solid #E2D5C3', borderRadius: '8px', overflow: 'hidden', opacity: 0.85, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div style={{ width: '100%', height: '140px', background: '#F5ECE1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: '#C4B298' }}>
+                    ✦
+                  </div>
+                  <div style={{ padding: '0.85rem' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#8C7A66', textTransform: 'uppercase' }}>
+                      Stage 03 · Upcoming
+                    </div>
+                    <h4 style={{ margin: '3px 0 6px 0', fontSize: '0.9rem', color: '#1C160E' }}>GI Certification & Cedar Crate Sealing</h4>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#5A4C3D', lineHeight: 1.4 }}>
+                      Hand-pressing with natural linen cloths, placement of wax seal provenance tag, and handover to BlueDart courier.
+                    </p>
+                    <span style={{ display: 'block', marginTop: '6px', fontSize: '0.7rem', color: '#9C8B76' }}>Scheduled for completion</span>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -188,12 +313,12 @@ export default function OrderTracking() {
               </div>
             </div>
 
-            <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
-              <Link to="/shop" className="hero-btn hero-btn--primary" style={{ flex: 1, textAlign: 'center', textDecoration: 'none' }}>
+            <div style={{ marginTop: '20px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              <Link to="/gallery" className="hero-btn hero-btn--primary" style={{ flex: '1 1 180px', textAlign: 'center', textDecoration: 'none' }}>
                 Continue to Storefront
               </Link>
-              <Link to="/gallery" className="hero-btn hero-btn--secondary" style={{ flex: 1, textAlign: 'center', textDecoration: 'none' }}>
-                Visit Exhibition Gallery
+              <Link to="/archive" className="hero-btn hero-btn--secondary" style={{ flex: '1 1 180px', textAlign: 'center', textDecoration: 'none' }}>
+                Visit Exhibition Archive
               </Link>
             </div>
           </div>

@@ -83,7 +83,12 @@ export default function CreateListing() {
   const [craftsList, setCraftsList] = useState<CraftReferenceRecord[]>([]);
 
   // Form Submission
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1100;
+    }
+    return true;
+  });
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -361,7 +366,7 @@ export default function CreateListing() {
           </div>
         </div>
 
-        <div className="editor-main-layout">
+        <div className={`editor-main-layout ${showPreview ? 'has-preview' : 'no-preview'}`}>
           {/* Main Form Form */}
           <div className="editor-form-col">
             <div className="editor-card">
@@ -399,7 +404,7 @@ export default function CreateListing() {
                   Take photos of your piece and speak a quick description in your own words. The assistant will analyze the craft, suggest traditional techniques, and draft your listing.
                 </p>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                <div className="form-grid-2" style={{ marginBottom: '14px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '6px', color: '#4a3b32' }}>
                       Upload Piece Photos (Max 4)
@@ -592,7 +597,7 @@ export default function CreateListing() {
                     Deterministic fair wage formula: <code>suggested_price = (materials_cost + hours × fair_hourly_wage) × craft_premium + platform_fee</code>.
                   </p>
 
-                  <div className="form-grid-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                  <div className="form-grid-3">
                     <div className="form-group">
                       <label htmlFor="hours-to-make">Hours of Labour</label>
                       <input
@@ -635,7 +640,7 @@ export default function CreateListing() {
                     </div>
                   </div>
 
-                  <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+                  <div style={{ marginTop: '10px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     <button
                       type="button"
                       onClick={handleCalculatePrice}
@@ -668,7 +673,7 @@ export default function CreateListing() {
                         fontSize: '0.85rem',
                       }}
                     >
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '8px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px', marginBottom: '8px' }}>
                         <div><strong>Materials:</strong> ₹{pricingBreakdown.materials_cost}</div>
                         <div><strong>Labour ({pricingBreakdown.hours}h @ ₹{pricingBreakdown.fair_hourly_wage}/h):</strong> ₹{pricingBreakdown.labour_cost}</div>
                         <div><strong>Multiplier:</strong> {pricingBreakdown.craft_premium_multiplier}x</div>
@@ -841,8 +846,8 @@ export default function CreateListing() {
 
           {/* Customer Preview Sidebar */}
           {showPreview && (
-            <div className="editor-preview-col" style={{ width: '380px', flexShrink: 0 }}>
-              <div className="editor-card" style={{ position: 'sticky', top: '20px' }}>
+            <div className="editor-preview-col">
+              <div className="editor-card" style={{ position: 'sticky', top: '84px' }}>
                 <span className="editor-eyebrow">LIVE CUSTOMER DOSSIER</span>
                 <img
                   src={imageUrl}

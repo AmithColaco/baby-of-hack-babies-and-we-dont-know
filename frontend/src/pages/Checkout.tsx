@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { checkoutOrder } from '../api/orders';
 import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
+import { generateQRDataUrl } from '../utils/qrCode';
 
 export default function Checkout() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { cart, removeFromCart, updateQuantity, clearCart, totalAmount, platformFeeTotal, taxTotal, directArtisanTotal } = useCart();
   const { user, isLoggedIn, requestOtp, loginWithOtp } = useAuth();
@@ -18,6 +21,12 @@ export default function Checkout() {
   const [state, setState] = useState('Maharashtra');
   const [pinCode, setPinCode] = useState('400006');
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'card' | 'inspection'>('upi');
+  const [courier, setCourier] = useState<'bluedart' | 'delhivery' | 'indiapost'>('bluedart');
+  const [trackingNumberStub] = useState(() => 'BD-' + Math.floor(100000 + Math.random() * 900000));
+  const [upiQrUrl, setUpiQrUrl] = useState('');
+  const [upiCopied, setUpiCopied] = useState(false);
+  const [upiVerified, setUpiVerified] = useState(false);
+  const [upiRefId, setUpiRefId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
 
@@ -36,6 +45,13 @@ export default function Checkout() {
       if (user.city) setCity(user.city);
     }
   }, [user]);
+
+  // Generate dynamic Mock UPI QR code
+  useEffect(() => {
+    const upiUri = `upi://pay?pa=kaarigar@guild&pn=KAARIGAR%20Escrow&am=${totalAmount}&cu=INR&tn=Artisan%20Direct%20Acquisition`;
+    generateQRDataUrl(upiUri, { width: 220, margin: 1 }).then(setUpiQrUrl);
+    setUpiRefId(`UPI-REF-${Math.floor(10000000 + Math.random() * 90000000)}`);
+  }, [totalAmount]);
 
   const handleInlineSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,7 +117,10 @@ export default function Checkout() {
         },
         payment_method: paymentMethod === 'card' ? 'mock_card' : 'mock_upi',
         idempotency_key: idempotencyKey,
-      });
+        courier: courier === 'bluedart' ? 'BlueDart Express' : courier === 'delhivery' ? 'Delhivery' : 'India Post SpeedPost',
+        tracking_number: trackingNumberStub,
+        upi_ref: paymentMethod === 'upi' ? upiRefId : undefined,
+      } as any);
       createdBackendOrderId = backendOrder.id;
     } catch (err: any) {
       console.warn('Backend checkout fallback to local order:', err);
@@ -116,6 +135,9 @@ export default function Checkout() {
       directArtisanTotal,
       customer: { name, email, phone, address, city, state, pinCode },
       paymentMethod,
+      courier: courier === 'bluedart' ? 'BlueDart Express' : courier === 'delhivery' ? 'Delhivery' : 'India Post SpeedPost',
+      trackingNumber: trackingNumberStub,
+      upiRef: paymentMethod === 'upi' ? upiRefId : undefined,
       status: 'Confirmed & Sent to Atelier',
     };
 
@@ -142,7 +164,7 @@ export default function Checkout() {
           <p style={{ color: 'var(--graphite)', marginBottom: '2rem' }}>
             You haven't reserved any masterworks yet. Explore our protected craft disciplines to begin your collection.
           </p>
-          <Link to="/shop" className="hero-btn hero-btn--primary">
+          <Link to="/gallery" className="hero-btn hero-btn--primary">
             Explore Collection →
           </Link>
         </div>
@@ -155,7 +177,7 @@ export default function Checkout() {
       <div className="checkout-page__inner">
         {/* Top Header */}
         <div className="checkout-topbar">
-          <Link to="/shop" className="checkout-back-link">
+          <Link to="/gallery" className="checkout-back-link">
             ← Continue Exploring Collection
           </Link>
           <span className="checkout-secure-badge">
@@ -271,8 +293,8 @@ export default function Checkout() {
 
               {/* Shipping Address */}
               <div className="checkout-card">
-                <span className="checkout-card__step">STEP 01</span>
-                <h2 className="checkout-card__title">Archival Transit Destination</h2>
+                <span className="checkout-card__step">{t('checkout.step1')}</span>
+                <h2 className="checkout-card__title">{t('checkout.step1')}</h2>
                 <p className="checkout-card__desc">
                   Where should the master artisan atelier dispatch your insured crate?
                 </p>
@@ -366,10 +388,73 @@ export default function Checkout() {
                 </div>
               </div>
 
-              {/* Payment Method */}
-              <div className="checkout-card">
-                <span className="checkout-card__step">STEP 02</span>
-                <h2 className="checkout-card__title">Payment Settlement Method</h2>
+              {/* Step 02: Logistics & Courier Selection Stub */}
+              <div className="checkout-card" style={{ marginTop: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="checkout-card__step">{t('checkout.step2')}</span>
+                  <span style={{ fontSize: '0.72rem', background: '#F0ECE1', color: '#5C4C3B', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
+                    Mock Logistics Stub (Prod: Delhivery / BlueDart API)
+                  </span>
+                </div>
+                <h2 className="checkout-card__title">{t('checkout.step2')}</h2>
+                <p className="checkout-card__desc">
+                  Select courier network. White-glove insured delivery is complimentary for all masterworks.
+                </p>
+
+                <div className="payment-options">
+                  <label className={`payment-option ${courier === 'bluedart' ? 'active' : ''}`}>
+                    <input
+                      type="radio"
+                      name="courier"
+                      value="bluedart"
+                      checked={courier === 'bluedart'}
+                      onChange={() => setCourier('bluedart')}
+                    />
+                    <div className="option-content">
+                      <span className="option-title">{t('checkout.courier_bluedart')}</span>
+                      <span className="option-sub">Tracking AWB: <code>{trackingNumberStub}</code></span>
+                    </div>
+                  </label>
+
+                  <label className={`payment-option ${courier === 'delhivery' ? 'active' : ''}`}>
+                    <input
+                      type="radio"
+                      name="courier"
+                      value="delhivery"
+                      checked={courier === 'delhivery'}
+                      onChange={() => setCourier('delhivery')}
+                    />
+                    <div className="option-content">
+                      <span className="option-title">{t('checkout.courier_delhivery')}</span>
+                      <span className="option-sub">Fragile Craft Safe Transit</span>
+                    </div>
+                  </label>
+
+                  <label className={`payment-option ${courier === 'indiapost' ? 'active' : ''}`}>
+                    <input
+                      type="radio"
+                      name="courier"
+                      value="indiapost"
+                      checked={courier === 'indiapost'}
+                      onChange={() => setCourier('indiapost')}
+                    />
+                    <div className="option-content">
+                      <span className="option-title">{t('checkout.courier_speedpost')}</span>
+                      <span className="option-sub">Direct access to remote tribal & artisan village clusters</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Step 03: Payment Method */}
+              <div className="checkout-card" style={{ marginTop: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="checkout-card__step">{t('checkout.step3')}</span>
+                  <span style={{ fontSize: '0.72rem', background: '#FDF0ED', color: '#9C2819', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
+                    {t('checkout.mock_notice')}
+                  </span>
+                </div>
+                <h2 className="checkout-card__title">{t('checkout.step3')}</h2>
                 <p className="checkout-card__desc">
                   Funds are held in secure escrow and released directly to the artisan upon safe delivery.
                 </p>
@@ -384,8 +469,8 @@ export default function Checkout() {
                       onChange={() => setPaymentMethod('upi')}
                     />
                     <div className="option-content">
-                      <span className="option-title">UPI Instant Settlement</span>
-                      <span className="option-sub">GPay, PhonePe, Paytm, BHIM, or any UPI App</span>
+                      <span className="option-title">UPI Instant Settlement (QR Code Screen)</span>
+                      <span className="option-sub">GPay, PhonePe, Paytm, BHIM, CRED or any UPI App</span>
                     </div>
                   </label>
 
@@ -417,6 +502,80 @@ export default function Checkout() {
                     </div>
                   </label>
                 </div>
+
+                {/* Mock UPI Interactive QR Screen */}
+                {paymentMethod === 'upi' && (
+                  <div style={{
+                    marginTop: '1.25rem',
+                    background: '#FDFBF7',
+                    border: '1px solid #D6C4A6',
+                    borderRadius: '8px',
+                    padding: '1.25rem',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ display: 'inline-block', background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #E2D5C3', boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}>
+                      {upiQrUrl ? (
+                        <img src={upiQrUrl} alt="UPI Payment QR Code" style={{ width: '180px', height: '180px', display: 'block' }} />
+                      ) : (
+                        <div style={{ width: '180px', height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', color: '#888' }}>
+                          Generating UPI QR...
+                        </div>
+                      )}
+                      <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#1C160E', marginTop: '6px' }}>
+                        ₹{totalAmount.toLocaleString('en-IN')}
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: '0.75rem', fontSize: '0.82rem', color: '#55483B' }}>
+                      <span>UPI ID: <strong>kaarigar@guild</strong></span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText('kaarigar@guild');
+                          setUpiCopied(true);
+                          setTimeout(() => setUpiCopied(false), 2000);
+                        }}
+                        style={{
+                          marginLeft: '8px',
+                          padding: '2px 8px',
+                          fontSize: '0.72rem',
+                          background: '#EFE8DC',
+                          border: '1px solid #D6C4A6',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {upiCopied ? '✓ Copied' : 'Copy VPA'}
+                      </button>
+                    </div>
+
+                    <div style={{ fontSize: '0.75rem', color: '#8C7A66', marginTop: '4px' }}>
+                      Ref: <code>{upiRefId}</code> · <em>Mock UPI for demo; production plan: Razorpay/UPI escrow</em>
+                    </div>
+
+                    <div style={{ marginTop: '1rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUpiVerified(true);
+                        }}
+                        style={{
+                          background: upiVerified ? '#2E6B38' : '#8C2D19',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '6px 14px',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        {upiVerified ? '✓ Bank Authorized (Mock Verified)' : '⚡ Simulate Bank Authorization (Demo)'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Place Order CTA */}
@@ -442,7 +601,7 @@ export default function Checkout() {
                   className="checkout-submit-btn"
                   id="checkout-confirm"
                 >
-                  <span>{isSubmitting ? 'Inscribing Order…' : `Confirm Acquisition · ₹${totalAmount.toLocaleString('en-IN')}`}</span>
+                  <span>{isSubmitting ? t('checkout.processing') : `${t('checkout.pay_btn')} · ₹${totalAmount.toLocaleString('en-IN')}`}</span>
                   <span className="arrow">→</span>
                 </button>
               )}
@@ -452,7 +611,7 @@ export default function Checkout() {
           {/* Right Column: Order Summary & Impact Breakdown */}
           <div className="checkout-summary-col">
             <div className="summary-sticky-card">
-              <h3 className="summary-heading">Acquisition Summary ({cart.length} Masterpiece{cart.length === 1 ? '' : 's'})</h3>
+              <h3 className="summary-heading">{t('checkout.order_summary')} ({cart.length})</h3>
 
               {/* Itemized list */}
               <div className="summary-items-list">

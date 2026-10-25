@@ -9,10 +9,18 @@ export function FeaturedCarousel() {
   const { products } = useProducts();
   const { addToCart } = useCart();
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [added, setAdded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const activeProducts = products.slice(0, 6);
   const currentProduct: CraftObject | undefined = activeProducts[selectedIndex] || activeProducts[0];
+
+  const handleAddToCart = () => {
+    if (!currentProduct) return;
+    addToCart(currentProduct);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
 
   const handleNext = useCallback(() => {
     setSelectedIndex((prev) => (prev + 1) % activeProducts.length);
@@ -184,15 +192,16 @@ export function FeaturedCarousel() {
 
               <button
                 type="button"
-                className="inspector-btn inspector-btn--cart"
-                onClick={() => addToCart(currentProduct)}
+                className={`inspector-btn inspector-btn--cart ${added ? 'added' : ''}`}
+                onClick={handleAddToCart}
                 id="carousel-add-cart"
+                disabled={added}
               >
-                <span>Add to Shopping Bag</span>
+                <span>{added ? '✓ Reserved in Bag' : 'Add to Shopping Bag'}</span>
               </button>
 
               <Link
-                to={`/gallery?focus=${currentProduct.id}`}
+                to={`/archive?focus=${currentProduct.id}`}
                 className="inspector-btn inspector-btn--3d"
                 id="carousel-enter-3d"
               >

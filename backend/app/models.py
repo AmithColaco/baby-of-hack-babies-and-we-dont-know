@@ -147,6 +147,15 @@ class Listing(Base):
     stock: Mapped[int] = mapped_column(Integer, default=1)
     status: Mapped[str] = mapped_column(Enum(ListingStatus), default=ListingStatus.DRAFT)
     gallery_wing: Mapped[str] = mapped_column(String(100), default="")
+    accession_id: Mapped[str] = mapped_column(String(50), default="")
+    voice_clip_url: Mapped[str] = mapped_column(String(500), default="")
+    is_women_shg: Mapped[bool] = mapped_column(Boolean, default=False)
+    shg_name: Mapped[str] = mapped_column(String(255), default="")
+    material_cost: Mapped[float] = mapped_column(Float, default=0.0)
+    skill_rate_per_hour: Mapped[float] = mapped_column(Float, default=150.0)
+    heritage_premium: Mapped[float] = mapped_column(Float, default=0.0)
+    machine_lookalike_price: Mapped[float] = mapped_column(Float, default=0.0)
+    machine_lookalike_notes: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     # relationships
@@ -184,6 +193,10 @@ class Order(Base):
     payment_status: Mapped[str] = mapped_column(
         Enum(PaymentStatus), default=PaymentStatus.PENDING
     )
+    courier: Mapped[str] = mapped_column(String(100), default="BlueDart Heritage Express")
+    tracking_number: Mapped[str] = mapped_column(String(100), default="")
+    payment_method: Mapped[str] = mapped_column(String(50), default="mock_upi")
+    upi_ref: Mapped[str] = mapped_column(String(100), default="")
     idempotency_key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
@@ -194,6 +207,9 @@ class Order(Base):
     )
     payment: Mapped["Payment | None"] = relationship(
         back_populates="order", uselist=False, cascade="all, delete-orphan"
+    )
+    timeline_updates: Mapped[list["OrderTimelineUpdate"]] = relationship(
+        back_populates="order", cascade="all, delete-orphan", order_by="OrderTimelineUpdate.stage_index"
     )
 
     __table_args__ = (UniqueConstraint("idempotency_key"),)
@@ -229,3 +245,55 @@ class Payment(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     order: Mapped["Order"] = relationship(back_populates="payment")
+
+
+class OrderTimelineUpdate(Base):
+    __tablename__ = "order_timeline_updates"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    order_id: Mapped[str] = mapped_column(String(32), ForeignKey("orders.id", ondelete="CASCADE"), index=True)
+    stage_index: Mapped[int] = mapped_column(Integer, default=1)
+    stage_name: Mapped[str] = mapped_column(String(100), default="")
+    photo_url: Mapped[str] = mapped_column(String(500), default="")
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+    order: Mapped["Order"] = relationship(back_populates="timeline_updates")
+
+
+class CommissionRequest(Base):
+    __tablename__ = "commission_requests"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    buyer_id: Mapped[str] = mapped_column(String(32), ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    craft_type: Mapped[str] = mapped_column(String(100), default="")
+    title: Mapped[str] = mapped_column(String(255), default="")
+    description: Mapped[str] = mapped_column(Text, default="")
+    dimensions: Mapped[str] = mapped_column(String(100), default="")
+    target_budget: Mapped[float] = mapped_column(Float, default=0.0)
+    deadline_days: Mapped[int] = mapped_column(Integer, default=30)
+    reference_image_url: Mapped[str] = mapped_column(String(500), default="")
+    status: Mapped[str] = mapped_column(String(50), default="OPEN")  # OPEN, QUOTED, ACCEPTED, IN_PROGRESS, COMPLETED
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+    buyer: Mapped["User"] = relationship()
+    quotes: Mapped[list["CommissionQuote"]] = relationship(
+        back_populates="commission", cascade="all, delete-orphan"
+    )
+
+
+class CommissionQuote(Base):
+    __tablename__ = "commission_quotes"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    commission_id: Mapped[str] = mapped_column(String(32), ForeignKey("commission_requests.id", ondelete="CASCADE"), index=True)
+    artisan_id: Mapped[str] = mapped_column(String(32), ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    quoted_price: Mapped[float] = mapped_column(Float, default=0.0)
+    estimated_days: Mapped[int] = mapped_column(Integer, default=14)
+    materials_description: Mapped[str] = mapped_column(Text, default="")
+    notes: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(50), default="PENDING")  # PENDING, ACCEPTED, DECLINED
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+    commission: Mapped["CommissionRequest"] = relationship(back_populates="quotes")
+    artisan: Mapped["User"] = relationship()

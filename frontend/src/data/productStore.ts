@@ -117,6 +117,17 @@ export function listingToCraftObject(listing: ListingRecord): CraftObject {
     position3D: [0, 0, 0],
     modelType: category === 'textiles' ? 'textile' : category === 'ceramics' ? 'pottery' : 'brass',
     colorPalette: ['#A0522D', '#D2B48C', '#2E8B57', '#DEB887'],
+    // Scannable Provenance & Story-Backed Pricing
+    isWomenSHG: listing.is_women_shg ?? (ct.includes('kasuti') || ct.includes('beedu')),
+    shgName: listing.shg_name || (ct.includes('kasuti') ? 'Mahila Utkarsha Kasuti Sangha' : ct.includes('beedu') ? 'Kinnigoli Women Grass-Weavers Guild' : undefined),
+    materialCost: listing.material_cost || Math.round(listing.price_inr * 0.25),
+    laborHours: listing.hours_to_make || 24,
+    skillRatePerHour: listing.skill_rate_per_hour || 120,
+    heritagePremium: listing.heritage_premium || Math.round(listing.price_inr * 0.15),
+    machineLookalikePrice: listing.machine_lookalike_price || Math.round(listing.price_inr * 0.15),
+    machineLookalikeNotes: listing.machine_lookalike_notes || 'Machine-made copies lack authentic GI hand-spinning, hand-dyeing, and generational technique integrity.',
+    voiceClipUrl: listing.voice_clip_url || 'https://actions.google.com/sounds/v1/ambiences/outdoor_ambience.ogg',
+    processPhotos: [imageUrl, '/images/artisan.jpg'],
   };
 }
 
@@ -127,16 +138,27 @@ export function getInitialProducts(): CraftObject[] {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((p: CraftObject) => {
-          if (!p.image || p.image.includes('placehold.co') || p.image.includes('placeholder')) {
-            const t = (p.craftTradition || p.title || '').toLowerCase();
-            if (t.includes('shell')) return { ...p, image: '/images/shellcraft.jpg' };
-            if (t.includes('beedu') || t.includes('mat')) return { ...p, image: '/images/beedu.jpg' };
-            if (t.includes('kasuti') || t.includes('saree')) return { ...p, image: '/images/kasuti.jpg' };
-            return { ...p, image: '/images/textile.jpg' };
-          }
-          return p;
+        // Merge missing fields and new craft objects from CRAFT_OBJECTS
+        const existingIds = new Set(parsed.map((p: CraftObject) => p.id));
+        const mergedFromSeed = CRAFT_OBJECTS.filter((seed) => !existingIds.has(seed.id));
+        const enriched = parsed.map((p: CraftObject) => {
+          const seedMatch = CRAFT_OBJECTS.find((s) => s.id === p.id);
+          return {
+            ...seedMatch,
+            ...p,
+            accessionNo: p.accessionNo || seedMatch?.accessionNo || `KG-2026-${p.id.slice(0, 4)}`,
+            isWomenSHG: p.isWomenSHG ?? seedMatch?.isWomenSHG,
+            shgName: p.shgName || seedMatch?.shgName,
+            materialCost: p.materialCost ?? seedMatch?.materialCost ?? Math.round(p.price * 0.25),
+            laborHours: p.laborHours ?? seedMatch?.laborHours ?? 24,
+            skillRatePerHour: p.skillRatePerHour ?? seedMatch?.skillRatePerHour ?? 120,
+            heritagePremium: p.heritagePremium ?? seedMatch?.heritagePremium ?? Math.round(p.price * 0.15),
+            machineLookalikePrice: p.machineLookalikePrice ?? seedMatch?.machineLookalikePrice ?? Math.round(p.price * 0.15),
+            machineLookalikeNotes: p.machineLookalikeNotes || seedMatch?.machineLookalikeNotes || 'Machine imitations lack authentic hand-spinning and GI provenance.',
+            voiceClipUrl: p.voiceClipUrl || seedMatch?.voiceClipUrl || 'https://actions.google.com/sounds/v1/ambiences/temple_bell_and_flute.ogg',
+          };
         });
+        return [...mergedFromSeed, ...enriched];
       }
     }
   } catch (e) {

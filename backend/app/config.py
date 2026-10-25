@@ -3,7 +3,12 @@ from pydantic_settings import BaseSettings
 
 _BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 _ROOT_DIR = os.path.abspath(os.path.join(_BACKEND_DIR, ".."))
-_DEFAULT_DB_PATH = os.path.join(_BACKEND_DIR, "kalahaat.db")
+_DEFAULT_DB_PATH = os.path.join(_BACKEND_DIR, "kaarigar.db")
+# Fallback to legacy kalahaat.db if kaarigar.db does not exist yet
+if not os.path.exists(_DEFAULT_DB_PATH):
+    _LEGACY_DB_PATH = os.path.join(_BACKEND_DIR, "kalahaat.db")
+    if os.path.exists(_LEGACY_DB_PATH):
+        _DEFAULT_DB_PATH = _LEGACY_DB_PATH
 
 
 class Settings(BaseSettings):
@@ -20,9 +25,9 @@ class Settings(BaseSettings):
     # Mock OTP – any 6-digit code accepted; this fixed code always works
     MOCK_OTP_CODE: str = "123456"
 
-    # Gemini AI
+    # Gemini AI – updated to current Google Gemini 2.0 Flash
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-1.5-flash"
+    GEMINI_MODEL: str = "gemini-2.0-flash"
 
     # Cloudinary (optional – falls back to local disk)
     CLOUDINARY_CLOUD_NAME: str = ""

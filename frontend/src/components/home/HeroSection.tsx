@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function HeroSection() {
+  const { t } = useTranslation();
   const { isArtisan } = useAuth();
 
   return (
@@ -9,32 +11,34 @@ export function HeroSection() {
       <div className="hero-editorial__container">
         {/* Top Eyebrow */}
         <div className="hero-editorial__eyebrow">
-          <span className="hero-editorial__badge">LIVING CRAFT ARCHIVE</span>
-          <span className="hero-editorial__provenance">PRESERVING TIME-HONOURED INDIAN MASTERWORKS</span>
+          <span className="hero-editorial__badge">{t('home.hero_eyebrow')}</span>
+          <span className="hero-editorial__provenance">{t('home.subtagline')}</span>
         </div>
 
         {/* Main Headline Grid */}
         <div className="hero-editorial__grid">
           <div className="hero-editorial__text-col">
             <h1 className="hero-editorial__headline">
-              Every object has a maker. <br />
-              <em>Every maker has a story.</em>
+              {t('home.hero_title')}
             </h1>
 
             <p className="hero-editorial__lead">
-              Discover authentic handcrafted treasures directly from India’s master artisans. 
-              Each creation carries generational wisdom, with 100% of every acquisition flowing directly to the makers.
+              {t('home.hero_subtitle')}
             </p>
 
             <div className="hero-editorial__cta-group">
               <Link to="/gallery" className="hero-btn hero-btn--primary" id="hero-explore-collection">
-                <span>Explore Gallery</span>
+                <span>{t('home.explore_gallery')}</span>
                 <span className="hero-btn__arrow">→</span>
+              </Link>
+
+              <Link to="/commissions" className="hero-btn hero-btn--ghost" id="hero-commission-request">
+                <span>{t('home.request_commission')}</span>
               </Link>
 
               {isArtisan && (
                 <Link to="/dashboard" className="hero-btn hero-btn--ghost" id="hero-sell-craft">
-                  <span>Artisan Atelier Portal</span>
+                  <span>{t('nav.dashboard')}</span>
                 </Link>
               )}
             </div>

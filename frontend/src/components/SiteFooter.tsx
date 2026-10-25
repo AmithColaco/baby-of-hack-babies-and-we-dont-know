@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 
 export function SiteFooter() {
+  const { t } = useTranslation();
   const { isArtisan } = useAuth();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
@@ -22,43 +24,42 @@ export function SiteFooter() {
           {/* Col 1: Brand & Philosophy */}
           <div className="site-footer__col site-footer__brand-col">
             <div className="site-footer__brand">
-              <span className="site-footer__brand-name">KAARIGAR</span>
+              <span className="site-footer__brand-name">{t('nav.brand_title')}</span>
             </div>
             <p className="site-footer__philosophy">
-              An archival digital sanctuary connecting India’s living masters directly with custodians of culture. 
-              We operate on an uncompromising standard of radical compensation, verifiable provenance, and reverence for traditional craftsmanship.
+              {t('footer.manifesto')}
             </p>
             <div className="site-footer__payout-badge">
               <span className="payout-num">100%</span>
-              <span className="payout-desc">Certified authentic craftsmanship distributed directly from master artisan ateliers.</span>
+              <span className="payout-desc">{t('footer.gi_guarantee')}</span>
             </div>
           </div>
 
           {/* Col 2: Traditions */}
           <div className="site-footer__col">
-            <h4 className="site-footer__heading">Craft Traditions</h4>
+            <h4 className="site-footer__heading">{t('footer.curated_corridors')}</h4>
             <ul className="site-footer__links">
-              <li><Link to="/shop?category=paintings">Kangra & Tanjore Paintings</Link></li>
-              <li><Link to="/shop?category=ceramics">Jaipur Blue Pottery</Link></li>
-              <li><Link to="/shop?category=textiles">Chanderi Gossamer Weaves</Link></li>
-              <li><Link to="/shop?category=metalcraft">Bastar Lost-Wax Dhokra</Link></li>
-              <li><Link to="/shop?category=woodcraft">Channapatna Lacquer Wood</Link></li>
-              <li><Link to="/shop?category=jewellery">Kundan & Meenakari Enamel</Link></li>
+              <li><Link to="/gallery?category=paintings">Kangra & Tanjore Paintings</Link></li>
+              <li><Link to="/gallery?category=ceramics">Jaipur Blue Pottery</Link></li>
+              <li><Link to="/gallery?category=textiles">Chanderi Gossamer Weaves</Link></li>
+              <li><Link to="/gallery?category=metalcraft">Bastar Lost-Wax Dhokra</Link></li>
+              <li><Link to="/gallery?category=woodcraft">Channapatna Lacquer Wood</Link></li>
+              <li><Link to="/gallery?category=jewellery">Kundan & Meenakari Enamel</Link></li>
             </ul>
           </div>
 
           {/* Col 3: Curation & Experience */}
           <div className="site-footer__col">
-            <h4 className="site-footer__heading">Curatorial Archive</h4>
+            <h4 className="site-footer__heading">{t('nav.gallery')}</h4>
             <ul className="site-footer__links">
-              <li><Link to="/shop">Complete Collection</Link></li>
-              <li><Link to="/gallery">Digital Exhibition Gallery</Link></li>
-              <li><Link to="/#artisans">Master Artisan Roster</Link></li>
-              <li><Link to="/#process">Material Alchemy & Stages</Link></li>
+              <li><Link to="/gallery">{t('nav.shop')}</Link></li>
+              <li><Link to="/archive">{t('nav.gallery')} Archive</Link></li>
+              <li><Link to="/#artisans">{t('nav.artisans')}</Link></li>
+              <li><Link to="/#process">{t('nav.process')}</Link></li>
               {isArtisan && (
-                <li><Link to="/dashboard">Artisan Atelier Portal</Link></li>
+                <li><Link to="/dashboard">{t('nav.dashboard')}</Link></li>
               )}
-              <li><Link to="/login">Onboard Your Guild</Link></li>
+              <li><Link to="/login">{t('nav.login')}</Link></li>
             </ul>
           </div>
 
@@ -101,7 +102,7 @@ export function SiteFooter() {
         {/* Bottom bar */}
         <div className="site-footer__bottom">
           <div className="site-footer__copyright">
-            © 2026 KAARIGAR Cultural Trust & Independent Guilds. All rights reserved.
+            {t('footer.copyright')}
           </div>
           <div className="site-footer__legal-links">
             <span>Fair Trade Covenant</span>

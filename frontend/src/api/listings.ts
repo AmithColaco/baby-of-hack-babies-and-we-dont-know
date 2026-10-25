@@ -33,6 +33,14 @@ export interface ListingRecord {
   story?: StoryRecord | null;
   artisan_name?: string;
   artisan_village?: string;
+  is_women_shg?: boolean;
+  shg_name?: string;
+  material_cost?: number;
+  skill_rate_per_hour?: number;
+  heritage_premium?: number;
+  machine_lookalike_price?: number;
+  machine_lookalike_notes?: string;
+  voice_clip_url?: string;
 }
 
 export interface CraftReferenceRecord {

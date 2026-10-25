@@ -91,7 +91,7 @@ export const CartDrawer = () => {
               Explore the digital exhibition space and select any handcrafted masterwork to inspect its provenance and reserve for acquisition.
             </p>
             <Link
-              to="/shop"
+              to="/gallery"
               onClick={() => setIsCartOpen(false)}
               className="btn btn-outline"
               style={{ textDecoration: 'none', display: 'inline-block' }}

@@ -4,7 +4,6 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useProducts } from '../data/productStore';
 import { useCart } from '../contexts/CartContext';
 import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
 import type { CraftObject } from '../types';
@@ -31,14 +30,6 @@ type AssistantState =
 
 const MAX_FILE_SIZE_MB = 8;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-
-const QUICK_PROMPTS = [
-  'How is Bastar Dhokra cast?',
-  'Tell me about Kasuti embroidery stitches',
-  'What is the 5% platform fee & pricing formula?',
-  'Show pieces under ₹30,000',
-  'How do you guarantee authenticity & GI tags?',
-];
 
 function formatINR(n: number) {
   return '₹' + n.toLocaleString('en-IN');
@@ -153,7 +144,7 @@ function RAGSourceViewer({ sources }: { sources: RAGSource[] }) {
         onClick={() => setExpanded(!expanded)}
         aria-expanded={expanded}
       >
-        <span className="rag-sources-icon">📚</span>
+        <span className="rag-sources-icon" aria-hidden="true">✦</span>
         <span>
           <strong>{sources.length}</strong> Verified Archival Source
           {sources.length > 1 ? 's' : ''}
@@ -241,9 +232,8 @@ function ChatProductCard({
           </Link>
           <button
             type="button"
-            className={`rag-product-card__btn rag-product-card__btn--primary${
-              added ? ' rag-product-card__btn--added' : ''
-            }`}
+            className={`rag-product-card__btn rag-product-card__btn--primary${added ? ' rag-product-card__btn--added' : ''
+              }`}
             onClick={handleAdd}
             disabled={added}
           >
@@ -302,9 +292,8 @@ function ProductRecommendationCard({
           </Link>
           <button
             type="button"
-            className={`stylist-rec-card__btn stylist-rec-card__btn--primary${
-              added ? ' stylist-rec-card__btn--added' : ''
-            }`}
+            className={`stylist-rec-card__btn stylist-rec-card__btn--primary${added ? ' stylist-rec-card__btn--added' : ''
+              }`}
             onClick={handleAdd}
             disabled={added}
           >
@@ -358,7 +347,7 @@ export function SpaceStylist() {
       id: 'msg_welcome',
       role: 'assistant',
       content:
-        'Namaste. I am your **KAARIGAR Senior Curatorial Concierge**, powered by our verified archives of living Indian heritage crafts, master lineages, making stages, and platform provenance.\n\n' +
+        'Namaste. I am your **KAARIGAR Curatorial Concierge**, powered by our verified archives of living Indian heritage crafts, master lineages, making stages, and platform provenance.\n\n' +
         'Ask me anything about our craft traditions, artisan techniques, pricing transparency, or ask for curated recommendations for your collection.',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
@@ -379,7 +368,6 @@ export function SpaceStylist() {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { products } = useProducts();
   const { addToCart } = useCart();
 
   // Scroll chat to bottom when messages update
@@ -585,7 +573,7 @@ export function SpaceStylist() {
         className="stylist-float-btn"
         onClick={handleOpen}
         aria-label="Open KAARIGAR AI Assistant & Space Stylist"
-        title="KAARIGAR AI Assistant — Curatorial RAG Chat & Room Stylist"
+        title="KAARIGAR AI Assistant — Curatorial Chat & Room Stylist"
       >
         <span className="stylist-float-btn__icon" aria-hidden="true">✦</span>
         <span className="stylist-float-btn__label">Curatorial Guide</span>
@@ -610,7 +598,7 @@ export function SpaceStylist() {
             <span className="stylist-panel__icon" aria-hidden="true">✦</span>
             <div>
               <h2 className="stylist-panel__title">KAARIGAR Curatorial Guide</h2>
-              <p className="stylist-panel__subtitle">RAG Archives & Heritage Intelligence</p>
+              <p className="stylist-panel__subtitle">Archives & Heritage Intelligence</p>
             </div>
           </div>
           <button
@@ -630,38 +618,20 @@ export function SpaceStylist() {
             className={`stylist-tab-btn${activeTab === 'chat' ? ' stylist-tab-btn--active' : ''}`}
             onClick={() => setActiveTab('chat')}
           >
-            <span className="stylist-tab-icon">💬</span> Curatorial Chat (RAG)
+            <span className="stylist-tab-icon">✦</span> Curatorial Chat
           </button>
           <button
             type="button"
             className={`stylist-tab-btn${activeTab === 'vision' ? ' stylist-tab-btn--active' : ''}`}
             onClick={() => setActiveTab('vision')}
           >
-            <span className="stylist-tab-icon">📷</span> Craft in Your Space
+            <span className="stylist-tab-icon">✦</span> Craft in Your Space
           </button>
         </div>
 
         {/* ── TAB 1: RAG CURATORIAL CHAT ── */}
         {activeTab === 'chat' && (
           <div className="rag-chat-container">
-            {/* Quick Prompt Suggestions */}
-            <div className="rag-quick-prompts-bar">
-              <span className="rag-quick-label">Suggested Inquiries:</span>
-              <div className="rag-quick-chips">
-                {QUICK_PROMPTS.map((qp, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    className="rag-chip"
-                    onClick={() => handleSendChat(qp)}
-                    disabled={isChatLoading}
-                  >
-                    {qp}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Conversation Stream */}
             <div className="rag-chat-messages" ref={chatScrollRef}>
               {chatMessages.map((msg) => (
@@ -717,7 +687,7 @@ export function SpaceStylist() {
                   {/* Render Empty State if Object Search Found No Pieces */}
                   {msg.noObjectsFound && (
                     <div className="rag-no-objects-card">
-                      <div className="rag-no-objects-icon" aria-hidden="true">🏺</div>
+                      <div className="rag-no-objects-icon" aria-hidden="true">✦</div>
                       <div className="rag-no-objects-content">
                         <h6 className="rag-no-objects-title">No Matching Masterworks in Archive</h6>
                         <p className="rag-no-objects-desc">
@@ -804,7 +774,10 @@ export function SpaceStylist() {
                 title="Start new curatorial thread"
                 aria-label="Start new curatorial thread"
               >
-                ↺
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                </svg>
               </button>
               <input
                 ref={chatInputRef}
@@ -822,7 +795,10 @@ export function SpaceStylist() {
                 title="Send inquiry"
                 aria-label="Send inquiry"
               >
-                ➔
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
               </button>
             </form>
           </div>
@@ -903,7 +879,12 @@ export function SpaceStylist() {
                     onChange={handleFileInput}
                     className="stylist-file-input"
                   />
-                  <div className="stylist-dropzone__icon">📷</div>
+                  <div className="stylist-dropzone__icon" aria-hidden="true">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto', display: 'block', color: 'var(--copper, #B5602A)' }}>
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                      <circle cx="12" cy="13" r="4" />
+                    </svg>
+                  </div>
                   <h4 className="stylist-dropzone__title">Drop your room photograph here</h4>
                   <p className="stylist-dropzone__hint">or click to browse from your device</p>
                   <span className="stylist-dropzone__specs">
@@ -1007,7 +988,13 @@ export function SpaceStylist() {
             {/* ── UNSUITABLE IMAGE STATE ── */}
             {state === 'unsuitable' && (
               <div className="stylist-state stylist-state--error">
-                <div className="stylist-error-icon" aria-hidden="true">🖼</div>
+                <div className="stylist-error-icon" aria-hidden="true">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto', display: 'block' }}>
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                </div>
                 <h3 className="stylist-error-title">Not an Interior Space</h3>
                 <p className="stylist-error-body">
                   {analysis?.unsuitableMessage ||
@@ -1048,7 +1035,7 @@ export function SpaceStylist() {
                   className="stylist-btn stylist-btn--ghost stylist-btn--full"
                   onClick={handleReset}
                 >
-                  ↺ Analyze a Different Space
+                  Analyze a Different Space
                 </button>
               </div>
             )}
@@ -1056,7 +1043,12 @@ export function SpaceStylist() {
             {/* ── NO MATCH STATE ── */}
             {state === 'no-match' && (
               <div className="stylist-state stylist-state--empty">
-                <div className="stylist-empty-icon" aria-hidden="true">🏺</div>
+                <div className="stylist-empty-icon" aria-hidden="true">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto', display: 'block', color: 'var(--copper, #B5602A)' }}>
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                </div>
                 <h3 className="stylist-empty-title">No Close Matches Found</h3>
                 <p className="stylist-empty-body">
                   Our current catalogue doesn't have an exact match for your space's aesthetic or
@@ -1082,7 +1074,13 @@ export function SpaceStylist() {
             {/* ── ERROR STATE ── */}
             {state === 'error' && (
               <div className="stylist-state stylist-state--error">
-                <div className="stylist-error-icon" aria-hidden="true">⚠</div>
+                <div className="stylist-error-icon" aria-hidden="true">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto', display: 'block' }}>
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                </div>
                 <h3 className="stylist-error-title">Analysis Failed</h3>
                 <p className="stylist-error-body">{errorMessage}</p>
                 <div className="stylist-error-actions">
@@ -1105,14 +1103,6 @@ export function SpaceStylist() {
             )}
           </div>
         )}
-
-        {/* ── Footer ── */}
-        <footer className="stylist-panel__footer">
-          <p>
-            Powered by <span className="stylist-footer-gem">KAARIGAR RAG & Curatorial Engine</span>
-          </p>
-          <p>Direct from {products.length} living Indian masterworks</p>
-        </footer>
       </aside>
     </>
   );

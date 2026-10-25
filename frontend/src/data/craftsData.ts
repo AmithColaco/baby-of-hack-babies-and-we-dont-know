@@ -58,7 +58,16 @@ export const CRAFT_OBJECTS: CraftObject[] = [
     rotation3D: [0, 0.25, 0],
     scale3D: [1, 1, 1],
     modelType: 'painting',
-    colorPalette: ['#1C2E4A', '#E2A838', '#8A2D23', '#2D5A3A']
+    colorPalette: ['#1C2E4A', '#E2A838', '#8A2D23', '#2D5A3A'],
+    isWomenSHG: false,
+    materialCost: 12500,
+    laborHours: 140,
+    skillRatePerHour: 220,
+    heritagePremium: 5200,
+    machineLookalikePrice: 1200,
+    machineLookalikeNotes: 'Digital offset prints on textured cardstock mimic mineral tone, but lack natural gemstone refraction, agate burnish, and 24K real gold leaf illumination.',
+    voiceClipUrl: 'https://actions.google.com/sounds/v1/ambiences/temple_bell_and_flute.ogg',
+    processPhotos: ['/images/pahari.jpg', '/images/artisan.jpg']
   },
   {
     id: 'jaipur-blue-pottery',
@@ -117,7 +126,16 @@ export const CRAFT_OBJECTS: CraftObject[] = [
     rotation3D: [0, -0.15, 0],
     scale3D: [1, 1, 1],
     modelType: 'pottery',
-    colorPalette: ['#0A4275', '#1EA5C4', '#FAF7F2', '#EBB036']
+    colorPalette: ['#0A4275', '#1EA5C4', '#FAF7F2', '#EBB036'],
+    isWomenSHG: false,
+    materialCost: 4800,
+    laborHours: 64,
+    skillRatePerHour: 240,
+    heritagePremium: 3840,
+    machineLookalikePrice: 850,
+    machineLookalikeNotes: 'Machine-pressed clay ceramics coated with synthetic lead glaze prone to crazing. Authentic GI Jaipur Blue Pottery is completely clay-free, molded from quartz crystal powder and natural cobalt.',
+    voiceClipUrl: 'https://actions.google.com/sounds/v1/ambiences/wood_creak.ogg',
+    processPhotos: ['/images/bluepottery.jpg', '/images/artisan_potter.jpg']
   },
   {
     id: 'chanderi-handwoven-silk',
@@ -175,7 +193,16 @@ export const CRAFT_OBJECTS: CraftObject[] = [
     rotation3D: [0, 0.1, 0],
     scale3D: [1, 1, 1],
     modelType: 'textile',
-    colorPalette: ['#7A1C29', '#E0A838', '#1F2A38', '#EDE6D6']
+    colorPalette: ['#7A1C29', '#E0A838', '#1F2A38', '#EDE6D6'],
+    isWomenSHG: false,
+    materialCost: 11200,
+    laborHours: 96,
+    skillRatePerHour: 210,
+    heritagePremium: 5140,
+    machineLookalikePrice: 2200,
+    machineLookalikeNotes: 'Powerloom polyester-viscose mix with plastic metallic lurex zari. Lacks the crisp acoustic rustle, lightness, and breathability of un-degummed handspun mulberry silk.',
+    voiceClipUrl: 'https://actions.google.com/sounds/v1/ambiences/outdoor_ambience.ogg',
+    processPhotos: ['/images/textile.jpg', '/images/artisan_weaver.jpg']
   },
   {
     id: 'bastar-dhokra-brass',
@@ -233,7 +260,16 @@ export const CRAFT_OBJECTS: CraftObject[] = [
     rotation3D: [0, -0.2, 0],
     scale3D: [1, 1, 1],
     modelType: 'brass',
-    colorPalette: ['#A07830', '#4B4228', '#2D4436', '#E8D5B0']
+    colorPalette: ['#A07830', '#4B4228', '#2D4436', '#E8D5B0'],
+    isWomenSHG: false,
+    materialCost: 7400,
+    laborHours: 85,
+    skillRatePerHour: 230,
+    heritagePremium: 5050,
+    machineLookalikePrice: 1500,
+    machineLookalikeNotes: 'Die-cast zinc and scrap alloy in factory molds. Authentic Dhokra uses single-pour destructive cire perdue lost-wax casting with wild forest honey beeswax.',
+    voiceClipUrl: 'https://actions.google.com/sounds/v1/ambiences/metal_clink.ogg',
+    processPhotos: ['/images/dhokra.jpg', '/images/artisan_metalcraft.jpg']
   },
   {
     id: 'channapatna-wood-sculpture',
@@ -291,7 +327,16 @@ export const CRAFT_OBJECTS: CraftObject[] = [
     rotation3D: [0, 0.15, 0],
     scale3D: [1, 1, 1],
     modelType: 'woodcraft',
-    colorPalette: ['#A64B2A', '#D99B26', '#3D2817', '#EFE3CE']
+    colorPalette: ['#A64B2A', '#D99B26', '#3D2817', '#EFE3CE'],
+    isWomenSHG: false,
+    materialCost: 2800,
+    laborHours: 42,
+    skillRatePerHour: 280,
+    heritagePremium: 3940,
+    machineLookalikePrice: 650,
+    machineLookalikeNotes: 'MDF chipboard spray-painted with toxic polyurethane chemical varnish. Authentic Channapatna is lathe-turned from sustainably pruned ivory wood and finished with organic vegetable lac.',
+    voiceClipUrl: 'https://actions.google.com/sounds/v1/ambiences/wood_creak.ogg',
+    processPhotos: ['/images/woodcraft.jpg', '/images/artisan_potter.jpg']
   },
   {
     id: 'kundan-meenakari-jewellery',
@@ -350,7 +395,83 @@ export const CRAFT_OBJECTS: CraftObject[] = [
     rotation3D: [0, -0.25, 0],
     scale3D: [1, 1, 1],
     modelType: 'jewellery',
-    colorPalette: ['#DFBD76', '#1E7958', '#9B2226', '#FAF7F2']
+    colorPalette: ['#DFBD76', '#1E7958', '#9B2226', '#FAF7F2'],
+    isWomenSHG: false,
+    materialCost: 52000,
+    laborHours: 120,
+    skillRatePerHour: 250,
+    heritagePremium: 7000,
+    machineLookalikePrice: 4500,
+    machineLookalikeNotes: 'Brass casting with glued glass crystals and resin enamel. Authentic Kundan uses 24K cold-fused gold foil, natural uncut Polki diamonds, and reverse-side kiln-fired vitreous champlevé enamel.',
+    voiceClipUrl: 'https://actions.google.com/sounds/v1/ambiences/temple_bell_and_flute.ogg',
+    processPhotos: ['/images/jewellery.jpg', '/images/artisan.jpg']
+  },
+  {
+    id: 'kasuti-dharwad-saree',
+    accessionNo: 'KG-2026-07',
+    romanNumeral: 'VII',
+    title: 'Gopura & Peacock Ilkal Kasuti Drape',
+    vernacularTitle: 'ಧಾರವಾಡ ಕಸೂತಿ ಕರಕುಶಲ ಸೀರೆ',
+    craftTradition: 'Dharwad Kasuti Hand Embroidery',
+    category: 'textiles',
+    artisan: 'Parvatamma Badiger & Mahila Sangha',
+    artisanTitle: 'Lead Artisan · Karnataka State Shilpa Guru Awardee',
+    atelier: 'Mahila Utkarsha Kasuti Sangha',
+    region: 'Hubballi-Dharwad',
+    state: 'Karnataka',
+    period: 'Chalukya Dynasty 7th-Century Geometrical Needlework',
+    price: 4200,
+    currency: 'INR',
+    availability: 'Available',
+    dimensions: '6.2 m Length × 1.18 m Width (with Blouse Piece)',
+    weight: '620 g (Pure Handloom Cotton-Silk)',
+    materials: [
+      'Handloom Ilkal Pure Cotton-Silk Ground',
+      'Naturally-dyed Untwisted Silk Floss (Resham)',
+      'Single Slender Eye Embroidery Needle (No hoop)',
+      'Traditional Red & White Chariot Weft Border'
+    ],
+    technique: 'Thread-count counted geometric needlework (Gavanti double-running, Muragi zig-zag, Neygi weaving stitch, Menthi fenugreek seed stitch) without knots on reverse',
+    image: '/images/textile.jpg',
+    makingStory: {
+      summary: 'Dating back to the Chalukya kingdom, Kasuti is an intricate counted-thread needlework where not a single knot is tied on either side of the cloth. Done by women across North Karnataka homes, the motifs depict sacred gopuras, palanquins, and peacocks aligned to warp and weft.',
+      stages: [
+        {
+          step: '01',
+          title: 'Warp & Weft Thread Counting',
+          description: 'Without tracing or carbon stenciling, artisans count individual fabric threads under natural daylight to map micro-geometric chariot coordinates.'
+        },
+        {
+          step: '02',
+          title: 'Knotless Gavanti & Muragi Stitching',
+          description: 'Untwisted resham silk floss is guided back and forth in continuous double-running stitches so both sides of the drape appear perfectly identical.'
+        },
+        {
+          step: '03',
+          title: 'GI Certification & Guild Pressing',
+          description: 'Each finished Ilkal drape is inspected by the Mahila Sangha elders to verify count accuracy, knotless purity, and authenticated with the Geographical Indication seal.'
+        }
+      ]
+    },
+    artisanBio: 'Parvatamma Badiger leads the 45-member Mahila Utkarsha Kasuti Sangha in Dharwad. For 35 years she has trained younger rural women in knotless Kasuti, providing dignified, home-based livelihoods that bypass commercial middlemen.',
+    artisanQuote: 'Kasuti is the silence of our fingers. If there is a knot on the back, the soul cannot move freely. A genuine Kasuti saree can be worn on either side without anyone knowing which is inside.',
+    artisanImage: '/images/artisan_weaver.jpg',
+    directArtisanSharePercent: 92,
+    position3D: [0.0, 0.2, -0.8],
+    rotation3D: [0, 0, 0],
+    scale3D: [1, 1, 1],
+    modelType: 'textile',
+    colorPalette: ['#8B1E2E', '#D9822B', '#1C3144', '#FAF3E0'],
+    isWomenSHG: true,
+    shgName: 'Mahila Utkarsha Kasuti Sangha (Dharwad)',
+    materialCost: 950,
+    laborHours: 28,
+    skillRatePerHour: 95,
+    heritagePremium: 590,
+    machineLookalikePrice: 400,
+    machineLookalikeNotes: 'Computerized multi-needle embroidery uses cheap nylon thread that frays within 3 washes, with loose knotted loops on the back. Authentic Kasuti has zero knots on either face and uses hand-spun double-strand silk floss that lasts generations.',
+    voiceClipUrl: 'https://actions.google.com/sounds/v1/ambiences/outdoor_ambience.ogg',
+    processPhotos: ['/images/textile.jpg', '/images/artisan_weaver.jpg']
   }
 ];
 

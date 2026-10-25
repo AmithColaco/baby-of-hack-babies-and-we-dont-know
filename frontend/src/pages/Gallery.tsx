@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { GalleryNav } from '../components/GalleryNav';
 import { ObjectDetailPanel } from '../components/ObjectDetailPanel';
-import { CartDrawer } from '../components/CartDrawer';
 import { StoriesModal } from '../components/StoriesModal';
 import { MakingOfModal } from '../components/MakingOfModal';
 import { AboutModal } from '../components/AboutModal';
@@ -140,8 +139,6 @@ export default function Gallery() {
         />
       )}
 
-      {/* 4. Curatorial Bag / Cart Drawer */}
-      <CartDrawer />
 
       {/* 5. Curatorial Section Modals */}
       {activeSection === 'stories' && (

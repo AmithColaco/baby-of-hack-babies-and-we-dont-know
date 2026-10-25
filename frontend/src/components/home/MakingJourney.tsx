@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface Stage {
   number: string;
@@ -45,14 +46,15 @@ const STAGES: Stage[] = [
 ];
 
 export function MakingJourney() {
+  const { t } = useTranslation();
   const [activeStage, setActiveStage] = useState(0);
 
   return (
     <section id="process" className="making-journey" aria-label="Making Process">
       <div className="making-journey__inner">
         <div className="making-journey__header">
-          <div className="section-eyebrow">UNBROKEN TRANSMISSION</div>
-          <h2 className="section-title">From Raw Earth to Sacred Object</h2>
+          <div className="section-eyebrow">{t('home.journey_eyebrow')}</div>
+          <h2 className="section-title">{t('home.journey_title')}</h2>
           <p className="section-subtitle">
             An Indian craft object is never merely assembled; it is transformed through patience, 
             natural alchemical reactions, and devotional discipline.

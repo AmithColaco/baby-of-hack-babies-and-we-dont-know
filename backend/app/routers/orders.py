@@ -10,6 +10,7 @@ Endpoints:
 
 import json
 import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
@@ -21,6 +22,7 @@ from app.models import (
     Order,
     OrderItem,
     OrderStatus,
+    OrderTimelineUpdate,
     Payment,
     PaymentStatus,
     User,
@@ -31,6 +33,8 @@ from app.schemas import (
     OrderOut,
     OrderItemOut,
     OrderStatusUpdate,
+    OrderTimelineUpdateCreate,
+    OrderTimelineUpdateOut,
     PaymentOut,
 )
 from app.services.payment_service import payment_provider
@@ -60,6 +64,10 @@ def _order_to_out(order: Order) -> OrderOut:
     if order.payment:
         payment_out = PaymentOut.model_validate(order.payment)
 
+    timeline_list = []
+    if hasattr(order, "timeline_updates") and order.timeline_updates:
+        timeline_list = [OrderTimelineUpdateOut.model_validate(t) for t in order.timeline_updates]
+
     return OrderOut(
         id=order.id,
         buyer_id=order.buyer_id,
@@ -67,10 +75,15 @@ def _order_to_out(order: Order) -> OrderOut:
         total_inr=order.total_inr,
         address_json=order.address_json,
         payment_status=order.payment_status,
+        courier=getattr(order, "courier", "BlueDart Heritage Express") or "BlueDart Heritage Express",
+        tracking_number=getattr(order, "tracking_number", "") or f"KG-{order.id[:8].upper()}-IN",
+        payment_method=getattr(order, "payment_method", "mock_upi") or "mock_upi",
+        upi_ref=getattr(order, "upi_ref", "") or "",
         idempotency_key=order.idempotency_key,
         created_at=order.created_at,
         items=items,
         payment=payment_out,
+        timeline_updates=timeline_list,
     )
 
 
@@ -128,13 +141,20 @@ def checkout(
             "unit_price_inr": listing.price_inr,
         })
 
-    # 3. Create order
+    # 3. Create order with courier and tracking number
+    courier_choice = getattr(body, "courier", "BlueDart Heritage Express") or "BlueDart Heritage Express"
+    tracking_code = f"KG-{int(datetime.now().timestamp() * 1000) % 100000000}-IN"
+
     order = Order(
         buyer_id=user.id,
         status=OrderStatus.PLACED,
         total_inr=round(total, 2),
         address_json=json.dumps(body.address),
         payment_status=PaymentStatus.PENDING,
+        courier=courier_choice,
+        tracking_number=tracking_code,
+        payment_method=body.payment_method or "mock_upi",
+        upi_ref=getattr(body, "upi_ref", "") or f"UPI-DEMO-{int(datetime.now().timestamp() * 1000) % 1000000}",
         idempotency_key=body.idempotency_key,
     )
     db.add(order)
@@ -142,6 +162,16 @@ def checkout(
 
     for item_data in order_items:
         db.add(OrderItem(order_id=order.id, **item_data))
+
+    # Initial Stage 1 timeline update
+    initial_timeline = OrderTimelineUpdate(
+        order_id=order.id,
+        stage_index=1,
+        stage_name="Raw Material Allocation & Order Inscribed",
+        photo_url=order_items[0]["listing_id"] if order_items else "",
+        note="Order confirmed. Certified natural materials and accession plates allocated at master atelier.",
+    )
+    db.add(initial_timeline)
 
     # 4. Process payment
     result = payment_provider.charge(
@@ -342,3 +372,53 @@ def update_order_status(
     db.commit()
     db.refresh(order)
     return _order_to_out(order)
+
+
+# ──────────────────────── Process Timeline Updates ──────────────────────────
+
+@router.post("/{order_id}/timeline", response_model=OrderTimelineUpdateOut, status_code=201, summary="Artisan posts stage photo & note")
+def add_order_timeline_update(
+    order_id: str,
+    body: OrderTimelineUpdateCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Artisan posts photographic proof and progress notes for a made-to-order piece."""
+    order = db.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    timeline_entry = OrderTimelineUpdate(
+        order_id=order_id,
+        stage_index=body.stage_index,
+        stage_name=body.stage_name,
+        photo_url=body.photo_url,
+        note=body.note,
+    )
+    db.add(timeline_entry)
+
+    # Automatically advance order status if stage 4 or 5
+    if body.stage_index >= 4 and order.status in (OrderStatus.PLACED, OrderStatus.CONFIRMED):
+        order.status = OrderStatus.SHIPPED
+    elif body.stage_index >= 2 and order.status == OrderStatus.PLACED:
+        order.status = OrderStatus.CONFIRMED
+
+    db.commit()
+    db.refresh(timeline_entry)
+    return OrderTimelineUpdateOut.model_validate(timeline_entry)
+
+
+@router.get("/{order_id}/timeline", response_model=list[OrderTimelineUpdateOut], summary="Get stage timeline updates for an order")
+def get_order_timeline(
+    order_id: str,
+    db: Session = Depends(get_db),
+):
+    """Public/buyer lookup of artisan crafting milestones for an accessioned piece."""
+    updates = (
+        db.query(OrderTimelineUpdate)
+        .filter(OrderTimelineUpdate.order_id == order_id)
+        .order_by(OrderTimelineUpdate.stage_index.asc(), OrderTimelineUpdate.created_at.asc())
+        .all()
+    )
+    return [OrderTimelineUpdateOut.model_validate(u) for u in updates]
+

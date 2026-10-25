@@ -33,7 +33,7 @@ export default function WishlistPage() {
               <div className="empty-icon">♡</div>
               <h3>No masterworks saved yet</h3>
               <p>Explore the curated collection and save pieces to your wishlist.</p>
-              <Link to="/shop" className="dash-btn dash-btn--primary" style={{ marginTop: '1.5rem', display: 'inline-block' }}>
+              <Link to="/gallery" className="dash-btn dash-btn--primary" style={{ marginTop: '1.5rem', display: 'inline-block' }}>
                 Browse Collection
               </Link>
             </div>

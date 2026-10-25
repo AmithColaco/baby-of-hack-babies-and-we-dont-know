@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useProducts, useWishlist, listingToCraftObject } from '../data/productStore';
 import { getListingById } from '../api/listings';
 import { useCart } from '../contexts/CartContext';
 import { handleImageError, getFallbackForCraft, getArtisanImage } from '../utils/imageFallback';
 import type { CraftObject } from '../types';
+import { ProvenanceTagModal } from '../components/ProvenanceTagModal';
 
 export default function Product() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { products } = useProducts();
   const { addToCart } = useCart();
@@ -18,6 +21,7 @@ export default function Product() {
   const [addedToast, setAddedToast] = useState(false);
   const [asyncProduct, setAsyncProduct] = useState<CraftObject | null>(null);
   const [isLoadingAsync, setIsLoadingAsync] = useState(false);
+  const [isProvenanceModalOpen, setIsProvenanceModalOpen] = useState(false);
 
   // Find product from store or async backend
   const localProduct = products.find((p) => p.id === id);
@@ -79,7 +83,7 @@ export default function Product() {
       <main className="storyboard-page">
         <div className="container" style={{ padding: '6rem 1rem', textAlign: 'center' }}>
           <h2>Craft piece not found</h2>
-          <Link to="/shop" className="hero-btn hero-btn--primary" style={{ marginTop: '1rem', display: 'inline-block' }}>
+          <Link to="/gallery" className="hero-btn hero-btn--primary" style={{ marginTop: '1rem', display: 'inline-block' }}>
             Return to Collection
           </Link>
         </div>
@@ -125,13 +129,13 @@ export default function Product() {
       <div className="storyboard-topbar">
         <div className="storyboard-topbar__inner">
           <div className="storyboard-breadcrumbs">
-            <Link to="/shop">← Collection</Link>
+            <Link to="/gallery">← Collection</Link>
             <span className="sep">/</span>
             <span className="current">{product.craftTradition}</span>
             <span className="sep">/</span>
             <span className="accession">{product.accessionNo}</span>
             <span className="sep">/</span>
-            <Link to={`/gallery?focus=${product.id}`} className="storyboard-3d-crumb" title="Inspect in Curatorial Gallery">
+            <Link to={`/archive?focus=${product.id}`} className="storyboard-3d-crumb" title="Inspect in Curatorial Gallery Dossier">
               ✦ View in Gallery
             </Link>
           </div>
@@ -268,7 +272,17 @@ export default function Product() {
                       id="primary-add-to-bag"
                     >
                       <span className="cart-btn-icon">🛍</span>
-                      <span>Add to Shopping Bag · ₹{(clientPrice * quantity).toLocaleString('en-IN')}</span>
+                      <span>{t('product.add_to_cart')} · ₹{(clientPrice * quantity).toLocaleString('en-IN')}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsProvenanceModalOpen(true)}
+                      className="scene-wish-btn"
+                      style={{ width: '100%', marginTop: '0.65rem', padding: '0.65rem 1rem', background: '#F8F4EC', border: '1px solid #D6C7B2', borderRadius: '6px', fontSize: '0.82rem', fontWeight: 600, color: '#8A2D19', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                    >
+                      <span>✦</span>
+                      <span>{t('product.provenance_btn')}</span>
                     </button>
 
                     <div className="purchase-shipping-hint">
@@ -482,6 +496,94 @@ export default function Product() {
                   <span className="acquire-artisan">Crafted by {product.artisan}</span>
 
                   <div className="acquire-price-display">
+                    {product.isWomenSHG && (
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: '999px',
+                        background: '#FAF0EB',
+                        border: '1px solid #E8C8BE',
+                        color: '#8A2D19',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        marginBottom: '0.85rem'
+                      }}>
+                        <span>✦</span> {t('women_shg.badge')} · {product.shgName || t('women_shg.kasuti_coop')}
+                      </div>
+                    )}
+
+                    {/* Story-Backed Transparent Pricing Breakdown */}
+                    <div style={{
+                      background: '#FDFBF7',
+                      border: '1px solid #E5D8C4',
+                      borderRadius: '8px',
+                      padding: '0.9rem',
+                      marginBottom: '1rem'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#8A7A66', fontWeight: 700 }}>
+                          ✦ {t('product.pricing_title')}
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: '#5A8A48', fontWeight: 600 }}>GI Heritage Fair-Rate</span>
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.84rem', color: '#4A4036' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span>{t('product.mat_cost')}:</span>
+                          <strong>₹{(product.materialCost ?? Math.round(product.price * 0.25)).toLocaleString('en-IN')}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span>
+                            {t('product.labor_cost')} ({product.laborHours ?? 24} hrs × ₹{product.skillRatePerHour ?? 120}/hr):
+                          </span>
+                          <strong>₹{((product.laborHours ?? 24) * (product.skillRatePerHour ?? 120)).toLocaleString('en-IN')}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span>{t('product.heritage_val')}:</span>
+                          <strong>₹{(product.heritagePremium ?? Math.round(product.price * 0.15)).toLocaleString('en-IN')}</strong>
+                        </div>
+                      </div>
+
+                      <div style={{ borderTop: '1px dashed #D6C7B2', marginTop: '0.55rem', paddingTop: '0.45rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem', fontWeight: 700, color: '#1C160E' }}>
+                        <span>{t('product.total_price')}:</span>
+                        <span>₹{product.price.toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+
+                    {/* Fair-Price Comparison: Machine-Made Lookalike Counter */}
+                    <div style={{
+                      background: '#FFF8F5',
+                      border: '1px solid #F0D5CB',
+                      borderRadius: '8px',
+                      padding: '0.85rem',
+                      marginBottom: '1rem',
+                      fontSize: '0.82rem'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                        <span style={{ fontWeight: 700, color: '#9C3826' }}>
+                          {t('product.lookalike_price')} ₹{(product.machineLookalikePrice ?? Math.round(product.price * 0.15)).toLocaleString('en-IN')}
+                        </span>
+                        <span style={{ fontSize: '0.72rem', background: '#F8D7DA', color: '#721C24', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: 600 }}>
+                          Industrial Imitation
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, color: '#6A5445', lineHeight: 1.45 }}>
+                        <strong>{t('product.lookalike_why')}:</strong> {product.machineLookalikeNotes || 'Industrial replicas use cheap synthetic dyes and automated powerlooms with knots and plastic filler. Authentic GI pieces use 100% handspun organic materials that endure for generations.'}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsProvenanceModalOpen(true)}
+                      className="scene-wish-btn"
+                      style={{ width: '100%', marginBottom: '1rem', padding: '0.65rem 1rem', background: '#F8F4EC', border: '1px solid #D6C7B2', borderRadius: '6px', fontSize: '0.82rem', fontWeight: 600, color: '#8A2D19', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                    >
+                      <span>✦</span>
+                      <span>{t('product.provenance_btn')}</span>
+                    </button>
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '0.75rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: '#5A564F' }}>
                         <span>Actual Price:</span>
@@ -540,9 +642,9 @@ export default function Product() {
                     </button>
 
                     <Link
-                      to={`/gallery?focus=${product.id}`}
+                      to={`/archive?focus=${product.id}`}
                       className="acquire-3d-btn"
-                      title="Inspect piece in Curatorial Gallery"
+                      title="Inspect piece in Curatorial Gallery Dossier"
                     >
                       <span>✦ Curatorial Exhibition Dossier</span>
                     </Link>
@@ -604,7 +706,7 @@ export default function Product() {
                 <div className="specs-price-tag">
                   ₹{clientPrice.toLocaleString('en-IN')}{' '}
                   <span style={{ fontSize: '0.85rem', fontWeight: 'normal', color: 'var(--muted)' }}>
-                    (₹{product.price.toLocaleString('en-IN')} base price + 5% platform fee)
+                    (₹{product.price.toLocaleString('en-IN')} base price + 5% platform fee + 5% GST)
                   </span>
                 </div>
 
@@ -662,6 +764,12 @@ export default function Product() {
           <span className="toast-text">“{product.title}” added to your shopping bag</span>
         </div>
       )}
+      {/* Scannable Provenance & Printable Tag Modal */}
+      <ProvenanceTagModal
+        craft={product}
+        isOpen={isProvenanceModalOpen}
+        onClose={() => setIsProvenanceModalOpen(false)}
+      />
     </main>
   );
 }

@@ -98,6 +98,15 @@ class ListingCreate(BaseModel):
     hours_to_make: float = Field(0.0, ge=0)
     price_inr: float = Field(0.0, ge=0)
     stock: int = Field(1, ge=0)
+    accession_id: Optional[str] = ""
+    voice_clip_url: Optional[str] = ""
+    is_women_shg: Optional[bool] = False
+    shg_name: Optional[str] = ""
+    material_cost: Optional[float] = 0.0
+    skill_rate_per_hour: Optional[float] = 150.0
+    heritage_premium: Optional[float] = 0.0
+    machine_lookalike_price: Optional[float] = 0.0
+    machine_lookalike_notes: Optional[str] = ""
 
 
 class ListingUpdate(BaseModel):
@@ -135,6 +144,17 @@ class ListingOut(BaseModel):
     created_at: datetime
     images: list[ListingImageOut] = []
     story: Optional[StoryOut] = None
+
+    # Provenance, Voice Clip & Story-backed pricing
+    accession_id: str = ""
+    voice_clip_url: str = ""
+    is_women_shg: bool = False
+    shg_name: str = ""
+    material_cost: float = 0.0
+    skill_rate_per_hour: float = 150.0
+    heritage_premium: float = 0.0
+    machine_lookalike_price: float = 0.0
+    machine_lookalike_notes: str = ""
 
     # denormalized artisan info for storefront
     artisan_name: str = ""
@@ -202,6 +222,8 @@ class CheckoutRequest(BaseModel):
     items: list[CartItem] = Field(..., min_length=1)
     address: dict = Field(default_factory=dict)
     payment_method: str = Field("mock_upi", description="mock_upi | mock_card | mock_cod")
+    courier: str = Field("BlueDart Heritage Express", description="Courier partner")
+    upi_ref: Optional[str] = Field(None, description="Mock UPI transaction UTR / reference")
     idempotency_key: str = Field(..., min_length=1, max_length=64)
 
 
@@ -225,6 +247,25 @@ class PaymentOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class OrderTimelineUpdateCreate(BaseModel):
+    stage_index: int = Field(..., ge=1, le=5)
+    stage_name: str = Field(..., max_length=100)
+    photo_url: str = Field("", max_length=500)
+    note: str = ""
+
+
+class OrderTimelineUpdateOut(BaseModel):
+    id: str
+    order_id: str
+    stage_index: int
+    stage_name: str
+    photo_url: str
+    note: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class OrderOut(BaseModel):
     id: str
     buyer_id: str
@@ -232,16 +273,73 @@ class OrderOut(BaseModel):
     total_inr: float
     address_json: str
     payment_status: str
+    courier: str = "BlueDart Heritage Express"
+    tracking_number: str = ""
+    payment_method: str = "mock_upi"
+    upi_ref: str = ""
     idempotency_key: str
     created_at: datetime
     items: list[OrderItemOut] = []
     payment: Optional[PaymentOut] = None
+    timeline_updates: list[OrderTimelineUpdateOut] = []
 
     model_config = {"from_attributes": True}
 
 
 class OrderStatusUpdate(BaseModel):
     status: str = Field(..., description="CONFIRMED | SHIPPED | DELIVERED | CANCELLED")
+
+
+# ──────────────────────────── Custom Commissions ──────────────────────────────
+
+class CommissionQuoteCreate(BaseModel):
+    quoted_price: float = Field(..., gt=0)
+    estimated_days: int = Field(..., ge=1)
+    materials_description: str = ""
+    notes: str = ""
+
+
+class CommissionQuoteOut(BaseModel):
+    id: str
+    commission_id: str
+    artisan_id: str
+    quoted_price: float
+    estimated_days: int
+    materials_description: str
+    notes: str
+    status: str
+    created_at: datetime
+    artisan_name: str = ""
+
+    model_config = {"from_attributes": True}
+
+
+class CommissionRequestCreate(BaseModel):
+    craft_type: str = Field(..., max_length=100)
+    title: str = Field(..., max_length=255)
+    description: str = Field(..., min_length=10)
+    dimensions: str = ""
+    target_budget: float = Field(0.0, ge=0)
+    deadline_days: int = Field(30, ge=1)
+    reference_image_url: str = ""
+
+
+class CommissionRequestOut(BaseModel):
+    id: str
+    buyer_id: str
+    craft_type: str
+    title: str
+    description: str
+    dimensions: str
+    target_budget: float
+    deadline_days: int
+    reference_image_url: str
+    status: str
+    created_at: datetime
+    buyer_name: str = ""
+    quotes: list[CommissionQuoteOut] = []
+
+    model_config = {"from_attributes": True}
 
 
 # ──────────────────────────── Gallery ────────────────────────────

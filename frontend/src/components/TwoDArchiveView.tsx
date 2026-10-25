@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { CraftObject, CraftCategory } from '../types';
 import { useProducts } from '../data/productStore';
 import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
@@ -13,6 +14,7 @@ export const TwoDArchiveView = ({
   onSelectObject,
   products,
 }: TwoDArchiveViewProps) => {
+  const { t } = useTranslation();
   const { products: storeProducts } = useProducts();
   const source = products && products.length > 0 ? products : storeProducts;
   const visibleObjects =
@@ -25,10 +27,10 @@ export const TwoDArchiveView = ({
       <div className="container">
         {/* Editorial Heading */}
         <div className="archive-intro-header">
-          <div className="archive-badge">CURATORIAL ARCHIVE · DIGITAL EXHIBITION</div>
-          <h2 className="archive-main-title">Permanent Collection</h2>
+          <div className="archive-badge">{t('gallery.provenance_badge')}</div>
+          <h2 className="archive-main-title">{t('gallery.title')}</h2>
           <p className="archive-subtext">
-            Handcrafted Indian masterworks cataloged with full material provenance, artisan lineages, and verified acquisition availability.
+            {t('gallery.subtitle')}
           </p>
         </div>
 
@@ -38,7 +40,16 @@ export const TwoDArchiveView = ({
             <article
               key={obj.id}
               className="archive-card"
+              role="button"
+              tabIndex={0}
+              aria-label={`Inspect ${obj.title}`}
               onClick={() => onSelectObject(obj)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onSelectObject(obj);
+                }
+              }}
             >
               <div className="archive-card__media">
                 <img
@@ -69,20 +80,21 @@ export const TwoDArchiveView = ({
 
                 <div className="archive-card__footer">
                   <div className="archive-card__price">
-                    <span className="price-tag">Acquisition</span>
+                    <span className="price-tag">{t('pricing.fair_price')}</span>
                     <span className="price-num">
                       ₹ {Math.round(obj.price * 1.05).toLocaleString('en-IN')}
                     </span>
                   </div>
 
                   <button
+                    type="button"
                     className="btn btn-primary btn-sm archive-inspect-btn"
                     onClick={(e) => {
                       e.stopPropagation();
                       onSelectObject(obj);
                     }}
                   >
-                    Inspect Dossier →
+                    {t('gallery.view_story')} →
                   </button>
                 </div>
               </div>

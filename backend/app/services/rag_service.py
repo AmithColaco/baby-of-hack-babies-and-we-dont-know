@@ -940,7 +940,9 @@ async def generate_rag_response(
                 "as well as our physical master-bench inspection, tamper-proof Certificate of Authenticity, and 7-day white-glove inspection window.\n"
                 f"{object_instruction}"
                 "4. Keep responses concise, beautiful, and formatted in clean GitHub Markdown.\n"
-                "5. Do NOT fabricate crafts or artisans not present in the archives."
+                "5. Do NOT fabricate crafts or artisans not present in the archives.\n"
+                "6. Never use emojis anywhere in your response. Maintain an authoritative, museum-grade curatorial tone free of emojis.\n"
+                "7. Never mention technical AI or system terminology such as 'RAG', 'Retrieval-Augmented Generation', 'LLM', or 'vector database'. Refer exclusively to the KAARIGAR Curatorial Archives and master registers."
             )
 
             prompt = (

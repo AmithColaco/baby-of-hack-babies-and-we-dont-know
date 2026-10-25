@@ -44,16 +44,20 @@ export function SellerCallToAction() {
           </div>
 
           <div className="seller-cta-actions">
-            {!isLoggedIn && (
+            {!isLoggedIn ? (
               <Link to="/login" className="seller-action-btn seller-action-btn--primary" id="seller-onboard-cta">
                 <span>Onboard Your Atelier</span>
                 <span className="arrow">→</span>
               </Link>
-            )}
-
-            {isArtisan && (
+            ) : isArtisan ? (
               <Link to="/dashboard" className="seller-action-btn seller-action-btn--secondary" id="seller-portal-cta">
                 <span>Artisan Atelier Portal</span>
+                <span className="arrow">→</span>
+              </Link>
+            ) : (
+              <Link to="/become-a-seller" className="seller-action-btn seller-action-btn--primary" id="seller-onboard-cta">
+                <span>Register as Master Artisan</span>
+                <span className="arrow">→</span>
               </Link>
             )}
           </div>

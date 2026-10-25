@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../data/productStore';
 import { useAuth } from '../contexts/AuthContext';
+import { changeLanguage } from '../i18n';
 
 export function SiteHeader() {
+  const { t, i18n } = useTranslation();
   const { totalItems, setIsCartOpen } = useCart();
   const { totalWishlist } = useWishlist();
   const { user, isLoggedIn, isArtisan, logout } = useAuth();
@@ -38,7 +41,16 @@ export function SiteHeader() {
   }, [showUserMenu]);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setIsScrolled(window.scrollY > 20);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -52,7 +64,7 @@ export function SiteHeader() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/shop?q=${encodeURIComponent(searchQuery.trim())}`);
+      navigate(`/gallery?q=${encodeURIComponent(searchQuery.trim())}`);
       setSearchOpen(false);
       setSearchQuery('');
     }
@@ -69,28 +81,60 @@ export function SiteHeader() {
       <header className={`site-header ${isScrolled || !isHomepage ? 'site-header--scrolled' : 'site-header--transparent'}`} role="banner">
         <div className="site-header__inner">
           {/* Mobile hamburger */}
-          <button type="button" className="site-header__menu-btn md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle navigation menu" aria-expanded={mobileMenuOpen}>
+          <button type="button" className="site-header__menu-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle navigation menu" aria-expanded={mobileMenuOpen}>
             <span className="hamburger-line" /><span className="hamburger-line" /><span className="hamburger-line" />
           </button>
 
           {/* Brand */}
           <Link to="/" className="site-header__brand" aria-label="KAARIGAR Home">
-            <span className="site-header__brand-title">KAARIGAR</span>
-            <span className="site-header__brand-tagline">Living Craft Archive</span>
+            <span className="site-header__brand-title">{t('nav.brand_title')}</span>
+            <span className="site-header__brand-tagline">{t('nav.brand_tagline')}</span>
           </Link>
 
           {/* Desktop Nav */}
           <nav className="site-header__nav" aria-label="Main Navigation">
-            <NavLink to="/gallery" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>Gallery</NavLink>
-            <Link to="/#artisans" className="site-nav-link">Artisans</Link>
-            <Link to="/#process" className="site-nav-link">Craft Journey</Link>
+            <NavLink to="/gallery" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>{t('nav.gallery')}</NavLink>
+            <NavLink to="/commissions" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>{t('nav.commissions')}</NavLink>
+            <Link to="/#artisans" className="site-nav-link">{t('nav.artisans')}</Link>
+            <Link to="/#process" className="site-nav-link">{t('nav.process')}</Link>
             {isArtisan && (
-              <NavLink to="/dashboard" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>Artisan Atelier Portal</NavLink>
+              <NavLink to="/dashboard" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>{t('nav.dashboard')}</NavLink>
             )}
           </nav>
 
           {/* Action Icons */}
           <div className="site-header__actions">
+            {/* Language Switcher */}
+            <div className="site-header__lang-switcher" role="group" aria-label="Select Language">
+              <button
+                type="button"
+                className={`lang-btn ${i18n.language === 'en' ? 'active' : ''}`}
+                onClick={() => changeLanguage('en')}
+                title="Switch to English"
+                aria-pressed={i18n.language === 'en'}
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                className={`lang-btn ${i18n.language === 'kn' ? 'active' : ''}`}
+                onClick={() => changeLanguage('kn')}
+                title="ಕನ್ನಡಕ್ಕೆ ಬದಲಾಯಿಸಿ"
+                aria-pressed={i18n.language === 'kn'}
+              >
+                ಕನ್ನಡ
+              </button>
+              <button
+                type="button"
+                className={`lang-btn ${i18n.language === 'hi' ? 'active' : ''}`}
+                onClick={() => changeLanguage('hi')}
+                title="हिंदी में बदलें"
+                aria-pressed={i18n.language === 'hi'}
+              >
+                हिंदी
+              </button>
+            </div>
+
             {/* Search */}
             <button type="button" className="site-header__action-btn" onClick={() => setSearchOpen(true)} aria-label="Search craft archive" title="Search crafts">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -156,7 +200,7 @@ export function SiteHeader() {
                       <Link to="/dashboard" className="user-dropdown__link" onClick={() => setShowUserMenu(false)}>
                         <span className="user-dropdown__link-text">
                           <span className="user-dropdown__link-icon">🏛</span>
-                          <span>Artisan Atelier Portal</span>
+                          <span>{t('nav.dashboard')}</span>
                         </span>
                         <span className="user-dropdown__arrow">→</span>
                       </Link>
@@ -164,26 +208,26 @@ export function SiteHeader() {
                     <Link to="/wishlist" className="user-dropdown__link" onClick={() => setShowUserMenu(false)}>
                       <span className="user-dropdown__link-text">
                         <span className="user-dropdown__link-icon">♡</span>
-                        <span>My Wishlist</span>
+                        <span>{t('nav.wishlist')}</span>
                       </span>
                       {totalWishlist > 0 && <span className="site-badge" style={{ position: 'static' }}>{totalWishlist}</span>}
                     </Link>
                     <Link to="/settings" className="user-dropdown__link" onClick={() => setShowUserMenu(false)}>
                       <span className="user-dropdown__link-text">
                         <span className="user-dropdown__link-icon">⚙</span>
-                        <span>Account Settings</span>
+                        <span>{t('nav.account')}</span>
                       </span>
                     </Link>
                     <button type="button" className="user-dropdown__btn" onClick={handleLogout}>
                       <span className="user-dropdown__link-icon">⎋</span>
-                      <span>Sign Out</span>
+                      <span>{t('nav.logout')}</span>
                     </button>
                   </div>
                 )}
               </div>
             ) : (
-              <Link to="/login" className="site-header__seller-cta" title="Sign In / Register">
-                <span>Sign In</span>
+              <Link to="/login" className="site-header__seller-cta" title="Login">
+                <span>{t('nav.login')}</span>
               </Link>
             )}
           </div>
@@ -199,16 +243,16 @@ export function SiteHeader() {
               <button type="button" className="search-modal__close" onClick={() => setSearchOpen(false)} aria-label="Close search">✕</button>
             </div>
             <form onSubmit={handleSearchSubmit} className="search-modal__form">
-              <input type="search" autoFocus value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search by craft, artisan, region…" className="search-modal__input" />
+              <input type="search" autoFocus value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={t('nav.search_placeholder')} className="search-modal__input" />
               <button type="submit" className="search-modal__submit">Search</button>
             </form>
             <div className="search-modal__quick-tags">
               <span>Suggested:</span>
-              <button type="button" onClick={() => { navigate('/shop?q=Pahari'); setSearchOpen(false); }}>Pahari Miniature</button>
-              <button type="button" onClick={() => { navigate('/shop?q=Dhokra'); setSearchOpen(false); }}>Bastar Dhokra</button>
-              <button type="button" onClick={() => { navigate('/shop?q=Chanderi'); setSearchOpen(false); }}>Chanderi Silk</button>
-              <button type="button" onClick={() => { navigate('/shop?q=Blue+Pottery'); setSearchOpen(false); }}>Jaipur Faience</button>
-              <button type="button" onClick={() => { navigate('/shop?q=Kundan'); setSearchOpen(false); }}>Kundan Meenakari</button>
+              <button type="button" onClick={() => { navigate('/gallery?q=Pahari'); setSearchOpen(false); }}>Pahari Miniature</button>
+              <button type="button" onClick={() => { navigate('/gallery?q=Dhokra'); setSearchOpen(false); }}>Bastar Dhokra</button>
+              <button type="button" onClick={() => { navigate('/gallery?q=Chanderi'); setSearchOpen(false); }}>Chanderi Silk</button>
+              <button type="button" onClick={() => { navigate('/gallery?q=Blue+Pottery'); setSearchOpen(false); }}>Jaipur Faience</button>
+              <button type="button" onClick={() => { navigate('/gallery?q=Kundan'); setSearchOpen(false); }}>Kundan Meenakari</button>
             </div>
           </div>
         </div>
@@ -219,21 +263,48 @@ export function SiteHeader() {
         <div className="mobile-drawer-backdrop" onClick={() => setMobileMenuOpen(false)}>
           <div className="mobile-drawer" onClick={(e) => e.stopPropagation()}>
             <div className="mobile-drawer__top">
-              <span className="site-header__brand-title">KAARIGAR</span>
+              <span className="site-header__brand-title">{t('nav.brand_title')}</span>
               <button type="button" className="mobile-drawer__close" onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">✕</button>
             </div>
             <nav className="mobile-drawer__nav">
               <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home Archive</Link>
-              <Link to="/gallery" onClick={() => setMobileMenuOpen(false)}>Living Gallery</Link>
-              <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>My Wishlist {totalWishlist > 0 && `(${totalWishlist})`}</Link>
-              {isLoggedIn && isArtisan && <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>Artisan Atelier Portal</Link>}
-              {isLoggedIn && <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>Settings</Link>}
+              <Link to="/gallery" onClick={() => setMobileMenuOpen(false)}>{t('nav.gallery')}</Link>
+              <Link to="/commissions" onClick={() => setMobileMenuOpen(false)}>{t('nav.commissions')}</Link>
+              <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>{t('nav.wishlist')} {totalWishlist > 0 && `(${totalWishlist})`}</Link>
+              {isLoggedIn && isArtisan && <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>{t('nav.dashboard')}</Link>}
+              {isLoggedIn && <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>{t('nav.account')}</Link>}
               {isLoggedIn
-                ? <button type="button" onClick={() => { logout(); navigate('/'); setMobileMenuOpen(false); }} style={{ background: 'none', border: 'none', textAlign: 'left', fontFamily: 'inherit', fontSize: 'inherit', cursor: 'pointer', color: '#C0392B', padding: 0 }}>Sign Out</button>
-                : <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Sign In / Register</Link>
+                ? <button type="button" onClick={() => { logout(); navigate('/'); setMobileMenuOpen(false); }} style={{ background: 'none', border: 'none', textAlign: 'left', fontFamily: 'inherit', fontSize: 'inherit', cursor: 'pointer', color: '#C0392B', padding: 0 }}>{t('nav.logout')}</button>
+                : <Link to="/login" onClick={() => setMobileMenuOpen(false)}>{t('nav.login')}</Link>
               }
-              <Link to="/cart" onClick={() => setMobileMenuOpen(false)}>Shopping Bag ({totalItems})</Link>
+              <Link to="/cart" onClick={() => setMobileMenuOpen(false)}>{t('nav.cart')} ({totalItems})</Link>
             </nav>
+            <div className="mobile-drawer__lang-wrap" style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--border-light, #E8DFD3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--stone)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Language</span>
+              <div className="site-header__lang-switcher" role="group" aria-label="Select Language">
+                <button
+                  type="button"
+                  className={`lang-btn ${i18n.language === 'en' ? 'active' : ''}`}
+                  onClick={() => changeLanguage('en')}
+                >
+                  EN
+                </button>
+                <button
+                  type="button"
+                  className={`lang-btn ${i18n.language === 'kn' ? 'active' : ''}`}
+                  onClick={() => changeLanguage('kn')}
+                >
+                  ಕನ್ನಡ
+                </button>
+                <button
+                  type="button"
+                  className={`lang-btn ${i18n.language === 'hi' ? 'active' : ''}`}
+                  onClick={() => changeLanguage('hi')}
+                >
+                  हिंदी
+                </button>
+              </div>
+            </div>
             <div className="mobile-drawer__bottom">
               <p>Authentic Handcrafts Direct from Indigenous Artisans.</p>
               <span>Authenticity & Provenance Seal Included</span>

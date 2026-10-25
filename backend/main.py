@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import Base, engine
-from app.routers import auth, chatbot, gallery, guide, listings, orders
+from app.routers import auth, chatbot, commissions, gallery, guide, listings, orders
 
 
 @asynccontextmanager
@@ -20,9 +20,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="KalaHaat API",
-    version="0.1.0",
-    description="Virtual Marketplace for Coastal Artisans — API",
+    title="KAARIGAR API",
+    version="1.0.0",
+    description="KAARIGAR – The Living Craft Archive & Cultural Commerce Platform",
     lifespan=lifespan,
 )
 
@@ -39,6 +39,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(listings.router, prefix="/listings", tags=["listings"])
 app.include_router(orders.router, prefix="/orders", tags=["orders"])
+app.include_router(commissions.router, prefix="/commissions", tags=["commissions"])
 app.include_router(gallery.router, prefix="/gallery", tags=["gallery"])
 app.include_router(guide.router, prefix="/guide", tags=["guide"])
 app.include_router(chatbot.router, prefix="/chatbot", tags=["chatbot"])
@@ -89,7 +90,7 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 @app.get("/", tags=["health"])
 def root():
-    return {"status": "ok", "app": "KalaHaat", "docs": "/docs"}
+    return {"status": "ok", "app": "KAARIGAR", "docs": "/docs"}
 
 
 @app.get("/health", tags=["health"])

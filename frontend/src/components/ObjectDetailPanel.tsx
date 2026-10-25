@@ -109,6 +109,7 @@ export const ObjectDetailPanel = ({
         <div className="panel__nav-controls">
           {onSelectPrev && (
             <button
+              type="button"
               onClick={onSelectPrev}
               className="panel__arrow-btn"
               title="Previous Masterwork (←)"
@@ -119,6 +120,7 @@ export const ObjectDetailPanel = ({
           )}
           {onSelectNext && (
             <button
+              type="button"
               onClick={onSelectNext}
               className="panel__arrow-btn"
               title="Next Masterwork (→)"
@@ -128,6 +130,7 @@ export const ObjectDetailPanel = ({
             </button>
           )}
           <button
+            type="button"
             onClick={onClose}
             className="panel__close-btn"
             title="Return to Collection (Esc)"
@@ -272,6 +275,7 @@ export const ObjectDetailPanel = ({
         {/* Navigation Tabs: Provenance / Making Process / Master Artisan */}
         <div className="panel__tabs" role="tablist">
           <button
+            type="button"
             role="tab"
             aria-selected={activeTab === 'provenance'}
             onClick={() => setActiveTab('provenance')}
@@ -280,6 +284,7 @@ export const ObjectDetailPanel = ({
             Provenance & Specs
           </button>
           <button
+            type="button"
             role="tab"
             aria-selected={activeTab === 'making'}
             onClick={() => setActiveTab('making')}
@@ -288,6 +293,7 @@ export const ObjectDetailPanel = ({
             The Making Process
           </button>
           <button
+            type="button"
             role="tab"
             aria-selected={activeTab === 'artisan'}
             onClick={() => setActiveTab('artisan')}
@@ -400,6 +406,7 @@ export const ObjectDetailPanel = ({
 
               {onOpenStory && (
                 <button
+                  type="button"
                   onClick={() => onOpenStory(object.id)}
                   className="btn btn-outline btn-sm artisan-explore-btn"
                 >
@@ -414,6 +421,7 @@ export const ObjectDetailPanel = ({
       {/* Sticky Bottom Actions */}
       <div className="panel__footer">
         <button
+          type="button"
           onClick={handleAcquire}
           className={`btn btn-primary btn-acquire ${addedAnimation ? 'btn-acquired' : ''}`}
           id="btn-acquire-object"
@@ -443,6 +451,7 @@ export const ObjectDetailPanel = ({
         </Link>
 
         <button
+          type="button"
           onClick={onClose}
           className="btn btn-ghost btn-return"
         >

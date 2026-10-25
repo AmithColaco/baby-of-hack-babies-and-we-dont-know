@@ -1,18 +1,23 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useProducts, listingToCraftObject } from '../data/productStore';
 import { useAuth } from '../contexts/AuthContext';
 import { handleImageError, getFallbackForCraft } from '../utils/imageFallback';
 import { getListings, archiveListing, type ListingRecord } from '../api/listings';
 import { getArtisanOrders, updateOrderStatus, type OrderRecord } from '../api/orders';
+import { ProvenanceTagModal } from '../components/ProvenanceTagModal';
+import type { CraftObject } from '../types';
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const { products, deleteProduct, resetToDefaults } = useProducts();
   const { user, logout, updateProfileOnBackend } = useAuth();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<'pieces' | 'inquiries' | 'profile'>('pieces');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [tagModalCraft, setTagModalCraft] = useState<CraftObject | null>(null);
 
   // Backend artisan orders state
   const [artisanOrders, setArtisanOrders] = useState<OrderRecord[]>([]);
@@ -127,14 +132,62 @@ export default function Dashboard() {
 
           <div className="dashboard-header__actions">
             <Link to="/dashboard/create" className="dash-btn dash-btn--primary" id="dashboard-add-piece">
-              <span>+ Add Craft Piece</span>
+              <span>{t('dashboard.add_piece')}</span>
             </Link>
             <Link to="/settings" className="dash-btn dash-btn--secondary">
-              <span>Settings</span>
+              <span>{t('nav.account')}</span>
             </Link>
             <button type="button" className="dash-btn dash-btn--danger" onClick={() => { logout(); navigate('/'); }}>
-              Sign Out
+              {t('nav.logout')}
             </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Plain-Language Visual Earnings Uplift Card */}
+      <section style={{ padding: '0 1.5rem', maxWidth: '1200px', margin: '0 auto 1.5rem auto' }}>
+        <div style={{
+          padding: '1.5rem',
+          background: '#FAF6EE',
+          border: '1px solid #D6C4A6',
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+        }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
+            <div>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', color: '#8A2D19', letterSpacing: '0.06em' }}>
+                ✦ {t('home.impact_title')}
+              </span>
+              <h2 style={{ margin: '4px 0 0 0', fontFamily: 'var(--font-display)', fontSize: '1.35rem', color: '#1C160E' }}>
+                {t('dashboard.earnings_headline')}
+              </h2>
+            </div>
+            <div style={{ background: '#E2F2E4', color: '#1E682A', border: '1px solid #B5DFBC', padding: '6px 14px', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 700 }}>
+              {t('dashboard.earnings_uplift')}
+            </div>
+          </div>
+
+          {/* Visual Comparison Bars */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '5px', fontWeight: 600 }}>
+                <span style={{ color: '#2E6B38' }}>✓ {t('dashboard.kaarigar_model')}</span>
+                <span style={{ color: '#2E6B38', fontWeight: 700 }}>₹18,400</span>
+              </div>
+              <div style={{ width: '100%', height: '14px', background: '#E8DFC8', borderRadius: '999px', overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: '100%', background: '#2E6B38', borderRadius: '999px' }}></div>
+              </div>
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '5px', color: '#705F4D' }}>
+                <span>{t('dashboard.middleman_trader')}</span>
+                <span style={{ fontWeight: 600 }}>₹6,000</span>
+              </div>
+              <div style={{ width: '100%', height: '14px', background: '#E8DFC8', borderRadius: '999px', overflow: 'hidden' }}>
+                <div style={{ width: '32.6%', height: '100%', background: '#A08F7E', borderRadius: '999px' }}></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -289,6 +342,16 @@ export default function Dashboard() {
                         >
                           Edit
                         </Link>
+
+                        <button
+                          type="button"
+                          className="action-link"
+                          style={{ background: '#FAF6EE', border: '1px solid #D6C4A6', color: '#5C4C3B' }}
+                          onClick={() => setTagModalCraft(item)}
+                          title="Generate scannable provenance QR code & print physical hang tag"
+                        >
+                          {t('dashboard.print_tag')}
+                        </button>
 
                         {deleteConfirmId === item.id ? (
                           <div className="delete-confirm-box">
@@ -539,6 +602,15 @@ export default function Dashboard() {
           )}
         </div>
       </section>
+
+      {/* Scannable Provenance & Printable Hang Tag Modal */}
+      {tagModalCraft && (
+        <ProvenanceTagModal
+          craft={tagModalCraft}
+          isOpen={Boolean(tagModalCraft)}
+          onClose={() => setTagModalCraft(null)}
+        />
+      )}
     </main>
   );
 }

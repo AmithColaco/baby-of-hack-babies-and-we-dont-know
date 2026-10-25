@@ -160,13 +160,13 @@ async def analyze_space_endpoint(
 @router.post(
     "/chat",
     response_model=ChatbotChatResponse,
-    summary="Ask the KAARIGAR Curatorial RAG Chatbot questions about crafts, artisans, or policies",
+    summary="Ask the KAARIGAR Curatorial Chatbot questions about crafts, artisans, or policies",
 )
 async def chat_endpoint(
     payload: ChatbotChatRequest,
     db: Session = Depends(get_db),
 ):
-    """Query the KAARIGAR Curatorial RAG Assistant.
+    """Query the KAARIGAR Curatorial Assistant.
 
     Retrieves verified knowledge chunks across craft traditions, master artisan lineages,
     making stages, and platform policies, and generates a context-augmented response with
