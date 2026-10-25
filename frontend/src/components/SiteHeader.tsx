@@ -93,10 +93,11 @@ export function SiteHeader() {
 
           {/* Desktop Nav */}
           <nav className="site-header__nav" aria-label="Main Navigation">
-            <NavLink to="/gallery" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>{t('nav.gallery')}</NavLink>
-            <NavLink to="/commissions" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>{t('nav.commissions')}</NavLink>
-            <Link to="/#artisans" className="site-nav-link">{t('nav.artisans')}</Link>
-            <Link to="/#process" className="site-nav-link">{t('nav.process')}</Link>
+            <NavLink to="/gallery" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>{t('nav.gallery', 'Catalogue')}</NavLink>
+            <NavLink to="/archive" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>Living Archive</NavLink>
+            <NavLink to="/commissions" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>{t('nav.commissions', 'Commissions')}</NavLink>
+            <Link to="/#artisans" className="site-nav-link">{t('nav.artisans', 'Artisans')}</Link>
+            <Link to="/#process" className="site-nav-link">{t('nav.process', 'Craft Journey')}</Link>
             {isArtisan && (
               <NavLink to="/dashboard" className={({ isActive }) => `site-nav-link ${isActive ? 'active' : ''}`}>{t('nav.dashboard')}</NavLink>
             )}
@@ -268,11 +269,12 @@ export function SiteHeader() {
             </div>
             <nav className="mobile-drawer__nav">
               <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home Archive</Link>
-              <Link to="/gallery" onClick={() => setMobileMenuOpen(false)}>{t('nav.gallery')}</Link>
-              <Link to="/commissions" onClick={() => setMobileMenuOpen(false)}>{t('nav.commissions')}</Link>
-              <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>{t('nav.wishlist')} {totalWishlist > 0 && `(${totalWishlist})`}</Link>
-              {isLoggedIn && isArtisan && <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>{t('nav.dashboard')}</Link>}
-              {isLoggedIn && <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>{t('nav.account')}</Link>}
+              <Link to="/gallery" onClick={() => setMobileMenuOpen(false)}>{t('nav.gallery', 'Craft Catalogue')}</Link>
+              <Link to="/archive" onClick={() => setMobileMenuOpen(false)}>Living Archive</Link>
+              <Link to="/commissions" onClick={() => setMobileMenuOpen(false)}>{t('nav.commissions', 'Custom Commissions')}</Link>
+              <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>{t('nav.wishlist', 'Wishlist')} {totalWishlist > 0 && `(${totalWishlist})`}</Link>
+              {isLoggedIn && isArtisan && <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>{t('nav.dashboard', 'Artisan Atelier')}</Link>}
+              {isLoggedIn && <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>{t('nav.account', 'Settings')}</Link>}
               {isLoggedIn
                 ? <button type="button" onClick={() => { logout(); navigate('/'); setMobileMenuOpen(false); }} style={{ background: 'none', border: 'none', textAlign: 'left', fontFamily: 'inherit', fontSize: 'inherit', cursor: 'pointer', color: '#C0392B', padding: 0 }}>{t('nav.logout')}</button>
                 : <Link to="/login" onClick={() => setMobileMenuOpen(false)}>{t('nav.login')}</Link>

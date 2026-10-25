@@ -118,10 +118,20 @@ export default function Catalogue() {
       {/* Header Banner */}
       <section className="shop-header">
         <div className="shop-header__inner">
-          <h1 className="shop-header__title">Gallery of Masterworks</h1>
+          <h1 className="shop-header__title">Catalogue of Masterworks</h1>
           <p className="shop-header__desc">
             Authentic Indian craftsmanship directly from living master artisans.
           </p>
+          <div style={{ marginTop: '0.85rem', display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+            <Link
+              to="/gallery"
+              className="hero-btn hero-btn--secondary"
+              style={{ fontSize: '0.82rem', padding: '0.4rem 0.9rem', textDecoration: 'none' }}
+              title="Experience 2D Curatorial Museum View with AI Voice Narration"
+            >
+              ✦ Switch to Curatorial Exhibition (with AI Voice Guide)
+            </Link>
+          </div>
         </div>
       </section>
 

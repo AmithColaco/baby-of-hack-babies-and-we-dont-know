@@ -82,7 +82,7 @@ export const TwoDArchiveView = ({
                   <div className="archive-card__price">
                     <span className="price-tag">{t('pricing.fair_price')}</span>
                     <span className="price-num">
-                      ₹ {Math.round(obj.price * 1.05).toLocaleString('en-IN')}
+                      ₹ {Math.round(obj.price * 1.10).toLocaleString('en-IN')}
                     </span>
                   </div>
 

@@ -13,6 +13,7 @@ import {
   type PriceBreakdownResponse,
   type CraftReferenceRecord,
 } from '../api/listings';
+import { API_BASE_URL } from '../api/client';
 
 const PRESET_IMAGES = [
   { label: 'Kasuti Embroidery Saree Pallu', url: '/images/kasuti.jpg' },
@@ -297,7 +298,7 @@ export default function CreateListing() {
     const productId = isEditing && id ? id : (backendId || `craft-${Date.now().toString(36)}`);
     const accessionNo = existingProduct?.accessionNo || `KH-2026-${Math.floor(Math.random() * 900 + 100)}`;
     const finalImage = uploadedImageUrl
-      ? (uploadedImageUrl.startsWith('/uploads') ? `http://localhost:8000${uploadedImageUrl}` : uploadedImageUrl)
+      ? (uploadedImageUrl.startsWith('/uploads') ? `${API_BASE_URL}${uploadedImageUrl}` : uploadedImageUrl)
       : (imageUrl || PRESET_IMAGES[0].url);
 
     const newCraftObject: CraftObject = {

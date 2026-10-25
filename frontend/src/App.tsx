@@ -1,8 +1,9 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { SiteHeader } from './components/SiteHeader';
 import { SiteFooter } from './components/SiteFooter';
 import { CartDrawer } from './components/CartDrawer';
+import LoadingSpinner from './components/LoadingSpinner';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
@@ -20,45 +21,6 @@ const Onboarding = lazy(() => import('./pages/Onboarding'));
 const WishlistPage = lazy(() => import('./pages/WishlistPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const CustomCommissions = lazy(() => import('./pages/CustomCommissions'));
-
-function RouteLoadingFallback() {
-  return (
-    <div
-      style={{
-        minHeight: '65vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '1.25rem',
-        backgroundColor: 'var(--cream, #FDFBF7)',
-        color: 'var(--stone, #7D7871)',
-        fontFamily: 'var(--font-heading, "Cinzel", Georgia, serif)',
-        letterSpacing: '0.14em',
-        fontSize: '0.82rem',
-        textTransform: 'uppercase',
-      }}
-      aria-label="Loading archival view"
-    >
-      <div
-        style={{
-          width: '32px',
-          height: '32px',
-          border: '2px solid rgba(184, 92, 56, 0.2)',
-          borderTopColor: 'var(--terracotta, #B85C38)',
-          borderRadius: '50%',
-          animation: 'kaarigar-spin 0.8s linear infinite',
-        }}
-      />
-      <span style={{ fontSize: '0.78rem', color: 'var(--charcoal, #1C1C1A)' }}>Consulting Curatorial Archives...</span>
-      <style>{`
-        @keyframes kaarigar-spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
-  );
-}
 
 function ScrollToTop() {
   const { pathname, search, hash } = useLocation();
@@ -98,10 +60,12 @@ function AppLayout() {
         <SpaceStylist />
       </Suspense>
 
-      <Suspense fallback={<RouteLoadingFallback />}>
+      <Suspense fallback={<LoadingSpinner label="Consulting Curatorial Archives…" />}>
         <Routes>
           <Route path="/"                   element={<Home />} />
           <Route path="/gallery"            element={<Catalogue />} />
+          <Route path="/catalogue"          element={<Catalogue />} />
+          <Route path="/collection"         element={<Catalogue />} />
           <Route path="/archive"            element={<Gallery />} />
           <Route path="/exhibition"         element={<Gallery />} />
           <Route path="/shop"               element={<ShopRedirect />} />

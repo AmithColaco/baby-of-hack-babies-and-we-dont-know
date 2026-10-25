@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { CRAFT_OBJECTS } from './craftsData';
 import type { CraftObject } from '../types';
 import { getListings, type ListingRecord } from '../api/listings';
+import { API_BASE_URL } from '../api/client';
 import { getArtisanImage } from '../utils/imageFallback';
 
 const PRODUCTS_STORAGE_KEY = 'kaarigar_products_catalog_v2';
@@ -38,7 +39,7 @@ export function listingToCraftObject(listing: ListingRecord): CraftObject {
     if (rawFirstUrl.startsWith('http://') || rawFirstUrl.startsWith('https://')) {
       imageUrl = rawFirstUrl;
     } else if (rawFirstUrl.startsWith('/uploads')) {
-      imageUrl = `http://localhost:8000${rawFirstUrl}`;
+      imageUrl = `${API_BASE_URL}${rawFirstUrl}`;
     } else {
       imageUrl = rawFirstUrl;
     }

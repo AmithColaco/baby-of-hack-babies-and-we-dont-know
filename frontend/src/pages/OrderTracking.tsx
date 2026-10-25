@@ -58,7 +58,9 @@ export default function OrderTracking() {
   ];
 
   const totalAmount = backendOrder ? backendOrder.total_inr : (localOrder?.totalAmount || 5200);
-  const directArtisanTotal = Math.round(totalAmount * 0.88);
+  const directArtisanTotal = localOrder?.directArtisanTotal || Math.round(totalAmount / 1.10);
+  const platformFee = Math.round(directArtisanTotal * 0.05);
+  const taxTotal = Math.round(directArtisanTotal * 0.05);
 
   // Status mapping to timeline steps (0..3)
   // PLACED -> 0
@@ -292,12 +294,16 @@ export default function OrderTracking() {
                 <span>₹{totalAmount.toLocaleString('en-IN')}</span>
               </div>
               <div className="equity-row highlight-row">
-                <span>Direct Artisan Guild Disbursement</span>
+                <span>Direct Artisan Guild Disbursement (100% Base)</span>
                 <strong className="text-green">₹{directArtisanTotal.toLocaleString('en-IN')}</strong>
               </div>
               <div className="equity-row">
                 <span>Platform Archival & Escrow Fee (5%)</span>
-                <span>₹{(totalAmount - directArtisanTotal).toLocaleString('en-IN')}</span>
+                <span>₹{platformFee.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="equity-row">
+                <span>Statutory Goods & Services Tax (5% GST)</span>
+                <span>₹{taxTotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="equity-row">
                 <span>Insured White-Glove Delivery</span>
