@@ -1,16 +1,18 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../contexts/AuthContext";
 import {
-  createListing, publishListing, uploadListingImages, getPriceSuggestion,
-  type PriceBreakdownResponse
+  createListing,
+  publishListing,
+  uploadListingImages,
+  getPriceSuggestion,
+  type PriceBreakdownResponse,
 } from "../api/listings";
-import { StepWizard, BigButton, VoiceInputField, HelpButton, BottomNav, OfflineBanner } from "../components/artisan";
-import "../artisan.css";
 
 // Helper: compress image client-side before upload
 async function compressImage(file: File, maxPx = 1200, quality = 0.75): Promise<File> {
-  return new Promise(res => {
+  return new Promise((res) => {
     const img = new Image();
     img.onload = () => {
       const scale = Math.min(maxPx / img.width, maxPx / img.height, 1);
@@ -18,11 +20,19 @@ async function compressImage(file: File, maxPx = 1200, quality = 0.75): Promise<
       canvas.width = Math.round(img.width * scale);
       canvas.height = Math.round(img.height * scale);
       canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(b => {
-        if (!b) return res(file);
-        const compressedFile = new File([b], file.name.replace(/\.[^/.]+$/, "") + ".webp", { type: "image/webp" });
-        res(compressedFile);
-      }, "image/webp", quality);
+      canvas.toBlob(
+        (b) => {
+          if (!b) return res(file);
+          const compressedFile = new File(
+            [b],
+            file.name.replace(/\.[^/.]+$/, "") + ".webp",
+            { type: "image/webp" }
+          );
+          res(compressedFile);
+        },
+        "image/webp",
+        quality
+      );
     };
     img.onerror = () => res(file);
     img.src = URL.createObjectURL(file);
@@ -32,54 +42,173 @@ async function compressImage(file: File, maxPx = 1200, quality = 0.75): Promise<
 type Complexity = "low" | "medium" | "high" | "very_high";
 
 const CRAFT_OPTIONS = [
-  { key: "weaving",        emoji: "🧶", label: "Weaving" },
-  { key: "pottery",        emoji: "🏺", label: "Pottery" },
-  { key: "wood_carving",   emoji: "🪵", label: "Wood carving" },
-  { key: "dhokra",         emoji: "🔔", label: "Metal casting" },
-  { key: "embroidery",     emoji: "🪡", label: "Embroidery" },
-  { key: "painting",       emoji: "🖌️", label: "Painting" },
-  { key: "jewellery",      emoji: "💎", label: "Jewellery" },
-  { key: "other",          emoji: "🎁", label: "Other" },
+  { key: "weaving", label: "Weaving & Handloom", desc: "Ikat, Jamdani, Kasuti, Shawls, Silk" },
+  { key: "pottery", label: "Pottery & Terracotta", desc: "Clayware, Studio Ceramics, Terracotta" },
+  { key: "wood_carving", label: "Wood Carving", desc: "Channapatna, Teak, Driftwood, Inlay" },
+  { key: "dhokra", label: "Metal Casting & Filigree", desc: "Lost-wax Dhokra, Bidriware, Brass" },
+  { key: "embroidery", label: "Needlework & Embroidery", desc: "Chikan, Phulkari, Kantha, Mirrorwork" },
+  { key: "painting", label: "Traditional Painting", desc: "Madhubani, Pattachitra, Miniature, Warli" },
+  { key: "jewellery", label: "Artisanal Jewellery", desc: "Kundan, Meenakari, Tribal silver, Terracotta" },
+  { key: "other", label: "Other Indigenous Craft", desc: "Bamboo, Cane, Stone carving, Natural fibers" },
 ];
 
-const TOTAL_STEPS = 5;
+const STEPS = [
+  { id: 1, label: "Photography" },
+  { id: 2, label: "Classification" },
+  { id: 3, label: "Details & Story" },
+  { id: 4, label: "Craftsmanship" },
+  { id: 5, label: "Fair Pricing" },
+];
 
 function useLocalDraft<T>(key: string, initial: T): [T, (v: T) => void] {
   const [val, setVal] = useState<T>(() => {
     try {
       const s = localStorage.getItem(key);
       return s ? JSON.parse(s) : initial;
-    } catch { return initial; }
+    } catch {
+      return initial;
+    }
   });
-  const set = (v: T) => { setVal(v); try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* quota */ } };
+  const set = (v: T) => {
+    setVal(v);
+    try {
+      localStorage.setItem(key, JSON.stringify(v));
+    } catch {
+      /* quota */
+    }
+  };
   return [val, set];
 }
 
+// ── Sidebar helpers matching Dashboard.tsx ──────────────────────────
+function NavItem({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        width: "100%",
+        padding: "0.55rem 0.875rem",
+        border: "none",
+        background: active ? "var(--linen, #E8E2D8)" : "transparent",
+        color: active ? "var(--charcoal, #1C1C1A)" : "var(--graphite, #4A4740)",
+        fontWeight: active ? 600 : 400,
+        fontSize: "0.9rem",
+        fontFamily: "var(--font-ui, system-ui, sans-serif)",
+        borderRadius: "6px",
+        cursor: "pointer",
+        textAlign: "left",
+        transition: "background 150ms, color 150ms",
+      }}
+    >
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        fontSize: "0.6875rem",
+        fontWeight: 700,
+        textTransform: "uppercase",
+        letterSpacing: "0.1em",
+        color: "var(--stone, #7A7570)",
+        padding: "0.75rem 0.875rem 0.25rem",
+        fontFamily: "var(--font-ui, system-ui, sans-serif)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Divider() {
+  return (
+    <div
+      style={{
+        height: "1px",
+        background: "var(--linen, #E8E2D8)",
+        margin: "0.75rem 0.5rem",
+      }}
+    />
+  );
+}
+
 export default function CreateListing() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   // Wizard state
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [draftSavedToast, setDraftSavedToast] = useState(false);
 
-  // Draft-persisted form fields
-  const [photoFile, setPhotoFile] = useLocalDraft<null>("cl_photo", null);
+  // Form fields
+  const [photoFile, setPhotoFile] = useLocalDraft<any>("cl_photo", null);
   const [photoPreview, setPhotoPreview] = useState<string>("");
   const [craftType, setCraftType] = useLocalDraft<string>("cl_craft", "");
   const [title, setTitle] = useLocalDraft<string>("cl_title", "");
   const [description, setDescription] = useLocalDraft<string>("cl_desc", "");
+  const [materials, setMaterials] = useLocalDraft<string>("cl_materials", "");
   const [hours, setHours] = useLocalDraft<number>("cl_hours", 8);
   const [materialCost, setMaterialCost] = useLocalDraft<number>("cl_mat_cost", 500);
   const [complexity, setComplexity] = useLocalDraft<Complexity>("cl_complexity", "medium");
   const [priceResult, setPriceResult] = useState<PriceBreakdownResponse | null>(null);
   const [finalPrice, setFinalPrice] = useLocalDraft<number>("cl_price", 0);
+  const [stock, setStock] = useState<number>(1);
 
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const SpeechRecognition =
+    (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+  const toggleRecording = () => {
+    if (!SpeechRecognition) return;
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+    try {
+      const r = new SpeechRecognition();
+      const langMap: Record<string, string> = { kn: "kn-IN", hi: "hi-IN", en: "en-IN" };
+      r.lang = langMap[i18n.language] || "en-IN";
+      r.interimResults = false;
+      r.maxAlternatives = 1;
+      r.onstart = () => setIsRecording(true);
+      r.onresult = (e: any) => {
+        const transcript = e.results[0][0].transcript;
+        setDescription(description ? `${description} ${transcript}` : transcript);
+      };
+      r.onerror = () => setIsRecording(false);
+      r.onend = () => setIsRecording(false);
+      recognitionRef.current = r;
+      r.start();
+    } catch {
+      setIsRecording(false);
+    }
+  };
+
   const canAdvance = (): boolean => {
-    if (step === 1) return Boolean(photoPreview || photoFile);
+    if (step === 1) return true; // Photography can be optional or uploaded
     if (step === 2) return Boolean(craftType);
     if (step === 3) return title.trim().length >= 3;
     if (step === 4) return hours >= 1;
@@ -94,11 +223,11 @@ export default function CreateListing() {
       const compressed = await compressImage(file);
       const url = URL.createObjectURL(compressed);
       setPhotoPreview(url);
-      (setPhotoFile as any)(compressed);
+      setPhotoFile(compressed);
     } catch {
       const url = URL.createObjectURL(file);
       setPhotoPreview(url);
-      (setPhotoFile as any)(file);
+      setPhotoFile(file);
     }
   };
 
@@ -116,7 +245,12 @@ export default function CreateListing() {
       setPriceResult(res);
       setFinalPrice(res.suggested_price);
     } catch {
-      setError(t("artisan.price_error", "Could not get a price estimate right now. You can still enter your own price below."));
+      setError(
+        t(
+          "artisan.price_error",
+          "Could not calculate automated pricing. You may specify your price manually below."
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -129,18 +263,27 @@ export default function CreateListing() {
   }, [step, craftType]);
 
   const handleSaveDraft = async () => {
-    setError("");
-    // silently auto-save to localStorage already done via useLocalDraft
-    // additionally create a backend draft if we have a craft type and title
+    setDraftSavedToast(true);
+    setTimeout(() => setDraftSavedToast(false), 3000);
     if (!craftType || !title) return;
     try {
-      await createListing({ craft_type: craftType, title: title || "Draft", price_inr: finalPrice || 1 });
-    } catch { /* offline ok */ }
+      await createListing({
+        craft_type: craftType,
+        title: title || "Draft",
+        description,
+        materials,
+        hours_to_make: hours,
+        price_inr: finalPrice || 1,
+        stock,
+      });
+    } catch {
+      /* local draft preserved */
+    }
   };
 
   const handleSubmit = async () => {
     if (!craftType || !title || !finalPrice) {
-      setError(t("artisan.fill_required", "Please fill in all required fields."));
+      setError(t("artisan.fill_required", "Please complete all required fields."));
       return;
     }
     setLoading(true);
@@ -150,349 +293,1394 @@ export default function CreateListing() {
         craft_type: craftType,
         title,
         description,
-        price_inr: finalPrice,
+        materials,
         hours_to_make: hours,
+        price_inr: finalPrice,
+        stock,
       });
 
-      if (photoFile && typeof photoFile === "object" && (photoFile as unknown as File).size) {
+      if (photoFile && typeof photoFile === "object" && (photoFile as File).size) {
         try {
-          await uploadListingImages(listing.id, [photoFile as unknown as File]);
-        } catch { /* image upload is optional */ }
+          await uploadListingImages(listing.id, [photoFile as File]);
+        } catch {
+          /* optional upload */
+        }
       }
 
       await publishListing(listing.id);
 
-      // Clear drafts
-      ["cl_photo", "cl_craft", "cl_title", "cl_desc", "cl_hours", "cl_mat_cost", "cl_complexity", "cl_price"]
-        .forEach(k => { try { localStorage.removeItem(k); } catch { /* */ } });
+      // Clear draft keys
+      [
+        "cl_photo",
+        "cl_craft",
+        "cl_title",
+        "cl_desc",
+        "cl_materials",
+        "cl_hours",
+        "cl_mat_cost",
+        "cl_complexity",
+        "cl_price",
+      ].forEach((k) => {
+        try {
+          localStorage.removeItem(k);
+        } catch {
+          /* */
+        }
+      });
 
       navigate("/dashboard", { state: { published: true } });
-    } catch {
-      setError(t("artisan.publish_error", "Something went wrong. Please try again. Your draft is saved."));
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.detail ||
+          t("artisan.publish_error", "An error occurred while publishing. Your draft is preserved.")
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const goBack = () => {
-    if (step === 1) { navigate("/dashboard"); return; }
-    setStep(s => s - 1);
+    if (step === 1) {
+      navigate("/dashboard");
+      return;
+    }
+    setStep((s) => s - 1);
   };
 
-  const goNext = () => setStep(s => s + 1);
+  const goNext = () => setStep((s) => s + 1);
 
-  const craftLabel = CRAFT_OPTIONS.find(c => c.key === craftType)?.label || craftType;
+  // ── Layout styles matching Dashboard.tsx ──────────────────────────
+  const shellStyle: React.CSSProperties = {
+    display: "flex",
+    flex: 1,
+    background: "var(--warm-white, #FDFBF7)",
+    fontFamily: "var(--font-ui, system-ui, sans-serif)",
+    minHeight: "calc(100vh - 72px)",
+  };
+
+  const sidebarStyle: React.CSSProperties = {
+    width: "220px",
+    flexShrink: 0,
+    borderRight: "1px solid var(--linen, #E8E2D8)",
+    padding: "2rem 1rem",
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.25rem",
+    position: "sticky",
+    top: 0,
+    height: "100vh",
+    overflowY: "auto",
+    background: "var(--warm-white, #FDFBF7)",
+  };
+
+  const mainStyle: React.CSSProperties = {
+    flex: 1,
+    padding: "2.5rem 2rem 4rem",
+    maxWidth: "840px",
+    overflowY: "auto",
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "0.75rem 0.95rem",
+    border: "1.5px solid var(--fog, #D4CEC5)",
+    borderRadius: "6px",
+    fontSize: "0.9375rem",
+    color: "var(--charcoal, #1C1C1A)",
+    background: "var(--warm-white, #FDFBF7)",
+    fontFamily: "var(--font-ui, system-ui, sans-serif)",
+    outline: "none",
+    boxSizing: "border-box",
+    transition: "border-color 180ms",
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: "block",
+    fontSize: "0.8125rem",
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--graphite, #4A4740)",
+    marginBottom: "0.4rem",
+    fontFamily: "var(--font-ui, system-ui, sans-serif)",
+  };
 
   return (
-    <div className="artisan-screen">
-      <OfflineBanner />
-      <StepWizard step={step} totalSteps={TOTAL_STEPS} onBack={goBack} onSaveDraft={handleSaveDraft}>
+    <div style={shellStyle} role="main" aria-label="Create new listing">
+      {/* ─── Sidebar ─────────────────────────────────────────── */}
+      <aside style={sidebarStyle} aria-label="Dashboard navigation">
+        <div style={{ marginBottom: "1.75rem", paddingLeft: "0.5rem" }}>
+          <Link to="/" style={{ textDecoration: "none" }}>
+            <div
+              style={{
+                fontFamily: "var(--font-display, Georgia, serif)",
+                fontSize: "1.1rem",
+                fontWeight: 700,
+                letterSpacing: "0.1em",
+                color: "var(--charcoal, #1C1C1A)",
+              }}
+            >
+              KAARIGAR
+            </div>
+          </Link>
+          <div
+            style={{
+              fontSize: "0.6875rem",
+              color: "var(--stone, #7A7570)",
+              marginTop: "0.2rem",
+              fontWeight: 400,
+            }}
+          >
+            Artisan Studio
+          </div>
+        </div>
 
-        {/* ---- STEP 1: PHOTO ---- */}
-        {step === 1 && (
-          <>
-            <h1 className="a-wizard__step-title">
-              {t("artisan.step1_title", "Take a photo of your work")}
+        <SectionHeading>Dashboard</SectionHeading>
+        <NavItem label="Overview" active={false} onClick={() => navigate("/dashboard")} />
+        <NavItem label="Orders" active={false} onClick={() => navigate("/dashboard")} />
+        <NavItem label="Listings" active={false} onClick={() => navigate("/dashboard")} />
+        <NavItem label="Profile" active={false} onClick={() => navigate("/dashboard")} />
+
+        <Divider />
+
+        <NavItem label="Add listing" active={true} onClick={() => {}} />
+        <NavItem label="Custom orders" active={false} onClick={() => navigate("/commissions")} />
+        <NavItem label="View storefront" active={false} onClick={() => navigate("/gallery")} />
+
+        <div style={{ marginTop: "auto", paddingTop: "1.5rem" }}>
+          <button
+            type="button"
+            onClick={() => {
+              logout();
+              navigate("/");
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              width: "100%",
+              padding: "0.6rem 0.875rem",
+              border: "none",
+              background: "transparent",
+              color: "var(--stone, #7A7570)",
+              fontSize: "0.9rem",
+              fontFamily: "var(--font-ui, system-ui, sans-serif)",
+              cursor: "pointer",
+              textAlign: "left",
+              borderRadius: "6px",
+              transition: "color 160ms",
+            }}
+          >
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      {/* ─── Main Content ─────────────────────────────────────── */}
+      <main style={mainStyle}>
+        {/* Breadcrumb / Back button */}
+        <div style={{ marginBottom: "1.5rem" }}>
+          <button
+            type="button"
+            onClick={goBack}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--stone, #7A7570)",
+              fontSize: "0.85rem",
+              cursor: "pointer",
+              padding: "0",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.35rem",
+              fontFamily: "var(--font-ui, system-ui, sans-serif)",
+            }}
+          >
+            &larr; {step === 1 ? "Back to Dashboard" : "Previous step"}
+          </button>
+        </div>
+
+        {/* Page Title */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            marginBottom: "1.5rem",
+            flexWrap: "wrap",
+            gap: "1rem",
+          }}
+        >
+          <div>
+            <h1
+              style={{
+                fontFamily: "var(--font-display, Georgia, serif)",
+                fontSize: "1.875rem",
+                fontWeight: 600,
+                color: "var(--charcoal, #1C1C1A)",
+                margin: "0 0 0.35rem",
+              }}
+            >
+              Add New Craft Object
             </h1>
-            <p className="a-wizard__step-subtitle">
-              {t("artisan.step1_sub", "A good photo helps buyers find your craft. Natural light is best.")}
+            <p
+              style={{
+                margin: 0,
+                color: "var(--stone, #7A7570)",
+                fontSize: "0.9375rem",
+                fontFamily: "var(--font-ui, system-ui, sans-serif)",
+              }}
+            >
+              Document your craft heritage, fair hourly craftsmanship, and authentic provenance.
             </p>
-            <div className="a-wizard__content">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handlePhotoChange}
-                style={{ display: "none" }}
-                aria-label={t("artisan.choose_photo", "Choose or take a photo")}
-                id="photo-upload"
-              />
-              {photoPreview ? (
-                <>
-                  <img src={photoPreview} alt={t("artisan.photo_preview", "Your photo")} className="a-photo-preview" />
-                  <div style={{ marginTop: "0.75rem" }}>
-                    <BigButton variant="secondary" small onClick={() => fileInputRef.current?.click()}>
-                      📷 {t("artisan.retake", "Take another photo")}
-                    </BigButton>
-                  </div>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  className="a-photo-btn"
-                  onClick={() => fileInputRef.current?.click()}
-                  id="photo-btn"
-                  aria-label={t("artisan.take_photo", "Open camera or gallery")}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            style={{
+              padding: "0.55rem 1rem",
+              borderRadius: "6px",
+              border: "1.5px solid var(--fog, #D4CEC5)",
+              background: "transparent",
+              color: "var(--graphite, #4A4740)",
+              fontSize: "0.8125rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "border-color 150ms",
+            }}
+          >
+            {draftSavedToast ? "Draft saved" : "Save draft"}
+          </button>
+        </div>
+
+        {/* Step Progress Tracker */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(5, 1fr)",
+            gap: "0.5rem",
+            marginBottom: "2.5rem",
+            borderBottom: "1px solid var(--linen, #E8E2D8)",
+            paddingBottom: "1.25rem",
+          }}
+        >
+          {STEPS.map((s) => {
+            const isCompleted = step > s.id;
+            const isCurrent = step === s.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => {
+                  if (isCompleted) setStep(s.id);
+                }}
+                disabled={!isCompleted && !isCurrent}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  textAlign: "left",
+                  padding: "0.25rem",
+                  cursor: isCompleted ? "pointer" : "default",
+                  opacity: !isCompleted && !isCurrent ? 0.45 : 1,
+                }}
+              >
+                <div
+                  style={{
+                    height: "3px",
+                    borderRadius: "2px",
+                    background: isCurrent
+                      ? "var(--terracotta, #B85C38)"
+                      : isCompleted
+                      ? "var(--charcoal, #1C1C1A)"
+                      : "var(--linen, #E8E2D8)",
+                    marginBottom: "0.5rem",
+                    transition: "background 200ms",
+                  }}
+                />
+                <span
+                  style={{
+                    display: "block",
+                    fontSize: "0.6875rem",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    color: isCurrent
+                      ? "var(--terracotta, #B85C38)"
+                      : isCompleted
+                      ? "var(--charcoal, #1C1C1A)"
+                      : "var(--stone, #7A7570)",
+                  }}
                 >
-                  <span className="a-photo-btn__icon" aria-hidden="true">📷</span>
-                  <span>{t("artisan.take_photo", "Tap here to take a photo or choose from gallery")}</span>
-                </button>
-              )}
-            </div>
-            <div className="a-wizard__footer">
-              {error && <div className="a-form-error" role="alert"><span>⚠️</span> {error}</div>}
-              <BigButton onClick={goNext} disabled={!canAdvance()}>
-                {t("artisan.next", "Next step")} →
-              </BigButton>
-              <BigButton variant="secondary" onClick={goNext}>
-                {t("artisan.skip_photo", "Skip for now")}
-              </BigButton>
-            </div>
-          </>
+                  Step {s.id}
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    fontSize: "0.8125rem",
+                    fontWeight: isCurrent ? 600 : 500,
+                    color: isCurrent ? "var(--charcoal, #1C1C1A)" : "var(--graphite, #4A4740)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {s.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Global Error Banner */}
+        {error && (
+          <div
+            style={{
+              padding: "0.875rem 1rem",
+              background: "#FDF8F4",
+              border: "1px solid rgba(184,92,56,0.3)",
+              borderRadius: "8px",
+              color: "var(--terracotta, #B85C38)",
+              fontSize: "0.875rem",
+              marginBottom: "1.75rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+            role="alert"
+          >
+            <span>{error}</span>
+          </div>
         )}
 
-        {/* ---- STEP 2: CRAFT TYPE ---- */}
+        {/* ── STEP 1: PHOTOGRAPHY ── */}
+        {step === 1 && (
+          <div>
+            <div style={{ marginBottom: "1.75rem" }}>
+              <h2
+                style={{
+                  fontFamily: "var(--font-display, Georgia, serif)",
+                  fontSize: "1.35rem",
+                  fontWeight: 600,
+                  color: "var(--charcoal, #1C1C1A)",
+                  margin: "0 0 0.35rem",
+                }}
+              >
+                1. Object Photography
+              </h2>
+              <p style={{ margin: 0, color: "var(--stone, #7A7570)", fontSize: "0.875rem" }}>
+                Authentic high-resolution photographs reveal the master needlework, chisel marks, and
+                glaze character.
+              </p>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              style={{ display: "none" }}
+              id="photo-upload-input"
+            />
+
+            {photoPreview ? (
+              <div
+                style={{
+                  border: "1.5px solid var(--fog, #D4CEC5)",
+                  borderRadius: "10px",
+                  padding: "1.5rem",
+                  background: "var(--warm-white, #FDFBF7)",
+                  marginBottom: "2rem",
+                }}
+              >
+                <div
+                  style={{
+                    maxHeight: "340px",
+                    overflow: "hidden",
+                    borderRadius: "6px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#000",
+                  }}
+                >
+                  <img
+                    src={photoPreview}
+                    alt="Listing preview"
+                    style={{ maxHeight: "340px", width: "auto", objectFit: "contain" }}
+                  />
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "0.75rem",
+                    marginTop: "1.25rem",
+                    alignItems: "center",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      padding: "0.6rem 1.1rem",
+                      borderRadius: "6px",
+                      border: "1.5px solid var(--fog, #D4CEC5)",
+                      background: "#fff",
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      color: "var(--charcoal, #1C1C1A)",
+                    }}
+                  >
+                    Replace photograph
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhotoPreview("");
+                      setPhotoFile(null);
+                    }}
+                    style={{
+                      padding: "0.6rem 1rem",
+                      background: "none",
+                      border: "none",
+                      color: "var(--terracotta, #B85C38)",
+                      fontSize: "0.875rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
+                tabIndex={0}
+                role="button"
+                aria-label="Upload photograph"
+                style={{
+                  border: "2px dashed var(--fog, #D4CEC5)",
+                  borderRadius: "10px",
+                  padding: "3.5rem 1.5rem",
+                  textAlign: "center",
+                  cursor: "pointer",
+                  background: "var(--warm-white, #FDFBF7)",
+                  marginBottom: "2rem",
+                  transition: "border-color 180ms, background 180ms",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor =
+                    "var(--terracotta, #B85C38)";
+                  (e.currentTarget as HTMLDivElement).style.background = "#FDF8F4";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = "var(--fog, #D4CEC5)";
+                  (e.currentTarget as HTMLDivElement).style.background =
+                    "var(--warm-white, #FDFBF7)";
+                }}
+              >
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "48px",
+                    height: "48px",
+                    borderRadius: "50%",
+                    background: "var(--linen, #E8E2D8)",
+                    color: "var(--charcoal, #1C1C1A)",
+                    marginBottom: "1rem",
+                    fontSize: "1.2rem",
+                    fontWeight: 700,
+                  }}
+                >
+                  +
+                </div>
+                <div
+                  style={{
+                    fontSize: "1rem",
+                    fontWeight: 600,
+                    color: "var(--charcoal, #1C1C1A)",
+                    marginBottom: "0.35rem",
+                  }}
+                >
+                  Upload high-resolution craft photograph
+                </div>
+                <div
+                  style={{
+                    fontSize: "0.8125rem",
+                    color: "var(--stone, #7A7570)",
+                    maxWidth: "360px",
+                    margin: "0 auto",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Select a photo from your device. Natural diffused lighting highlights authentic
+                  texture best.
+                </div>
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingTop: "1.5rem",
+                borderTop: "1px solid var(--linen, #E8E2D8)",
+              }}
+            >
+              <button
+                type="button"
+                onClick={goNext}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--stone, #7A7570)",
+                  fontSize: "0.875rem",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+              >
+                Skip photo for now
+              </button>
+              <button
+                type="button"
+                onClick={goNext}
+                style={{
+                  padding: "0.75rem 1.75rem",
+                  borderRadius: "6px",
+                  background: "var(--charcoal, #1C1C1A)",
+                  color: "#fff",
+                  fontWeight: 600,
+                  fontSize: "0.9375rem",
+                  border: "none",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-ui, system-ui, sans-serif)",
+                }}
+              >
+                Continue to Classification &rarr;
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 2: CRAFT CATEGORY ── */}
         {step === 2 && (
-          <>
-            <h1 className="a-wizard__step-title">
-              {t("artisan.step2_title", "What type of craft is this?")}
-            </h1>
-            <p className="a-wizard__step-subtitle">
-              {t("artisan.step2_sub", "Tap one box to choose.")}
-            </p>
-            <div className="a-wizard__content">
-              <div className="a-craft-cards" role="radiogroup" aria-label={t("artisan.craft_type", "Craft type")}>
-                {CRAFT_OPTIONS.map(opt => (
+          <div>
+            <div style={{ marginBottom: "1.75rem" }}>
+              <h2
+                style={{
+                  fontFamily: "var(--font-display, Georgia, serif)",
+                  fontSize: "1.35rem",
+                  fontWeight: 600,
+                  color: "var(--charcoal, #1C1C1A)",
+                  margin: "0 0 0.35rem",
+                }}
+              >
+                2. Craft Classification
+              </h2>
+              <p style={{ margin: 0, color: "var(--stone, #7A7570)", fontSize: "0.875rem" }}>
+                Select the cultural discipline that best encompasses your creation.
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                gap: "0.85rem",
+                marginBottom: "2.5rem",
+              }}
+              role="radiogroup"
+              aria-label="Select craft tradition"
+            >
+              {CRAFT_OPTIONS.map((opt) => {
+                const selected = craftType === opt.key;
+                return (
                   <button
                     key={opt.key}
                     type="button"
                     role="radio"
-                    aria-checked={craftType === opt.key}
-                    className={`a-craft-card${craftType === opt.key ? " a-craft-card--selected" : ""}`}
+                    aria-checked={selected}
                     onClick={() => setCraftType(opt.key)}
+                    style={{
+                      padding: "1.25rem 1.15rem",
+                      borderRadius: "8px",
+                      border: `1.5px solid ${selected ? "var(--terracotta, #B85C38)" : "var(--fog, #D4CEC5)"}`,
+                      background: selected ? "#FDF8F4" : "var(--warm-white, #FDFBF7)",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      transition: "border-color 160ms, background 160ms",
+                      position: "relative",
+                    }}
                   >
-                    <span className="a-craft-card__emoji" aria-hidden="true">{opt.emoji}</span>
-                    <span>{t(`artisan.craft_${opt.key}`, opt.label)}</span>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: "0.35rem",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "0.9375rem",
+                          fontWeight: 600,
+                          color: "var(--charcoal, #1C1C1A)",
+                        }}
+                      >
+                        {opt.label}
+                      </span>
+                      {selected && (
+                        <span
+                          style={{
+                            width: "8px",
+                            height: "8px",
+                            borderRadius: "50%",
+                            background: "var(--terracotta, #B85C38)",
+                          }}
+                        />
+                      )}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.78rem",
+                        color: "var(--stone, #7A7570)",
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {opt.desc}
+                    </div>
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
-            <div className="a-wizard__footer">
-              <BigButton onClick={goNext} disabled={!canAdvance()}>
-                {t("artisan.next", "Next step")} →
-              </BigButton>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingTop: "1.5rem",
+                borderTop: "1px solid var(--linen, #E8E2D8)",
+              }}
+            >
+              <button
+                type="button"
+                onClick={goBack}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--stone, #7A7570)",
+                  fontSize: "0.875rem",
+                  cursor: "pointer",
+                }}
+              >
+                &larr; Back
+              </button>
+              <button
+                type="button"
+                onClick={goNext}
+                disabled={!canAdvance()}
+                style={{
+                  padding: "0.75rem 1.75rem",
+                  borderRadius: "6px",
+                  background: canAdvance() ? "var(--charcoal, #1C1C1A)" : "var(--fog, #D4CEC5)",
+                  color: canAdvance() ? "#fff" : "var(--stone, #7A7570)",
+                  fontWeight: 600,
+                  fontSize: "0.9375rem",
+                  border: "none",
+                  cursor: canAdvance() ? "pointer" : "not-allowed",
+                  fontFamily: "var(--font-ui, system-ui, sans-serif)",
+                }}
+              >
+                Continue to Details &rarr;
+              </button>
             </div>
-          </>
+          </div>
         )}
 
-        {/* ---- STEP 3: NAME + DESCRIPTION ---- */}
+        {/* ── STEP 3: DETAILS & STORY ── */}
         {step === 3 && (
-          <>
-            <h1 className="a-wizard__step-title">
-              {t("artisan.step3_title", "Give it a name and description")}
-            </h1>
-            <p className="a-wizard__step-subtitle">
-              {t("artisan.step3_sub", "Describe your {{craft}} in your own words. You can speak or type.", { craft: craftLabel })}
-            </p>
-            <div className="a-wizard__content">
-              <div className="a-form-group">
-                <label className="a-form-label" htmlFor="cl-title">
-                  {t("artisan.product_name", "Name of your product")} *
+          <div>
+            <div style={{ marginBottom: "1.75rem" }}>
+              <h2
+                style={{
+                  fontFamily: "var(--font-display, Georgia, serif)",
+                  fontSize: "1.35rem",
+                  fontWeight: 600,
+                  color: "var(--charcoal, #1C1C1A)",
+                  margin: "0 0 0.35rem",
+                }}
+              >
+                3. Object Details & Provenance
+              </h2>
+              <p style={{ margin: 0, color: "var(--stone, #7A7570)", fontSize: "0.875rem" }}>
+                Name your creation and document the artisan narrative behind its making.
+              </p>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", marginBottom: "2.5rem" }}>
+              {/* Product Title */}
+              <div>
+                <label style={labelStyle} htmlFor="craft-title">
+                  Object Title *
                 </label>
                 <input
-                  id="cl-title"
+                  id="craft-title"
                   type="text"
-                  className="a-form-input"
                   value={title}
-                  onChange={e => setTitle(e.target.value)}
-                  placeholder={t("artisan.title_placeholder", "e.g. Hand-woven Ikat saree, blue and gold")}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. Hand-spun Kasuti Saree with Chariot Motifs"
+                  style={inputStyle}
                   required
                 />
               </div>
-              <VoiceInputField
-                id="cl-description"
-                label={t("artisan.tell_story", "Describe this piece — how you made it, materials used, time taken")}
-                value={description}
-                onChange={setDescription}
-                placeholder={t("artisan.story_placeholder", "Speak or type your story here…")}
-                rows={5}
-              />
-            </div>
-            <div className="a-wizard__footer">
-              {error && <div className="a-form-error" role="alert"><span>⚠️</span> {error}</div>}
-              <BigButton onClick={goNext} disabled={!canAdvance()}>
-                {t("artisan.next", "Next step")} →
-              </BigButton>
-            </div>
-          </>
-        )}
 
-        {/* ---- STEP 4: TIME + MATERIALS ---- */}
-        {step === 4 && (
-          <>
-            <h1 className="a-wizard__step-title">
-              {t("artisan.step4_title", "How long did it take?")}
-            </h1>
-            <p className="a-wizard__step-subtitle">
-              {t("artisan.step4_sub", "We use this to suggest a fair price for your work.")}
-            </p>
-            <div className="a-wizard__content">
-              <div aria-label={t("artisan.hours_stepper", "Hours to make stepper")}>
-                <div className="a-stepper">
-                  <button
-                    type="button"
-                    className="a-stepper__btn"
-                    onClick={() => setHours(Math.max(1, hours - 1))}
-                    aria-label={t("artisan.decrease_hours", "Decrease hours")}
-                    disabled={hours <= 1}
-                  >−</button>
-                  <div>
-                    <div className="a-stepper__value" aria-live="polite">{hours}</div>
-                    <div className="a-stepper__unit">{t("artisan.hours", "hours")}</div>
-                  </div>
-                  <button
-                    type="button"
-                    className="a-stepper__btn"
-                    onClick={() => setHours(hours + 1)}
-                    aria-label={t("artisan.increase_hours", "Increase hours")}
-                  >+</button>
-                </div>
-              </div>
-
-              <div className="a-form-group">
-                <label className="a-form-label" htmlFor="mat-cost">
-                  {t("artisan.material_cost", "Cost of materials you bought (₹)")}
+              {/* Raw Materials */}
+              <div>
+                <label style={labelStyle} htmlFor="craft-materials">
+                  Primary Raw Materials
                 </label>
                 <input
-                  id="mat-cost"
-                  type="number"
-                  className="a-form-input"
-                  value={materialCost}
-                  min={0}
-                  step={50}
-                  onChange={e => setMaterialCost(Number(e.target.value))}
-                  inputMode="numeric"
+                  id="craft-materials"
+                  type="text"
+                  value={materials}
+                  onChange={(e) => setMaterials(e.target.value)}
+                  placeholder="e.g. Mulberry Silk, Natural Indigo Dye, Zari Thread"
+                  style={inputStyle}
                 />
-                <p className="a-form-hint">{t("artisan.mat_hint", "Thread, clay, dye, paint — everything you spent money on.")}</p>
               </div>
 
-              <div className="a-form-group">
-                <label className="a-form-label">{t("artisan.complexity", "How difficult is this piece?")}</label>
-                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                  {([["low","Simple"], ["medium","Medium"], ["high","Complex"], ["very_high","Very complex"]] as const).map(([val, fallback]) => (
-                    <button
-                      key={val}
-                      type="button"
-                      className={`a-craft-card${complexity === val ? " a-craft-card--selected" : ""}`}
-                      role="radio"
-                      aria-checked={complexity === val}
-                      onClick={() => setComplexity(val as Complexity)}
-                      style={{ flex: "1 1 45%", minHeight: "56px", minWidth: "100px" }}
-                    >
-                      {t(`artisan.complexity_${val}`, fallback)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="a-wizard__footer">
-              <BigButton onClick={goNext}>
-                {t("artisan.next", "Next step")} →
-              </BigButton>
-            </div>
-          </>
-        )}
-
-        {/* ---- STEP 5: PRICE ---- */}
-        {step === 5 && (
-          <>
-            <h1 className="a-wizard__step-title">
-              {t("artisan.step5_title", "Set your price")}
-            </h1>
-            <p className="a-wizard__step-subtitle">
-              {t("artisan.step5_sub", "You can use our suggested fair price, or set your own.")}
-            </p>
-            <div className="a-wizard__content">
-              {!priceResult && (
-                <BigButton
-                  variant="secondary"
-                  onClick={handleGetPriceEstimate}
-                  disabled={loading}
-                  icon="✨"
-                  id="get-price-btn"
+              {/* Story / Description with Voice Recording */}
+              <div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: "0.4rem",
+                  }}
                 >
-                  {loading ? t("artisan.calculating", "Calculating…") : t("artisan.get_fair_price", "Get a fair price suggestion")}
-                </BigButton>
-              )}
-              {priceResult ? (
-                <div className="a-price-review">
-                  <div className="a-price-review__label">{t("artisan.suggested_price_tag", "We suggest:")}</div>
-                  <div className="a-price-review__amount" style={{ fontSize: "2.5rem", fontWeight: 700, color: "var(--a-green, #1e7e34)" }}>
-                    ₹{priceResult.suggested_price.toLocaleString("en-IN")}
-                  </div>
-                  <div className="a-price-review__breakdown" style={{ marginTop: "0.75rem", fontSize: "1rem" }}>
-                    <strong>{t("artisan.how_calc", "How we worked this out:")}</strong><br />
-                    • {t("artisan.materials_label", "Materials:")} ₹{priceResult.materials_cost.toLocaleString("en-IN")}<br />
-                    • {t("artisan.labour_label", "Your time ({h}h × ₹{r}/hr):", { h: priceResult.hours, r: priceResult.fair_hourly_wage })}: ₹{priceResult.labour_cost.toLocaleString("en-IN")}<br />
-                    • {t("artisan.heritage_label", "Craft heritage:")} ₹{priceResult.craft_premium_amount.toLocaleString("en-IN")}<br />
-                    • {t("artisan.range_label", "Suggested range:")} ₹{priceResult.suggested_range.min.toLocaleString("en-IN")} – ₹{priceResult.suggested_range.max.toLocaleString("en-IN")}
-                  </div>
-
-                  {!finalPrice && (
-                    <div style={{ marginTop: "1.25rem" }}>
-                      <BigButton
-                        variant="success"
-                        onClick={() => setFinalPrice(priceResult.suggested_price)}
-                      >
-                        👍 {t("artisan.looks_good", "Looks good (₹{{price}})", { price: priceResult.suggested_price.toLocaleString("en-IN") })}
-                      </BigButton>
-                    </div>
+                  <label style={{ ...labelStyle, margin: 0 }} htmlFor="craft-description">
+                    Artisan Story & Crafting Process
+                  </label>
+                  {SpeechRecognition && (
+                    <button
+                      type="button"
+                      onClick={toggleRecording}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.4rem",
+                        padding: "0.3rem 0.65rem",
+                        borderRadius: "999px",
+                        border: `1px solid ${isRecording ? "var(--terracotta, #B85C38)" : "var(--fog, #D4CEC5)"}`,
+                        background: isRecording ? "#FDF8F4" : "transparent",
+                        color: isRecording ? "var(--terracotta, #B85C38)" : "var(--graphite, #4A4740)",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "50%",
+                          background: isRecording ? "var(--terracotta, #B85C38)" : "#9C9490",
+                        }}
+                      />
+                      <span>{isRecording ? "Listening… tap to stop" : "Speak your story"}</span>
+                    </button>
                   )}
                 </div>
-              ) : null}
-
-              {/* Price input - either prefilled or customized */}
-              <div className="a-form-group" style={{ marginTop: "1.25rem" }}>
-                <label className="a-form-label" htmlFor="final-price">
-                  {t("artisan.your_price", "Your selling price (₹)")} *
-                </label>
-                <input
-                  id="final-price"
-                  type="number"
-                  className="a-form-input"
-                  value={finalPrice || ""}
-                  min={1}
-                  step={50}
-                  onChange={e => setFinalPrice(Number(e.target.value))}
-                  inputMode="numeric"
-                  required
-                  aria-describedby="price-hint"
+                <textarea
+                  id="craft-description"
+                  rows={6}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe how this piece was crafted, the lineage of the motif, cultural significance, or special technique used…"
+                  style={{
+                    ...inputStyle,
+                    resize: "vertical",
+                    lineHeight: 1.6,
+                  }}
                 />
-                <p id="price-hint" className="a-form-hint">
-                  {t("artisan.price_hint", "This is the amount buyers will pay. You keep most of it.")}
-                </p>
               </div>
-              {error && <div className="a-form-error" role="alert"><span>⚠️</span> {error}</div>}
             </div>
-            <div className="a-wizard__footer">
-              <BigButton
-                variant="primary"
-                onClick={handleSubmit}
-                disabled={loading || !canAdvance()}
-                id="publish-btn"
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingTop: "1.5rem",
+                borderTop: "1px solid var(--linen, #E8E2D8)",
+              }}
+            >
+              <button
+                type="button"
+                onClick={goBack}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--stone, #7A7570)",
+                  fontSize: "0.875rem",
+                  cursor: "pointer",
+                }}
               >
-                {loading ? t("artisan.publishing", "Publishing…") : `🚀 ${t("artisan.publish", "Looks good — Publish my product")}`}
-              </BigButton>
-              <BigButton variant="secondary" onClick={handleSaveDraft} disabled={loading}>
-                {t("artisan.save_draft", "Save as draft")}
-              </BigButton>
+                &larr; Back
+              </button>
+              <button
+                type="button"
+                onClick={goNext}
+                disabled={!canAdvance()}
+                style={{
+                  padding: "0.75rem 1.75rem",
+                  borderRadius: "6px",
+                  background: canAdvance() ? "var(--charcoal, #1C1C1A)" : "var(--fog, #D4CEC5)",
+                  color: canAdvance() ? "#fff" : "var(--stone, #7A7570)",
+                  fontWeight: 600,
+                  fontSize: "0.9375rem",
+                  border: "none",
+                  cursor: canAdvance() ? "pointer" : "not-allowed",
+                  fontFamily: "var(--font-ui, system-ui, sans-serif)",
+                }}
+              >
+                Continue to Craftsmanship &rarr;
+              </button>
             </div>
-          </>
+          </div>
         )}
 
-      </StepWizard>
+        {/* ── STEP 4: TIME & CRAFTSMANSHIP ── */}
+        {step === 4 && (
+          <div>
+            <div style={{ marginBottom: "1.75rem" }}>
+              <h2
+                style={{
+                  fontFamily: "var(--font-display, Georgia, serif)",
+                  fontSize: "1.35rem",
+                  fontWeight: 600,
+                  color: "var(--charcoal, #1C1C1A)",
+                  margin: "0 0 0.35rem",
+                }}
+              >
+                4. Craftsmanship & Time Invested
+              </h2>
+              <p style={{ margin: 0, color: "var(--stone, #7A7570)", fontSize: "0.875rem" }}>
+                True luxury is defined by dedicated human hours. We use this to calculate an honest
+                artisan wage.
+              </p>
+            </div>
 
-      <HelpButton
-        screenText={
-          step === 1 ? t("artisan.help_step1", "Tap the big box to take a photo of your craft with your phone camera, or choose one from your gallery.")
-          : step === 2 ? t("artisan.help_step2", "Tap the box that matches what you make.")
-          : step === 3 ? t("artisan.help_step3", "Type or speak the name and description of your craft. Use the microphone button to speak.")
-          : step === 4 ? t("artisan.help_step4", "Use the plus and minus buttons to set how many hours you spent making this piece. Also enter how much you spent on materials.")
-          : t("artisan.help_step5", "Tap Get a fair price suggestion to let us calculate a price based on your time and materials. Then you can change it if you want.")
-        }
-      />
-      <BottomNav />
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "1.5rem",
+                marginBottom: "2rem",
+              }}
+            >
+              {/* Hours Spent */}
+              <div
+                style={{
+                  padding: "1.5rem",
+                  border: "1.5px solid var(--fog, #D4CEC5)",
+                  borderRadius: "8px",
+                  background: "var(--warm-white, #FDFBF7)",
+                }}
+              >
+                <label style={labelStyle}>Time to make (hours) *</label>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "1rem",
+                    marginTop: "0.75rem",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setHours(Math.max(1, hours - 1))}
+                    disabled={hours <= 1}
+                    style={{
+                      width: "42px",
+                      height: "42px",
+                      borderRadius: "6px",
+                      border: "1.5px solid var(--fog, #D4CEC5)",
+                      background: "#fff",
+                      fontSize: "1.25rem",
+                      fontWeight: 600,
+                      cursor: hours <= 1 ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    -
+                  </button>
+                  <div style={{ textAlign: "center", minWidth: "60px" }}>
+                    <div
+                      style={{
+                        fontSize: "1.75rem",
+                        fontWeight: 700,
+                        color: "var(--charcoal, #1C1C1A)",
+                      }}
+                    >
+                      {hours}
+                    </div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--stone, #7A7570)" }}>hours</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHours(hours + 1)}
+                    style={{
+                      width: "42px",
+                      height: "42px",
+                      borderRadius: "6px",
+                      border: "1.5px solid var(--fog, #D4CEC5)",
+                      background: "#fff",
+                      fontSize: "1.25rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* Material Expense */}
+              <div
+                style={{
+                  padding: "1.5rem",
+                  border: "1.5px solid var(--fog, #D4CEC5)",
+                  borderRadius: "8px",
+                  background: "var(--warm-white, #FDFBF7)",
+                }}
+              >
+                <label style={labelStyle} htmlFor="material-cost-input">
+                  Direct Material Costs (&lrm;&#8377;)
+                </label>
+                <div style={{ marginTop: "0.75rem" }}>
+                  <input
+                    id="material-cost-input"
+                    type="number"
+                    min={0}
+                    step={50}
+                    value={materialCost}
+                    onChange={(e) => setMaterialCost(Number(e.target.value))}
+                    style={{ ...inputStyle, fontSize: "1.1rem", fontWeight: 600 }}
+                  />
+                  <div
+                    style={{
+                      fontSize: "0.75rem",
+                      color: "var(--stone, #7A7570)",
+                      marginTop: "0.4rem",
+                    }}
+                  >
+                    Total expenditure on base fabric, clay, natural dyes, or metals.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Technique Complexity */}
+            <div style={{ marginBottom: "2.5rem" }}>
+              <label style={labelStyle}>Technique Difficulty & Heritage Rarity</label>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gap: "0.75rem",
+                  marginTop: "0.5rem",
+                }}
+              >
+                {(
+                  [
+                    ["low", "Foundational", "Standard handcraft practice"],
+                    ["medium", "Intermediate", "Multi-step seasoned skill"],
+                    ["high", "Advanced", "Intricate master-level patience"],
+                    ["very_high", "Masterwork", "Heritage lineage technique"],
+                  ] as const
+                ).map(([key, titleText, descText]) => {
+                  const selected = complexity === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setComplexity(key as Complexity)}
+                      style={{
+                        padding: "1rem",
+                        borderRadius: "8px",
+                        border: `1.5px solid ${selected ? "var(--terracotta, #B85C38)" : "var(--fog, #D4CEC5)"}`,
+                        background: selected ? "#FDF8F4" : "var(--warm-white, #FDFBF7)",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        transition: "border-color 150ms",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: "0.875rem",
+                          fontWeight: 600,
+                          color: "var(--charcoal, #1C1C1A)",
+                          marginBottom: "0.2rem",
+                        }}
+                      >
+                        {titleText}
+                      </div>
+                      <div style={{ fontSize: "0.72rem", color: "var(--stone, #7A7570)" }}>
+                        {descText}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingTop: "1.5rem",
+                borderTop: "1px solid var(--linen, #E8E2D8)",
+              }}
+            >
+              <button
+                type="button"
+                onClick={goBack}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--stone, #7A7570)",
+                  fontSize: "0.875rem",
+                  cursor: "pointer",
+                }}
+              >
+                &larr; Back
+              </button>
+              <button
+                type="button"
+                onClick={goNext}
+                disabled={!canAdvance()}
+                style={{
+                  padding: "0.75rem 1.75rem",
+                  borderRadius: "6px",
+                  background: canAdvance() ? "var(--charcoal, #1C1C1A)" : "var(--fog, #D4CEC5)",
+                  color: canAdvance() ? "#fff" : "var(--stone, #7A7570)",
+                  fontWeight: 600,
+                  fontSize: "0.9375rem",
+                  border: "none",
+                  cursor: canAdvance() ? "pointer" : "not-allowed",
+                  fontFamily: "var(--font-ui, system-ui, sans-serif)",
+                }}
+              >
+                Continue to Fair Pricing &rarr;
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 5: FAIR PRICING & PUBLISH ── */}
+        {step === 5 && (
+          <div>
+            <div style={{ marginBottom: "1.75rem" }}>
+              <h2
+                style={{
+                  fontFamily: "var(--font-display, Georgia, serif)",
+                  fontSize: "1.35rem",
+                  fontWeight: 600,
+                  color: "var(--charcoal, #1C1C1A)",
+                  margin: "0 0 0.35rem",
+                }}
+              >
+                5. Fair Pricing & Publication
+              </h2>
+              <p style={{ margin: 0, color: "var(--stone, #7A7570)", fontSize: "0.875rem" }}>
+                Our algorithm protects master craft from exploitative pricing by calculating direct
+                material costs and living hourly wages.
+              </p>
+            </div>
+
+            {/* Fair Price Breakdown Card */}
+            {priceResult ? (
+              <div
+                style={{
+                  border: "1.5px solid var(--linen, #E8E2D8)",
+                  borderRadius: "10px",
+                  background: "#fff",
+                  padding: "1.75rem",
+                  marginBottom: "2rem",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    flexWrap: "wrap",
+                    gap: "1rem",
+                    borderBottom: "1px solid var(--linen, #E8E2D8)",
+                    paddingBottom: "1.25rem",
+                    marginBottom: "1.25rem",
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "0.75rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        color: "var(--sage, #5A7A60)",
+                        fontWeight: 700,
+                        marginBottom: "0.25rem",
+                      }}
+                    >
+                      Algorithmic Fair Price Suggestion
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "2.25rem",
+                        fontWeight: 700,
+                        fontFamily: "var(--font-display, Georgia, serif)",
+                        color: "var(--charcoal, #1C1C1A)",
+                      }}
+                    >
+                      &#8377;{priceResult.suggested_price.toLocaleString("en-IN")}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.8125rem",
+                        color: "var(--stone, #7A7570)",
+                        marginTop: "0.2rem",
+                      }}
+                    >
+                      Suggested equitable range: &#8377;
+                      {priceResult.suggested_range.min.toLocaleString("en-IN")} &ndash; &#8377;
+                      {priceResult.suggested_range.max.toLocaleString("en-IN")}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setFinalPrice(priceResult.suggested_price)}
+                    style={{
+                      padding: "0.55rem 1rem",
+                      borderRadius: "6px",
+                      border: "1.5px solid var(--charcoal, #1C1C1A)",
+                      background:
+                        finalPrice === priceResult.suggested_price
+                          ? "var(--charcoal, #1C1C1A)"
+                          : "transparent",
+                      color:
+                        finalPrice === priceResult.suggested_price
+                          ? "#fff"
+                          : "var(--charcoal, #1C1C1A)",
+                      fontSize: "0.8125rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      transition: "all 150ms",
+                    }}
+                  >
+                    {finalPrice === priceResult.suggested_price
+                      ? "Suggested price applied"
+                      : "Apply suggested price"}
+                  </button>
+                </div>
+
+                {/* Breakdown items */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: "1rem",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  <div>
+                    <div style={{ color: "var(--stone, #7A7570)", marginBottom: "0.2rem" }}>
+                      Materials
+                    </div>
+                    <div style={{ fontWeight: 600, color: "var(--charcoal, #1C1C1A)" }}>
+                      &#8377;{priceResult.materials_cost.toLocaleString("en-IN")}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ color: "var(--stone, #7A7570)", marginBottom: "0.2rem" }}>
+                      Artisan Labor ({priceResult.hours}h &times; &#8377;
+                      {priceResult.fair_hourly_wage}/h)
+                    </div>
+                    <div style={{ fontWeight: 600, color: "var(--charcoal, #1C1C1A)" }}>
+                      &#8377;{priceResult.labour_cost.toLocaleString("en-IN")}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ color: "var(--stone, #7A7570)", marginBottom: "0.2rem" }}>
+                      Lineage Premium
+                    </div>
+                    <div style={{ fontWeight: 600, color: "var(--charcoal, #1C1C1A)" }}>
+                      &#8377;{priceResult.craft_premium_amount.toLocaleString("en-IN")}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ marginBottom: "2rem" }}>
+                <button
+                  type="button"
+                  onClick={handleGetPriceEstimate}
+                  disabled={loading}
+                  style={{
+                    padding: "0.75rem 1.25rem",
+                    borderRadius: "6px",
+                    border: "1.5px solid var(--fog, #D4CEC5)",
+                    background: "#fff",
+                    color: "var(--charcoal, #1C1C1A)",
+                    fontSize: "0.875rem",
+                    fontWeight: 600,
+                    cursor: loading ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {loading ? "Calculating suggestion…" : "Recalculate fair price suggestion"}
+                </button>
+              </div>
+            )}
+
+            {/* Final Listing Inputs */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "1.5rem",
+                marginBottom: "2.5rem",
+              }}
+            >
+              <div>
+                <label style={labelStyle} htmlFor="final-selling-price">
+                  Your Selling Price (&lrm;&#8377;) *
+                </label>
+                <input
+                  id="final-selling-price"
+                  type="number"
+                  min={1}
+                  step={50}
+                  value={finalPrice || ""}
+                  onChange={(e) => setFinalPrice(Number(e.target.value))}
+                  placeholder="e.g. 4200"
+                  style={{ ...inputStyle, fontSize: "1.2rem", fontWeight: 600 }}
+                  required
+                />
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--stone, #7A7570)",
+                    marginTop: "0.35rem",
+                  }}
+                >
+                  The transparent acquisition price patrons pay directly.
+                </div>
+              </div>
+
+              <div>
+                <label style={labelStyle} htmlFor="listing-stock-qty">
+                  Available Quantity
+                </label>
+                <input
+                  id="listing-stock-qty"
+                  type="number"
+                  min={1}
+                  value={stock}
+                  onChange={(e) => setStock(Math.max(1, Number(e.target.value)))}
+                  style={{ ...inputStyle, fontSize: "1.2rem", fontWeight: 600 }}
+                />
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--stone, #7A7570)",
+                    marginTop: "0.35rem",
+                  }}
+                >
+                  Quantity currently crafted and ready to dispatch.
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Actions */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingTop: "1.5rem",
+                borderTop: "1px solid var(--linen, #E8E2D8)",
+              }}
+            >
+              <button
+                type="button"
+                onClick={goBack}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--stone, #7A7570)",
+                  fontSize: "0.875rem",
+                  cursor: "pointer",
+                }}
+              >
+                &larr; Back
+              </button>
+
+              <div style={{ display: "flex", gap: "0.75rem" }}>
+                <button
+                  type="button"
+                  onClick={handleSaveDraft}
+                  disabled={loading}
+                  style={{
+                    padding: "0.75rem 1.25rem",
+                    borderRadius: "6px",
+                    border: "1.5px solid var(--fog, #D4CEC5)",
+                    background: "transparent",
+                    color: "var(--graphite, #4A4740)",
+                    fontSize: "0.9375rem",
+                    fontWeight: 600,
+                    cursor: loading ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Save as draft
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={loading || !canAdvance()}
+                  style={{
+                    padding: "0.75rem 2rem",
+                    borderRadius: "6px",
+                    background: canAdvance() ? "var(--charcoal, #1C1C1A)" : "var(--fog, #D4CEC5)",
+                    color: canAdvance() ? "#fff" : "var(--stone, #7A7570)",
+                    fontSize: "0.9375rem",
+                    fontWeight: 600,
+                    border: "none",
+                    cursor: canAdvance() && !loading ? "pointer" : "not-allowed",
+                    fontFamily: "var(--font-ui, system-ui, sans-serif)",
+                    transition: "background 150ms",
+                  }}
+                >
+                  {loading ? "Publishing…" : "Publish Craft Listing"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
