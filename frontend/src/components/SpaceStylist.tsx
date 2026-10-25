@@ -282,6 +282,26 @@ function ProductRecommendationCard({
         <p className="stylist-rec-card__artisan">by {rec.product.artisan}</p>
         <p className="stylist-rec-card__price">{formatINR(rec.product.price)}</p>
         <p className="stylist-rec-card__reason">{rec.reason}</p>
+
+        {/* Spatial Intelligence: Placement Anchor & Clearance */}
+        {rec.spatialPlacement && (
+          <div style={{ fontSize: '0.72rem', background: 'rgba(212, 163, 115, 0.12)', borderLeft: '2px solid #B5602A', padding: '0.25rem 0.45rem', borderRadius: '3px', margin: '0.35rem 0' }}>
+            <span style={{ fontWeight: 600, color: '#B5602A' }}>📍 Spatial Placement: </span>
+            <span style={{ color: '#4A4843' }}>
+              {rec.spatialPlacement.anchor_reference}
+              {rec.spatialPlacement.orientation_angle_deg !== undefined && ` (${rec.spatialPlacement.orientation_angle_deg}° orientation)`}
+              {rec.spatialPlacement.recommended_clearance_cm !== undefined && ` · min ${rec.spatialPlacement.recommended_clearance_cm}cm clearance`}
+            </span>
+          </div>
+        )}
+
+        {/* Spatial Intelligence: Photometric Interaction */}
+        {rec.photometricInteraction && (
+          <div style={{ fontSize: '0.70rem', color: '#6A6862', fontStyle: 'italic', margin: '0.2rem 0 0.4rem' }}>
+            💡 {rec.photometricInteraction}
+          </div>
+        )}
+
         <div className="stylist-rec-card__actions">
           <Link
             to={`/shop/${rec.product.id}`}
@@ -316,6 +336,32 @@ function SpaceAnalysisBadge({ analysis }: { analysis: SpaceAnalysis }) {
         <span className="stylist-analysis-badge__label">Space Mood</span>
         <span className="stylist-analysis-badge__value">{analysis.spaceMood}</span>
       </div>
+
+      {/* Photometric Profile */}
+      {analysis.ambientCctKelvin && (
+        <div className="stylist-analysis-badge__row">
+          <span className="stylist-analysis-badge__label">Photometrics</span>
+          <span className="stylist-analysis-badge__value">
+            {analysis.ambientCctKelvin}K CCT ({analysis.diffusionLevel || 'diffused'} · {analysis.lightDirectionality || 'natural'})
+          </span>
+        </div>
+      )}
+
+      {/* Fixed Envelope Elements */}
+      {analysis.fixedEnvelope && (analysis.fixedEnvelope.flooring || analysis.fixedEnvelope.walls) && (
+        <div className="stylist-analysis-badge__row">
+          <span className="stylist-analysis-badge__label">Envelope</span>
+          <span className="stylist-analysis-badge__value">
+            {[
+              analysis.fixedEnvelope.flooring && `Floor: ${analysis.fixedEnvelope.flooring}`,
+              analysis.fixedEnvelope.walls && `Walls: ${analysis.fixedEnvelope.walls}`,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </span>
+        </div>
+      )}
+
       {analysis.suggestedPlacements && analysis.suggestedPlacements.length > 0 && (
         <div className="stylist-analysis-badge__row">
           <span className="stylist-analysis-badge__label">Best For</span>
@@ -324,6 +370,15 @@ function SpaceAnalysisBadge({ analysis }: { analysis: SpaceAnalysis }) {
           </span>
         </div>
       )}
+
+      {/* Styling Narrative */}
+      {analysis.stylingNarrative && (
+        <div style={{ margin: '0.4rem 0 0.2rem', padding: '0.4rem 0.6rem', background: 'rgba(45, 106, 79, 0.08)', borderRadius: '4px', borderLeft: '2px solid #2D6A4F', fontSize: '0.74rem', color: '#1E4334', lineHeight: 1.45 }}>
+          <strong style={{ display: 'block', marginBottom: '0.15rem' }}>Architectural Narrative</strong>
+          {analysis.stylingNarrative}
+        </div>
+      )}
+
       {analysis.dominantColors && analysis.dominantColors.length > 0 && (
         <div className="stylist-analysis-badge__colors">
           {analysis.dominantColors.map((c, i) => (

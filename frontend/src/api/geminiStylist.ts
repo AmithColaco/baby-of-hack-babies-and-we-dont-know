@@ -17,12 +17,35 @@ export interface SpaceAnalysis {
   colorDescription: string;
   spaceDescription: string;
   maxBudget?: number;
+  ambientCctKelvin?: number;
+  lightDirectionality?: string;
+  diffusionLevel?: string;
+  lightingRecommendation?: string;
+  suitabilityStatus?: string;
+  stylingNarrative?: string;
+  fixedEnvelope?: {
+    flooring?: string;
+    walls?: string;
+    ceiling?: string;
+    architectural_features?: string[];
+  };
 }
 
 export interface ProductRecommendation {
   product: CraftObject;
   reason: string;
   matchScore: number;
+  designRationale?: {
+    aesthetic_bridge?: string;
+    material_dialogue?: string;
+    chromatic_fit?: string;
+  };
+  spatialPlacement?: {
+    anchor_reference?: string;
+    orientation_angle_deg?: number;
+    recommended_clearance_cm?: number;
+  };
+  photometricInteraction?: string;
 }
 
 export interface StylistAnalysisResult {
@@ -32,11 +55,7 @@ export interface StylistAnalysisResult {
 
 interface BackendChatbotResponse {
   spaceAnalysis: SpaceAnalysis;
-  recommendations: Array<{
-    product: CraftObject;
-    reason: string;
-    matchScore: number;
-  }>;
+  recommendations: ProductRecommendation[];
 }
 
 // Parse budget from user preference string (e.g. "budget ₹25000" or "under 30000")

@@ -8,6 +8,7 @@ Endpoints:
 from __future__ import annotations
 
 import logging
+import re
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
@@ -23,7 +24,8 @@ from app.schemas import (
     ChatbotRecommendation,
     ChatbotSpaceAnalysis,
 )
-from app.services import ai_service, rag_service
+from app.services import ai_service, rag_service, spatial_stylist
+from app.services.spatial_stylist import SpatialStylistOutput
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +34,69 @@ router = APIRouter()
 
 MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024  # 8 MB
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
+
+
+@router.post(
+    "/spatial-stylist",
+    response_model=SpatialStylistOutput,
+    summary="Principal Spatial AI Architect: 4-phase spatial reasoning and masterwork harmonization",
+)
+async def spatial_stylist_endpoint(
+    image: Optional[UploadFile] = File(None, description="Photograph of room, wall, desk, or architectural envelope"),
+    room_image: Optional[UploadFile] = File(None, description="Alternative field name matching data contract specification"),
+    room_metadata: Optional[str] = Form(None, description="Optional JSON or text describing room type, dimensions, flooring"),
+    preference: str = Form("", description="Optional patron budget and placement constraints"),
+    db: Session = Depends(get_db),
+):
+    """Execute complete 4-phase Spatial AI Architecture evaluation:
+    Phase 1: Architectural Aesthetic & Fixed Envelope Extraction
+    Phase 2: Photometric & Light Temperature Profiling (CCT 2200K - 6500K)
+    Phase 3: Spatial Clearance & Suitability Guardrails (circulation >= 75cm/90cm)
+    Phase 4: Masterwork Harmonization & Curated Selection (60-30-10 rule, 3D placement)
+    """
+    target_file = room_image or image
+    if target_file is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="An image file is required under form field 'room_image' or 'image'.",
+        )
+
+    content_type = target_file.content_type or ""
+    if content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported image type: '{content_type}'. Allowed types: JPEG, PNG, WebP.",
+        )
+
+    try:
+        image_bytes = await target_file.read()
+    except Exception as e:
+        logger.error(f"Failed to read uploaded image: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Could not read uploaded image.")
+
+    if len(image_bytes) == 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded image file is empty.")
+    if len(image_bytes) > MAX_FILE_SIZE_BYTES:
+        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Image size exceeds 8 MB.")
+
+    meta_dict: dict = {}
+    if room_metadata:
+        try:
+            meta_dict = json.loads(room_metadata) if room_metadata.strip().startswith("{") else {"description": room_metadata}
+        except Exception:
+            meta_dict = {"description": room_metadata}
+    if preference:
+        meta_dict["preference"] = preference.strip()
+
+    catalogue = get_all_catalogue_products(db=db)
+
+    result = await spatial_stylist.evaluate_room_spatial_intelligence(
+        image_bytes=image_bytes,
+        mime_type=content_type,
+        room_metadata=meta_dict,
+        catalog_corpus=catalogue,
+    )
+    return result
 
 
 @router.post(
@@ -44,12 +109,11 @@ async def analyze_space_endpoint(
     preference: str = Form("", description="Optional user preferences e.g. budget, color, placement"),
     db: Session = Depends(get_db),
 ):
-    """Analyze an uploaded room/space photograph using Gemini Vision.
+    """Analyze an uploaded room/space photograph using Spatial AI Architect & Gemini Vision.
 
-    Retrieves real products from the KAARIGAR catalogue, prompts Gemini with the visual context
-    and product details, and returns structured analysis along with grounded recommendations.
+    Retrieves real products from the KAARIGAR catalogue, evaluates architectural aesthetic,
+    photometric CCT profile, and spatial clearance, returning grounded recommendations.
     """
-    # 1. Validate content type
     content_type = image.content_type or ""
     if content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(
@@ -57,7 +121,6 @@ async def analyze_space_endpoint(
             detail=f"Unsupported image type: '{content_type}'. Allowed types: JPEG, PNG, WebP.",
         )
 
-    # 2. Read image bytes and validate size
     try:
         image_bytes = await image.read()
     except Exception as e:
@@ -79,76 +142,112 @@ async def analyze_space_endpoint(
             detail=f"Image size exceeds {MAX_FILE_SIZE_BYTES // (1024 * 1024)} MB limit.",
         )
 
-    # 3. Retrieve catalogue products (flagship masterpieces + published listings)
     catalogue = get_all_catalogue_products(db=db)
     catalogue_by_id = {p["id"]: p for p in catalogue}
 
-    # 4. Invoke AI vision analysis
-    try:
-        raw_result = await ai_service.analyze_space(
-            image_bytes=image_bytes,
-            mime_type=content_type,
-            user_preference=preference.strip(),
-            catalogue=catalogue,
-        )
-    except RuntimeError as e:
-        logger.warning(f"Chatbot analysis failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(e),
-        )
-    except Exception as e:
-        logger.exception("Chatbot space analysis encountered an unexpected exception")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred while analyzing your space: {str(e)}",
-        )
+    # Execute Spatial AI Architect evaluation
+    spatial_eval = await spatial_stylist.evaluate_room_spatial_intelligence(
+        image_bytes=image_bytes,
+        mime_type=content_type,
+        room_metadata={"preference": preference.strip()},
+        catalog_corpus=catalogue,
+    )
 
-    # 5. Hydrate recommendations with full product records from catalogue
+    is_suitable = spatial_eval.suitability_guard.status != "REJECTED"
+    unsuitable_msg = ""
+    if not is_suitable:
+        risk_msgs = [c.measured_risk for c in spatial_eval.suitability_guard.critical_spatial_constraints]
+        unsuitable_msg = risk_msgs[0] if risk_msgs else "The uploaded photograph captures a person portrait or isolated item closeup rather than an interior living space."
+
+    # Hydrate recommendations with full product records from catalogue
     recommendations_out: list[ChatbotRecommendation] = []
-    for rec in raw_result.get("recommendations", []):
-        prod_id = rec.get("productId")
-        prod_data = catalogue_by_id.get(prod_id)
-        if not prod_data:
-            continue
+    if is_suitable:
+        for rec in spatial_eval.harmonized_recommendations:
+            prod_data = catalogue_by_id.get(rec.sku)
+            if not prod_data:
+                # Fallback search by title
+                for p in catalogue:
+                    if p["title"].lower() == rec.product_name.lower():
+                        prod_data = p
+                        break
+            if not prod_data:
+                continue
 
-        product_out = ChatbotProductOut(
-            id=prod_data["id"],
-            title=prod_data["title"],
-            craftTradition=prod_data.get("craftTradition", ""),
-            category=prod_data.get("category", "crafts"),
-            price=float(prod_data.get("price", 0)),
-            artisan=prod_data.get("artisan", "Master Artisan"),
-            region=prod_data.get("region", "India"),
-            state=prod_data.get("state", ""),
-            dimensions=prod_data.get("dimensions", ""),
-            image=prod_data.get("image", "/images/textile.jpg"),
-            colorPalette=prod_data.get("colorPalette", []),
-            materials=prod_data.get("materials", []),
-            technique=prod_data.get("technique", ""),
-        )
-
-        recommendations_out.append(
-            ChatbotRecommendation(
-                product=product_out,
-                reason=rec.get("reason", "Aesthetic artisanal complement for your space."),
-                matchScore=int(rec.get("matchScore", 85)),
+            product_out = ChatbotProductOut(
+                id=prod_data["id"],
+                title=prod_data["title"],
+                craftTradition=prod_data.get("craftTradition", ""),
+                category=prod_data.get("category", "crafts"),
+                price=float(prod_data.get("price", 0)),
+                artisan=prod_data.get("artisan", "Master Artisan"),
+                region=prod_data.get("region", "India"),
+                state=prod_data.get("state", ""),
+                dimensions=prod_data.get("dimensions", ""),
+                image=prod_data.get("image", "/images/textile.jpg"),
+                colorPalette=prod_data.get("colorPalette", []),
+                materials=prod_data.get("materials", []),
+                technique=prod_data.get("technique", ""),
             )
-        )
 
-    # 6. Format space analysis response
-    raw_analysis = raw_result.get("spaceAnalysis", {})
+            rationale_dict = {
+                "aesthetic_bridge": rec.design_rationale.aesthetic_bridge,
+                "material_dialogue": rec.design_rationale.material_dialogue,
+                "chromatic_fit": rec.design_rationale.chromatic_fit,
+            }
+            placement_dict = {
+                "anchor_reference": rec.spatial_placement.anchor_reference,
+                "orientation_angle_deg": rec.spatial_placement.orientation_angle_deg,
+                "recommended_clearance_cm": rec.spatial_placement.recommended_clearance_cm,
+            }
+
+            recommendations_out.append(
+                ChatbotRecommendation(
+                    product=product_out,
+                    reason=f"{rec.design_rationale.aesthetic_bridge} {rec.design_rationale.chromatic_fit}",
+                    matchScore=rec.match_score,
+                    designRationale=rationale_dict,
+                    spatialPlacement=placement_dict,
+                    photometricInteraction=rec.photometric_interaction,
+                )
+            )
+
+    # Format space analysis response
+    ra = spatial_eval.room_assessment
+    photo = ra.photometric_profile
+    fixed = ra.fixed_envelope_elements
+
+    budget = None
+    b_match = re.search(r'[\u20b9]?\s*(\d[\d,]*)', preference)
+    if b_match:
+        try:
+            budget = float(b_match.group(1).replace(",", ""))
+        except ValueError:
+            budget = None
+
     space_analysis_out = ChatbotSpaceAnalysis(
-        isSuitable=bool(raw_analysis.get("isSuitable", True)),
-        unsuitableMessage=raw_analysis.get("unsuitableMessage", ""),
-        dominantColors=raw_analysis.get("dominantColors", []),
-        interiorStyle=raw_analysis.get("interiorStyle", "contemporary"),
-        spaceMood=raw_analysis.get("spaceMood", "Curated space"),
-        colorDescription=raw_analysis.get("colorDescription", ""),
-        spaceDescription=raw_analysis.get("spaceDescription", ""),
-        suggestedCategories=raw_analysis.get("suggestedCategories", []),
-        suggestedPlacements=raw_analysis.get("suggestedPlacements", []),
-        maxBudget=raw_analysis.get("maxBudget"),
+        isSuitable=is_suitable,
+        unsuitableMessage=unsuitable_msg,
+        dominantColors=["#EFE7DA", "#8C6239", "#2E4057", "#C07A46"] if is_suitable else [],
+        interiorStyle=ra.primary_architectural_style,
+        secondaryInfluences=ra.secondary_influences,
+        spaceMood=f"{ra.primary_architectural_style} with {photo.diffusion_level} illumination",
+        colorDescription=f"Ambient CCT estimated at {photo.ambient_cct_kelvin}K with {photo.light_directionality}.",
+        spaceDescription=spatial_eval.styling_narrative,
+        suggestedCategories=["ceramics", "textiles", "paintings", "metalcraft", "woodcraft"] if is_suitable else [],
+        suggestedPlacements=[r.spatial_placement.anchor_reference for r in spatial_eval.harmonized_recommendations[:3]],
+        maxBudget=budget,
+        ambientCctKelvin=photo.ambient_cct_kelvin,
+        lightDirectionality=photo.light_directionality,
+        diffusionLevel=photo.diffusion_level,
+        lightingRecommendation=photo.lighting_recommendation,
+        suitabilityStatus=spatial_eval.suitability_guard.status,
+        fixedEnvelope={
+            "flooring": fixed.flooring,
+            "walls": fixed.walls,
+            "ceiling": fixed.ceiling,
+            "architectural_features": fixed.architectural_features,
+        },
+        stylingNarrative=spatial_eval.styling_narrative,
     )
 
     return ChatbotAnalyzeResponse(

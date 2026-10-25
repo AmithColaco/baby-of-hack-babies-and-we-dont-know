@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -385,12 +385,20 @@ class ChatbotSpaceAnalysis(BaseModel):
     unsuitableMessage: str = ""
     dominantColors: list[str] = Field(default_factory=list)
     interiorStyle: str = ""
+    secondaryInfluences: list[str] = Field(default_factory=list)
     spaceMood: str = ""
     colorDescription: str = ""
     spaceDescription: str = ""
     suggestedCategories: list[str] = Field(default_factory=list)
     suggestedPlacements: list[str] = Field(default_factory=list)
     maxBudget: Optional[float] = None
+    ambientCctKelvin: Optional[int] = None
+    lightDirectionality: Optional[str] = None
+    diffusionLevel: Optional[str] = None
+    lightingRecommendation: Optional[str] = None
+    suitabilityStatus: str = "APPROVED"
+    fixedEnvelope: Optional[dict[str, Any]] = None
+    stylingNarrative: Optional[str] = None
 
 
 class ChatbotProductOut(BaseModel):
@@ -413,6 +421,9 @@ class ChatbotRecommendation(BaseModel):
     product: ChatbotProductOut
     reason: str
     matchScore: int = Field(..., ge=0, le=100)
+    designRationale: Optional[dict[str, str]] = None
+    spatialPlacement: Optional[dict[str, Any]] = None
+    photometricInteraction: Optional[str] = None
 
 
 class ChatbotAnalyzeResponse(BaseModel):

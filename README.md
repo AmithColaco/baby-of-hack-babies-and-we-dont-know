@@ -187,7 +187,11 @@ graph TD
 
 ### 7. KAARIGAR Curatorial Guide (Dual-Engine AI Concierge)
 * **Mode A: Curatorial Chat**: Grounded archival retrieval without hallucinations. Filters strictly to matching objects with zero informal emojis and verifiable source citations.
-* **Mode B: Craft in Your Space (AI Interior Stylist)**: Room suitability guard powered by Gemini 2.0 Flash Vision, identifying interior architectural aesthetics, light temperatures, and harmonizing catalogue masterworks.
+* **Mode B: Craft in Your Space (Principal Spatial AI Architect & Interior Design Director)**:
+  - **Phase 1: Architectural Aesthetic & Materiality Extraction**: Evaluates room taxonomy (Japandi, Warm Contemporary, Brutalist, Transitional) and extracts fixed envelope anchors (flooring, limewash walls, ceiling structures, fenestration).
+  - **Phase 2: Photometric & Light Temperature Profiling**: Calculates ambient Correlated Color Temperature ($2200\text{K} - 6500\text{K}$ CCT), natural light directionality, diffusion levels, and artificial fixture balancing rules.
+  - **Phase 3: Spatial Clearance & Suitability Guardrails**: Rigorously guards circulation (walkway clearance $\ge 75\text{ cm}$ secondary, $\ge 90\text{ cm}$ primary; seating-to-table $35 - 45\text{ cm}$), checks visual weight, and enforces suitability verdicts (`APPROVED`, `CONDITIONAL`, `REJECTED`).
+  - **Phase 4: Masterwork Harmonization & Curated Selection**: Employs the 60-30-10 chromatic rule, material tension dialogue, and precise 3D placement orientation angles and anchors. Exposed via dedicated endpoint `POST /chatbot/spatial-stylist`.
 
 ### 8. Women-Led Guilds (SHG) & Multilingual Inclusivity
 * **Women's Self-Help Group (SHG) Badge**: Special social recognition badge highlighting women-led cooperatives (e.g. *Mahila Utkarsha Kasuti Sangha* and *Kinnigoli Women Grass-Weavers Guild*).
