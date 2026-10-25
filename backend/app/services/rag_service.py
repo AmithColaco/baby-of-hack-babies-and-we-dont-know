@@ -28,7 +28,8 @@ from app.schemas import (
     ChatbotProductOut,
     RAGSourceOut,
 )
-from app.services import ai_service
+from app.services import ai_service, knowledge_loader
+from app.services.chunking import KnowledgeDocument, RAGChunk
 
 logger = logging.getLogger(__name__)
 
@@ -47,305 +48,28 @@ STOP_WORDS = {
 _EMBEDDING_CACHE: dict[str, list[float]] = {}
 
 
-@dataclass
-class RAGChunk:
-    id: str
-    title: str
-    category: str  # craft_tradition, product, artisan, making_stage, platform_policy, editorial_story
-    content: str
-    product_id: Optional[str] = None
-    tags: list[str] = field(default_factory=list)
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-
 # ─────────────────────────────────────────────────────────────────────────────
-# Static Curated Heritage Knowledge Corpus
+# JSON Knowledge Corpus Ingestion & Automated Chunking
 # ─────────────────────────────────────────────────────────────────────────────
 
-STATIC_KNOWLEDGE_CORPUS: list[RAGChunk] = [
-    # ── Platform Policies & Economics ─────────────────────────────────────────
-    RAGChunk(
-        id="policy_pricing_transparency",
-        title="KAARIGAR 4-Part Transparent Pricing Formula",
-        category="platform_policy",
-        content=(
-            "KAARIGAR enforces an uncompromised 4-part transparent pricing breakdown on every craftwork:\n"
-            "1. Actual Artisan Price (Base Price): 100% of this amount goes directly to the master craftsperson or guild.\n"
-            "2. Platform Infrastructure Fee: A modest 5% fee dedicated strictly to secure digital archiving, 3D photogrammetry, high-resolution media hosting, and artisan technical onboarding.\n"
-            "3. Applicable Taxes (GST): Exact 5% statutory goods and services tax.\n"
-            "4. Total Final Price: The clear arithmetic sum (Base Price + 5% Platform Fee + 5% Tax). No hidden markups, distributor cuts, or dealer margins."
-        ),
-        tags=["pricing", "fee", "platform fee", "tax", "gst", "cost", "breakdown", "direct share", "margin", "fair trade"],
-    ),
-    RAGChunk(
-        id="policy_provenance_and_authenticity",
-        title="Master-Bench Inspection & Certificate of Authenticity",
-        category="platform_policy",
-        content=(
-            "Every single piece catalogued on KAARIGAR undergoes rigorous physical master-bench examination before dispatch. "
-            "Each certified item arrives with a tamper-evident, serialised Certificate of Authenticity embedded with: "
-            "(1) The artisan's registered fingerprint or seal, (2) Geographical Indication (GI) registry registration number, "
-            "(3) Exact material composition breakdown verified by mineral/fibre assay, and (4) An encrypted QR code that leads "
-            "to the permanent digital ledger entry recording the piece's accession number, lineage, and master maker."
-        ),
-        tags=["authenticity", "certificate", "gi", "geographical indication", "inspection", "verification", "qr code", "genuine", "original"],
-    ),
-    RAGChunk(
-        id="policy_escrow_and_returns",
-        title="Artisan Escrow Protection & 7-Day White-Glove Inspection Window",
-        category="platform_policy",
-        content=(
-            "To safeguard both our patrons and our master makers, patron funds are held in secure escrow upon ordering. "
-            "Artisan payout is released once the piece arrives safely and the patron completes their 7-day white-glove "
-            "inspection window. All shipments travel in bespoke, climate-cushioned archival crating insured for 100% of value. "
-            "In the rare circumstance of transit damage, KAARIGAR provides immediate insured recovery and replacement, with zero financial liability on the artisan."
-        ),
-        tags=["escrow", "delivery", "shipping", "packaging", "return", "refund", "damage", "inspection", "insurance"],
-    ),
-    RAGChunk(
-        id="policy_login_checkout",
-        title="Mandatory Authentication for Checkout & Provenance Ownership",
-        category="platform_policy",
-        content=(
-            "Patrons must sign in (via mobile OTP or credentials) before completing checkout. "
-            "This ensures that ownership records, serialised certificates of authenticity, and immutable accession tracking "
-            "are securely bound to the patron's verified digital profile, preventing unauthorized resale or fraudulent acquisition."
-        ),
-        tags=["login", "checkout", "auth", "account", "provenance", "order tracking", "security"],
-    ),
+def load_static_corpus(force_reload: bool = False) -> list[RAGChunk]:
+    """Retrieve automatically chunked heritage knowledge from JSON data source.
 
-    # ── Flagship Masterpieces from Core Catalogue ──────────────────────────────
-    RAGChunk(
-        id="prod_pahari_miniature",
-        title="Radha & Krishna in the Groves of Kangra (Pahari Miniature)",
-        category="product",
-        product_id="pahari-miniature",
-        content=(
-            "Flagship Masterwork: 'Radha & Krishna in the Groves of Kangra'.\n"
-            "Craft Tradition: Pahari Miniature Painting (Kangra Kalam revival, circa 1780 Gita Govinda lineage).\n"
-            "Master Artist: Pandit Ram Swaroop Sharma (Chamba-Kangra Parampara Gurukulam, Himachal Pradesh).\n"
-            "Base Price: ₹48,500 INR.\n"
-            "Materials: Handmade Wasli Paper (laminated with rice-starch & neem paste), genuine Badakhshan Lapis Lazuli ultramarine, "
-            "Deccan Malachite mineral green, Cinnabar vermilion, and 24K beaten gold leaf (varq illumination).\n"
-            "Technique: Painted with a single-hair brush gathered from the throat of a Himalayan mountain squirrel. "
-            "Agate stone burnishing (ghontai) imparts a cold milk-silk sheen to the paper.\n"
-            "Dimensions: 28.5 cm × 21.0 cm (Framed: 42 cm × 34 cm in teak & glass mount). Weight: 1.4 kg.\n"
-            "Ideal Placements: Curated art wall, reading nook focal point, intimate salon."
-        ),
-        tags=["pahari", "kangra", "miniature", "painting", "radha krishna", "ram swaroop sharma", "wasli", "lapis lazuli", "gold leaf", "himachal"],
-    ),
-    RAGChunk(
-        id="prod_jaipur_blue_pottery",
-        title="Cobalt Meena Arabesque Urn (Jaipur Blue Pottery)",
-        category="product",
-        product_id="jaipur-blue-pottery",
-        content=(
-            "Flagship Masterwork: 'Cobalt Meena Arabesque Urn'.\n"
-            "Craft Tradition: Jaipur Blue Pottery (Turko-Persian glazed faience lineage, Sanganer, Rajasthan).\n"
-            "Master Ceramist: Mahesh Kumar & Sanganer Guild (UNESCO Seal of Excellence awardee).\n"
-            "Base Price: ₹24,000 INR.\n"
-            "Materials: 70% Ground Quartz Rock from the Aravalli hills, 15% recycled glass powder, natural Katira Gond, "
-            "Fuller's earth (Multani Mitti 5%), Cobalt Oxide & Copper Carbonate pigments, low-fire Borax & Feldspar glaze. Completely 100% clay-free.\n"
-            "Technique: Hand-pressed into two-part terracotta open molds with wood ash internal cores, painted freehand with camel-hair brushes, "
-            "and fired at 850°C in an indigenous wood-fired kiln.\n"
-            "Dimensions: 38.0 cm Height × 22.5 cm Diameter. Weight: 3.6 kg.\n"
-            "Ideal Placements: Entryway console, shelf accent, table centerpiece, mantelpiece."
-        ),
-        tags=["blue pottery", "jaipur", "urn", "cobalt", "ceramics", "mahesh kumar", "quartz", "sanganer", "rajasthan", "vessel"],
-    ),
-    RAGChunk(
-        id="prod_chanderi_silk",
-        title="Chanderi Royal Peacock Zari Weave (Handwoven Brocade)",
-        category="product",
-        product_id="chanderi-handwoven-silk",
-        content=(
-            "Flagship Masterwork: 'Chanderi Royal Peacock Zari Weave'.\n"
-            "Craft Tradition: Handwoven Chanderi Brocade (Vedic gossamer silk tradition, Pranpur, Madhya Pradesh).\n"
-            "Master Artisan: Master Weaver Bismillah Ansari (Sant Kabir National Awardee · 5th Generation Weaver).\n"
-            "Base Price: ₹36,500 INR.\n"
-            "Materials: Pure un-degummed Mulberry Silk warp (20/22 denier) preserving natural sericin for crystalline drape, "
-            "fine 120s count cotton weft, real silver electroplated gold zari thread, natural Manjistha (madder root) crimson dye.\n"
-            "Technique: Woven in subterranean earthen pit-looms with foot-treadle tension control. "
-            "Extra-weft kadwa interlocking ensures each golden peacock motif is an isolated island of zari with no loose floats on the underside.\n"
-            "Dimensions: 5.5 m Length × 1.15 m Width (with blouse piece). Weight: 520 g (ultra-fine gossamer).\n"
-            "Ideal Placements: Draped statement textile, framed fabric panel, formal lounge accent."
-        ),
-        tags=["chanderi", "silk", "saree", "brocade", "zari", "bismillah ansari", "textile", "weft", "pit loom", "kadwa", "madhya pradesh"],
-    ),
-    RAGChunk(
-        id="prod_bastar_dhokra",
-        title="Bastar Lost-Wax Ritual Guardian Horse (Dhokra Bell Metal)",
-        category="product",
-        product_id="bastar-dhokra-brass",
-        content=(
-            "Flagship Masterwork: 'Bastar Lost-Wax Ritual Guardian Horse'.\n"
-            "Craft Tradition: Bastar Dhokra Lost-Wax Metalcraft (Cire Perdue, 4,000-year Harappan metallurgical lineage).\n"
-            "Master Sculptor: Sukhruram Ghadwa (Ghadwa tribal community, Kondagaon, Bastar, Chhattisgarh).\n"
-            "Base Price: ₹32,000 INR.\n"
-            "Materials: Traditional bell metal bronze alloy (78% copper, 22% tin), forest wild honeycomb beeswax, "
-            "Sal tree resin (dammar), and riverbed alluvial clay with termite soil.\n"
-            "Technique: Wax is extruded through hardwood presses into gossamer threads and coiled concentric spirals around an inner clay core. "
-            "Molten bronze at 1200°C vaporizes the wax entirely. The clay mold is broken open with an iron mallet, rendering every casting 100% unique.\n"
-            "Dimensions: 34.0 cm Height × 29.5 cm Length × 12.0 cm Depth. Weight: 4.8 kg.\n"
-            "Ideal Placements: Executive desk accent, coffee table sculptural anchor, bookshelf display, sideboard centerpiece."
-        ),
-        tags=["dhokra", "bastar", "lost-wax", "brass", "bronze", "sukhruram ghadwa", "metalcraft", "sculpture", "horse", "chhattisgarh"],
-    ),
-    RAGChunk(
-        id="prod_channapatna_wood",
-        title="Temple Spire & Avian Harmony Totem (Channapatna Woodcraft)",
-        category="product",
-        product_id="channapatna-wood-sculpture",
-        content=(
-            "Flagship Masterwork: 'Temple Spire & Avian Harmony Totem'.\n"
-            "Craft Tradition: Channapatna Lathe-Turned Woodcraft (Gombegala Ooru / Toy Town, Ramanagara, Karnataka).\n"
-            "Master Craftsman: Syed Khaleel & Sons (Master Wood Turner · 38 Years Atelier Practice).\n"
-            "Base Price: ₹18,500 INR.\n"
-            "Materials: Sustainably harvested Aale Mara / Ivory Wood (Wrightia tinctoria), seasoned Indian Rosewood base, "
-            "natural Kerria lacca vegetable resin, botanical dyes (turmeric amber, indigo blue, vermilion red).\n"
-            "Technique: Hand-turned on high-speed treadle lathes, vegetable-lac sticks applied through dry friction heat, "
-            "and buffed with Talegari (palm leaves) to achieve a glass-like child-safe organic luster.\n"
-            "Dimensions: 52.0 cm Height × 15.0 cm Base Diameter. Weight: 2.2 kg.\n"
-            "Ideal Placements: Minimalist corner pedestal, tall bookshelf niche, console sculptural punctuation."
-        ),
-        tags=["channapatna", "woodcraft", "lathe", "ivory wood", "lacquer", "syed khaleel", "karnataka", "totem", "toy town"],
-    ),
-    RAGChunk(
-        id="prod_kundan_meenakari",
-        title="Navratna Polki & Enamel Kundan Amulet (Jaipur Royal Court)",
-        category="product",
-        product_id="kundan-meenakari-jewellery",
-        content=(
-            "Flagship Masterwork: 'Navratna Polki & Enamel Kundan Amulet'.\n"
-            "Craft Tradition: Jaipur Royal Kundan & Meenakari (Mughal-Rajput court goldsmithing lineage, Jaipur, Rajasthan).\n"
-            "Master Goldsmith: Sunar Govind Lal Meenakar (7th Generation Court Goldsmith).\n"
-            "Base Price: ₹89,000 INR.\n"
-            "Materials: 24K refined Kundan gold foil, 22K yellow gold base framework, natural uncut Polki diamonds, "
-            "Colombian emerald cabochon, and vitreous champlevé mineral enamels (peacock blue, ruby red, bottle green).\n"
-            "Technique: Four-stage classical synthesis: Ghaat (framework shaping), Khudai (intaglio engraving of floral wells), "
-            "Meenakari (kiln-fired vitreous enamel filling on the reverse), and Jadai (setting uncut gems with cold-burnished 24K pure gold leaf).\n"
-            "Dimensions: 7.8 cm Height × 5.4 cm Width. Weight: 46 g (Net Gold: 34 g 22K/24K).\n"
-            "Ideal Placements: Display vitrine, vanity tray, museum-grade shadowbox frame."
-        ),
-        tags=["kundan", "meenakari", "jewellery", "gold", "polki", "emerald", "jaipur", "govind lal", "rajasthan", "amulet"],
-    ),
+    Automated semantic chunking eliminates manual data fragmentation by dynamically
+    segmenting curated documents along boundary-preserving hierarchies with context overlap.
+    """
+    return knowledge_loader.get_static_chunks(force_reload=force_reload)
 
-    # ── Regional Craft Traditions & Geographical Indications (GI) ─────────────
-    RAGChunk(
-        id="craft_kasuti_embroidery",
-        title="Kasuti Embroidery of Karnataka (GI Protected)",
-        category="craft_tradition",
-        content=(
-            "Kasuti is an intricate count-thread embroidery tradition native to the Dharwad and North Karnataka region, dating back to the Chalukya era. "
-            "Craftswomen embroider without knotting the thread or tracing outlines, working stitch-by-stitch counted against the warp and weft of Ilkal handloom sarees. "
-            "Four distinct stitches characterize authentic Kasuti:\n"
-            "1. Gavanti (Double running stitch forming straight lines, completely reversible on both sides).\n"
-            "2. Murgi (Zig-zag stepped stitch creating diamond patterns).\n"
-            "3. Neygi (Running stitch resembling woven tapestry).\n"
-            "4. Menthi (Cross-stitch used for dense floral and temple Gopura fills).\n"
-            "Traditional motifs include temple chariots (rathas), tulsi katte, peacocks, elephants, and sacred geometric kolams. Master awardees include Parvati Devi."
-        ),
-        tags=["kasuti", "embroidery", "karnataka", "dharwad", "gavanti", "murgi", "neygi", "menthi", "ilkal", "parvati devi", "gi"],
-    ),
-    RAGChunk(
-        id="craft_bidriware_karnataka",
-        title="Bidriware Damascene Metalcraft of Bidar (GI Protected)",
-        category="craft_tradition",
-        content=(
-            "Bidriware is an archaic metal handicraft originating from Bidar in northern Karnataka, developed during the 14th-century Bahmani Sultanate. "
-            "The body is cast from an alloy of zinc (95%) and copper (5%). The surface is engraved with intricate arabesques, and pure silver wire or sheet "
-            "is hammered into the chiselled grooves (Tarkashi and Tehnishan inlay techniques). "
-            "The magic of Bidriware occurs during the final boiling in a paste containing soil gathered exclusively from beneath the foundation of the 500-year-old Bidar Fort, "
-            "rich in natural potassium nitrate. The paste turns the zinc alloy a deep velvety matte jet-black, leaving the pure silver gleaming with celestial contrast."
-        ),
-        tags=["bidriware", "bidri", "bidar", "karnataka", "silver inlay", "zinc", "damascene", "fort soil", "gi", "metalcraft"],
-    ),
-    RAGChunk(
-        id="craft_mata_ni_pachedi",
-        title="Mata ni Pachedi (Mother Goddess Shrines of Gujarat)",
-        category="craft_tradition",
-        content=(
-            "Mata ni Pachedi ('That which behind the Mother lies') is a sacred ritual textile art practiced by the nomadic Chitara community along the Sabarmati River in Gujarat. "
-            "Originating when marginalized Vaghari tribes were forbidden from entering stone temples, they painted portable nomadic shrines onto unbleached cotton cloths. "
-            "Drawn freehand using bamboo reed pens (kalam) and hand-carved date wood blocks. Dyes are 100% natural: black from fermented iron shavings and jaggery, "
-            "crimson red from alum mordant boiled with madder root (alizarin), and white reserved un-dyed cloth. Every cloth is consecrated through river washings."
-        ),
-        tags=["mata ni pachedi", "chitara", "gujarat", "kalamkari", "goddess", "textile", "natural dyes", "alum", "sacred art"],
-    ),
-    RAGChunk(
-        id="craft_kashmiri_walnut_carving",
-        title="Kashmiri Walnut Wood Carving (Juglans Regia)",
-        category="craft_tradition",
-        content=(
-            "Kashmiri Walnut Wood Carving is centered in the Kashmir Valley, utilizing exclusively the timber of Juglans regia (indigenous walnut trees) "
-            "that have reached natural maturity (over 100 years old). The timber is dry-cured for two to three years to eliminate sap moisture and prevent warping. "
-            "Master carvers employ four levels of carving: (1) Deep relief (Akkasi), (2) Undercut hollowed carving (Jali work), (3) Shallow engraving, and (4) Semi-relief. "
-            "Iconic motifs include Chinar leaves, Kashmiri iris, trailing grapevines, and Mughal geometric lattice windows. Finished with natural beeswax and agate burnishing."
-        ),
-        tags=["kashmir", "walnut wood", "wood carving", "chinar", "jali", "relief", "craft", "woodcraft"],
-    ),
-    RAGChunk(
-        id="craft_patan_patola",
-        title="Patan Patola Double Ikat (Queen of Silks)",
-        category="craft_tradition",
-        content=(
-            "Patan Patola from northern Gujarat is the pinnacle of double-ikat weaving worldwide. Both the silk warp and weft threads are individually tied and dyed "
-            "with natural botanical resists (turmeric, madder, marigold, pomegranate rind) before touching the loom. When woven, the warp and weft meet with mathematical "
-            "sub-millimeter precision to form identical geometric patterns on both the front and reverse sides of the textile. "
-            "A single Patola takes a family of master weavers four to eight months of continuous calculation on a slant-beam rosewood loom. Celebrated in Gujarati lore: "
-            "'Padi patole bhat, fatey pan fitey nahin' (The fabric may tear with centuries, but the sacred color shall never fade)."
-        ),
-        tags=["patan patola", "double ikat", "patola", "gujarat", "silk", "ikat", "weaving", "salvi", "handloom"],
-    ),
 
-    # ── Editorial Stories & Master Artisan Biographies ─────────────────────────
-    RAGChunk(
-        id="story_breath_on_wasli",
-        title="The Breath on Wasli: Why Kangra Miniatures Cannot Be Rushed",
-        category="editorial_story",
-        product_id="pahari-miniature",
-        content=(
-            "In Pandit Ram Swaroop Sharma's atelier in the Kangra Valley, time is measured not by clocks but by stone burnishing and pigment settling. "
-            "Wasli paper requires laminating three sheets of acid-free rag paper with neem-infused starch paste to prevent pest infestation. "
-            "Once sun-cured against marble slabs, the artist rubs the surface with a heated agate stone until it acquires the dense smoothness of ivory. "
-            "Sharma uses a squirrel-hair brush with three hairs plucked from a wild mountain squirrel. As Sharma explains: "
-            "'A miniature is meant to be held inches from your eyelashes. If your heartbeat accelerates, the brush wavers. To paint the divine romance, "
-            "the artist must silence all thoughts of the market. When you grind a mountain stone, light enters the crystal and stays for four hundred years.'"
-        ),
-        tags=["story", "kangra", "wasli", "ram swaroop sharma", "miniature", "agate", "squirrel hair", "pigments"],
-    ),
-    RAGChunk(
-        id="story_four_thousand_year_wire",
-        title="The Four-Thousand-Year Wire: Bastar's Lost-Wax Lineage",
-        category="editorial_story",
-        product_id="bastar-dhokra-brass",
-        content=(
-            "In the Sal forests of Bastar, metal begins with wild honey hunters who climb trees to harvest combs. "
-            "Tribal master Sukhruram Ghadwa blends raw beeswax with Sal tree resin (dammar) and strains it into cold river water. "
-            "The elastic wax is hand-extruded through hardwood presses into gossamer threads, which are wound in concentric spirals over a sun-dried clay core. "
-            "Sukhruram reflects: 'There is no master mold. When we pour molten bell metal bronze at twelve hundred degrees, the beeswax vaporizes into smoke. "
-            "It gives its life so the bronze can take its place. To create one horse, the wax must die.' "
-            "Because each clay mold is shattered with an iron mallet upon cooling, every single Dhokra sculpture is an irreproducible, singular monument of archaic metallurgy."
-        ),
-        tags=["story", "dhokra", "bastar", "sukhruram ghadwa", "lost-wax", "beeswax", "bronze", "chhattisgarh"],
-    ),
-    RAGChunk(
-        id="story_woven_air_chanderi",
-        title="The Woven Air of the Bundelkhand Plains",
-        category="editorial_story",
-        product_id="chanderi-handwoven-silk",
-        content=(
-            "Step down into the subterranean pit-loom workshop of Master Weaver Bismillah Ansari in Pranpur, and the intense summer heat drops ten degrees. "
-            "The packed damp earthen floor preserves the vital moisture of fine 20/22 denier mulberry silk. "
-            "Ansari's hands dance across the wooden reed with rhythmic percussion as foot treadles control warp tension. "
-            "'Chanderi is distinct because of its transparent structure,' Ansari explains. 'We do not boil off the natural sericin gum before weaving, "
-            "giving the fabric its crystalline transparency and characteristic soft crackle.' "
-            "Each peacock motif on the pallu is hand-interlocked with the kadwa extra-weft technique, eliminating all loose underside floats. "
-            "Through KAARIGAR's fair-trade economics, 86% of the purchase price flows directly into the Pranpur weaver collective."
-        ),
-        tags=["story", "chanderi", "bismillah ansari", "pit loom", "silk", "zari", "kadwa", "pranpur", "gossamer"],
-    ),
-]
+# Maintain backward compatibility for any callers expecting STATIC_KNOWLEDGE_CORPUS
+STATIC_KNOWLEDGE_CORPUS: list[RAGChunk] = load_static_corpus()
+
+
+def reload_knowledge_corpus() -> list[RAGChunk]:
+    """Force re-ingestion and re-chunking of the JSON knowledge corpus."""
+    global STATIC_KNOWLEDGE_CORPUS
+    STATIC_KNOWLEDGE_CORPUS = knowledge_loader.reload_knowledge_base()
+    return STATIC_KNOWLEDGE_CORPUS
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -436,8 +160,8 @@ def get_dynamic_db_chunks(db: Optional[Session]) -> list[RAGChunk]:
 
 
 def get_full_knowledge_corpus(db: Optional[Session] = None) -> list[RAGChunk]:
-    """Return combined static + dynamic database chunks."""
-    corpus = list(STATIC_KNOWLEDGE_CORPUS)
+    """Return combined static (loaded from JSON & automatically chunked) + dynamic database chunks."""
+    corpus = list(knowledge_loader.get_static_chunks())
     if db is not None:
         dynamic = get_dynamic_db_chunks(db)
         corpus.extend(dynamic)
@@ -658,7 +382,11 @@ def filter_catalogue_for_query(
 
     # Check if this is purely a policy/faq inquiry without object purchase/viewing intent
     is_pure_policy_or_technique = False
-    policy_keywords = {"fee", "platform fee", "5%", "tax", "gst", "escrow", "shipping", "delivery", "return", "refund", "auth", "login", "certificate", "inspection"}
+    policy_keywords = {
+        "fee", "platform fee", "5%", "tax", "gst", "escrow", "shipping", "delivery",
+        "return", "refund", "auth", "login", "certificate", "inspection", "pricing formula",
+        "pricing", "formula", "breakdown", "policy", "policies", "terms", "transparent pricing",
+    }
     if any(pk in clean_q for pk in policy_keywords) and not has_noun and not any(w in words for w in ["buy", "show", "pieces", "products"]):
         is_pure_policy_or_technique = True
 
